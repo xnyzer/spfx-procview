@@ -31,8 +31,9 @@ Full context: README.md
 ## Status & where to start
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
-requirements defined (`REQUIREMENTS.md`, F-001–F-009 in `PROGRESS.md`) — no feature
-implemented yet. Next: `/prep-step F-001` (starts with a spike on a real shared link).
+requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-010 in `PROGRESS.md`). F-001 done:
+provider contract and Signavio link validation in `src/providers/` (44 Jest tests), not yet
+wired into the web part. Next: `/prep-step F-002` (configuration pane + diagram display).
 
 <!-- section:claude-startup -->
 Read `README.md` and `REQUIREMENTS.md` (while it exists). Then `PROGRESS.md`: its open-tasks

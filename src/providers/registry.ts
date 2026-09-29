@@ -1,7 +1,8 @@
+import { signavioProvider } from './signavio';
 import type { IProcessToolProvider, LinkParseResult } from './types';
 
-/** Providers the web part asks, in order. Signavio is registered in F-001b. */
-export const defaultProviders: readonly IProcessToolProvider[] = [];
+/** Providers the web part asks, in order. */
+export const defaultProviders: readonly IProcessToolProvider[] = [signavioProvider];
 
 /**
  * Turns editor input into a validated diagram link. Trims the input, rejects empty

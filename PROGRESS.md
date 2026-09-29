@@ -18,68 +18,12 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | Step | Description | Completed |
 |------|-------------|-----------|
 | F-001a | Provider contract, registry and first Jest tests (test pipeline verified) | 2026-09-29 |
+| F-001b | Signavio provider: host allow-list, link validation, normalised image/hub URLs, 38 tests | 2026-09-29 |
+| F-001 | Provider interface + Signavio provider (F-001a, F-001b) | 2026-09-29 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-001 — Provider interface + Signavio provider
-
-**Status:** PLANNED
-
-**Problem:** The web part must turn an editor-supplied link into a displayable diagram image
-and reject anything else — today only for Signavio, later for other process tools.
-
-**Idea:** Define a small provider contract (does this link belong to me? → image URL, hub URL,
-validation errors) and implement it for Signavio "Simple image" links — the only accepted
-input (Signavio: Share → Embed diagram → tab "Simple image"). PNG resolution is settled
-(natural size); the regional hosts are verified (see below).
-
-**Solution sketch** (updated 2026-09-29 by `/prep-step`):
-- Pure functions outside the web part class (testable with Jest); no UI — wiring into the
-  property pane is F-002
-- **Rebuild, never pass through:** the image URL is reassembled from validated parts
-  (`https://<allow-listed host>/p/model/<id>/png?inline&authkey=<key>`) — no foreign query
-  parameters, fragments or userinfo (`https://editor.signavio.com@example.com/…`) can reach
-  the `<img>`
-- **Exact host match** against the 7 verified hosts (DNS + endpoint checked 2026-09-29):
-  `editor.signavio.com` (EU), `app-us`, `app-au`, `app-ca`, `app-jp`, `app-kr`,
-  `app-sgp.signavio.com` — no suffix matching (lookalikes are rejected)
-- Model id = 32 hex chars; `authkey` = hex of **variable length** (real links: 62 and 64) —
-  accept 32–128; case-insensitive match, value passed on unchanged
-- **Errors as codes** (`empty`, `unsupported`, `notUrl`, `notHttps`, `unknownHost`,
-  `embedCode`, `notImageLink`, `missingAuthKey`, `invalidModelId`, `invalidAuthKey`) —
-  F-002 maps them to `loc/` strings; `embedCode`/`notImageLink` carry the hint to the
-  "Simple image" tab
-- Hub link `https://<host>/p/portal#/model/<id>` (verified for EU; same pattern assumed for
-  the other regions — open question in REQUIREMENTS)
-- Provider registry with Signavio as the only entry; no new dependencies
-- Real shared links are kept only locally under `private/` (gitignored); tests use placeholder
-  links only — model ids/authkeys are on the privacy-lint blocklist
-
-**Dependencies:** —
-
-#### F-001b — Signavio provider
-
-**What:** Signavio implementation of the contract: host allow-list, URL parsing and
-validation, normalised image URL, derived hub link, detection of typical wrong inputs;
-registered in the registry.
-
-**Files:** `src/providers/signavio.ts`, `src/providers/signavio.test.ts`,
-`src/providers/registry.ts` (registration)
-
-**Dependencies:** F-001a
-
-**Acceptance criteria:**
-- [ ] Valid links for all 7 hosts are recognised (with and without `inline`); output URL
-      and hub link are normalised
-- [ ] Negative tests (CODING-STANDARDS §10): `http:`, `javascript:`, lookalike hosts,
-      userinfo trick, extra query parameters/fragments dropped, invalid model id, missing/
-      invalid `authkey`, embed code (`signavio.js`/`authToken`), hub/portal link, model link
-      without `/png`, surrounding whitespace
-- [ ] Tests contain placeholder ids/keys only — privacy-lint (with blocklist) green
-- [ ] Local, uncommitted check: the locally kept real links parse
-      correctly against the compiled output
 
 ### F-002 — Configuration pane + diagram display with size control
 
@@ -246,7 +190,7 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 
 <!-- FEATURE-INDEX
 next-feature: F-011
-F-001 Provider interface + Signavio provider (PLANNED)
+F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control
 F-003 Collaboration Hub link (checkbox)
 F-004 Empty and error states

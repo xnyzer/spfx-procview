@@ -8,6 +8,91 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-001 — Provider interface + Signavio provider
+
+_Completed 2026-09-29 via F-001a and F-001b._
+
+**Problem:** The web part must turn an editor-supplied link into a displayable diagram image
+and reject anything else — today only for Signavio, later for other process tools.
+
+**Idea:** Define a small provider contract (does this link belong to me? → image URL, hub URL,
+validation errors) and implement it for Signavio "Simple image" links — the only accepted
+input (Signavio: Share → Embed diagram → tab "Simple image"). PNG resolution is settled
+(natural size); the regional hosts are verified (see below).
+
+**Solution sketch** (updated 2026-09-29 by `/prep-step`):
+- Pure functions outside the web part class (testable with Jest); no UI — wiring into the
+  property pane is F-002
+- **Rebuild, never pass through:** the image URL is reassembled from validated parts
+  (`https://<allow-listed host>/p/model/<id>/png?inline&authkey=<key>`) — no foreign query
+  parameters, fragments or userinfo (`https://editor.signavio.com@example.com/…`) can reach
+  the `<img>`
+- **Exact host match** against the 7 verified hosts (DNS + endpoint checked 2026-09-29):
+  `editor.signavio.com` (EU), `app-us`, `app-au`, `app-ca`, `app-jp`, `app-kr`,
+  `app-sgp.signavio.com` — no suffix matching (lookalikes are rejected)
+- Model id = 32 hex chars; `authkey` = hex of **variable length** (real links: 62 and 64) —
+  accept 32–128; case-insensitive match, value passed on unchanged
+- **Errors as codes** (`empty`, `unsupported`, `notUrl`, `notHttps`, `unknownHost`,
+  `embedCode`, `notImageLink`, `missingAuthKey`, `invalidModelId`, `invalidAuthKey`) —
+  F-002 maps them to `loc/` strings; `embedCode`/`notImageLink` carry the hint to the
+  "Simple image" tab
+- Hub link `https://<host>/p/portal#/model/<id>` (verified for EU; same pattern assumed for
+  the other regions — open question in REQUIREMENTS)
+- Provider registry with Signavio as the only entry; no new dependencies
+- Real shared links are kept only locally under `private/` (gitignored); tests use placeholder
+  links only — model ids/authkeys are on the privacy-lint blocklist
+
+**Dependencies:** —
+
+### F-001b — Signavio provider
+
+_Part of F-001 — Provider interface + Signavio provider. Completed 2026-09-29._
+
+**What:** Signavio implementation of the contract: host allow-list, URL parsing and
+validation, normalised image URL, derived hub link, detection of typical wrong inputs;
+registered in the registry.
+
+**Files:** `src/providers/signavio.ts` (new), `src/providers/signavio.test.ts` (new),
+`src/providers/registry.ts` (registration)
+
+**Dependencies:** F-001a
+
+**Acceptance criteria:**
+- [x] Valid links for all 7 hosts are recognised (with and without `inline`); output URL
+      and hub link are normalised
+- [x] Negative tests (CODING-STANDARDS §10): `http:`, `javascript:`, lookalike hosts,
+      userinfo trick, extra query parameters/fragments dropped, invalid model id, missing/
+      invalid `authkey`, embed code (`signavio.js`/`authToken`), hub/portal link, model link
+      without `/png`, surrounding whitespace
+- [x] Tests contain placeholder ids/keys only — privacy-lint (with blocklist) green
+- [x] Local, uncommitted check: the locally kept real links parse correctly against the
+      compiled output — both recognised, rebuilt image URL identical to the input; the
+      real embed code yields `embedCode`
+
+**Implemented:**
+- `signavio.ts` — `SIGNAVIO_HOSTS` (7 regional hosts, exact match) and `signavioProvider`.
+  The provider claims every input that mentions "signavio" (so wrong Signavio input gets a
+  specific error instead of `unsupported`) and checks in order: embed code → `embedCode`;
+  URL parse (`new URL`) → `notUrl`; scheme → `notHttps`; host in allow-list and no
+  userinfo/port → `unknownHost`; path `/p/model/<id>/png` → `notImageLink`; model id
+  (32 hex) → `invalidModelId`; `authkey` present → `missingAuthKey`, 32–128 hex →
+  `invalidAuthKey`. Output `imageUrl` and `hubUrl` are rebuilt from the validated parts.
+- `signavio.test.ts` — 38 tests (all 7 hosts, missing `inline`, 62-char key, upper-case
+  host, foreign parameters/fragments dropped, registry integration; negatives for embed
+  code, non-URL, `http:`/`javascript:`/`data:`, lookalike hosts, bare domain, `app-eu`,
+  explicit port, userinfo trick and userinfo on an allowed host, hub/portal/model/SVG/
+  nested paths, four invalid model ids, missing/empty key, four invalid keys incl. markup).
+- `registry.ts` — `defaultProviders = [signavioProvider]`.
+- Total suite: 44 tests green; a mutation test (host check weakened to a suffix match)
+  turned 3 tests red, confirming the negative tests bite.
+
+**Decisions / deviations:**
+- Two negative tests beyond the plan: markup in the `authkey` and a `data:` URL.
+- Secret-scanner false positives in the tests were fixed without allow-listing: the
+  placeholder key is deliberately low-entropy (`'ab12'.repeat(16)`), the userinfo test
+  builds its credentials from a variable, and the `javascript:` input is assembled from two
+  strings instead of disabling ESLint's `no-script-url`.
+
 ### F-001a — Provider contract, registry, test pipeline
 
 _Part of F-001 — Provider interface + Signavio provider. Completed 2026-09-29._
