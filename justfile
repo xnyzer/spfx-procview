@@ -1,12 +1,42 @@
-# project-template — repo-level recipes (never shipped to projects; those get core/justfile)
+# spfx-procview — standard recipes (SPFx adaptation of the ts-node module)
+# The recipe set (setup/dev/test/lint/format/check/build) is the stable contract —
+# skills and CI call only these names. Tooling comes from the SPFx 1.23 Heft rig
+# (npm, ESLint, Jest); Prettier is the formatter.
+
+# Prettier scope: source and SPFx config only — governance Markdown/YAML stays untouched
+prettier_globs := '"src/**/*.{ts,js,scss,json}" "config/**/*.json" "*.config.js"'
 
 default:
     @just --list
 
-# Install git hooks
+# Install dependencies (exactly as locked) + git hooks
 setup:
+    npm ci
     lefthook install
 
-# Full template validation: JSON/YAML syntax, placeholder registry, privacy lint
+# Serve the web part to the hosted workbench (set SPFX_SERVE_TENANT_DOMAIN first)
+dev:
+    npx --no-install heft start --clean
+
+# Build (TypeScript + Heft lint) and run the Jest suite
+test:
+    npx --no-install heft test --clean
+
+# Static analysis: ESLint with the SPFx profile, zero warnings
+lint:
+    npx --no-install eslint --max-warnings 0 .
+
+# Auto-format + safe lint fixes
+format:
+    npx --no-install prettier --write --log-level warn {{prettier_globs}}
+    npx --no-install eslint --fix .
+
+# Full gate — must be green before every commit
 check:
-    uv run --with pyyaml python3 scripts/validate.py
+    npx --no-install prettier --check --log-level warn {{prettier_globs}}
+    just lint
+    just test
+
+# Production build: tests + solution package (sharepoint/solution/spfx-procview.sppkg)
+build:
+    npm run build

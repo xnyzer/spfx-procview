@@ -1,39 +1,62 @@
 # Security Policy
 
-project-template ships configuration into downstream projects: CI workflows, permission
-settings for Claude Code, git hooks, and dependency automation. A malicious or careless
-change here propagates — reports are taken seriously.
+`spfx-procview` is a SharePoint Framework web part that renders process diagrams from
+editor-supplied links inside SharePoint pages; it runs in the security context of every
+page visitor, so injection flaws (e.g. unescaped URLs or markup) could affect all users of
+a site.
 
 ## Reporting a Vulnerability
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Use GitHub's private reporting instead:
+Instead, use GitHub's private reporting feature:
 
 1. Go to the **Security tab** of this repository
 2. Click **"Report a vulnerability"**
 3. Fill in the form and submit
 
-## What is in scope
+Only the maintainer and you will see the report. You can attach proof-of-concept code or
+logs without them becoming public.
 
-- The shipped CI workflows (`core/.github/workflows/`, module `ci.part.yml` files) —
-  e.g. permission escalation, unpinned or tampered action references.
-- The shipped Claude Code permission settings (`core/.claude/settings.json`) — e.g. a
-  deny-list bypass.
-- The shipped hook and scanner configuration (`core/lefthook.yml`) and the template
-  validator (`scripts/validate.py`).
+## What to include
 
-Out of scope: vulnerabilities in the referenced third-party tools themselves (mise, just,
-lefthook, gitleaks, Renovate, CodeQL) — report those upstream, but do tell us so pins can
-be updated.
+- A description of the issue and its impact
+- Steps to reproduce (as minimal as you can make them)
+- The affected version or commit SHA
+- The threat scenario (who can exploit this, and from where)
+- Any suggested mitigation or patch idea, if you have one
 
 ## What happens next
 
-This project is maintained by a single person in their spare time — initial response
-within a few days where possible, but it can take two to three weeks. Confirmed issues in
-shipped configuration are treated with priority because of their downstream blast radius.
+This project is maintained by a single person in their spare time, so response times
+vary — please be patient.
+
+- **Initial response:** within a few days where possible, but it can take two to three weeks.
+- **Triage:** confirmation whether it is a vulnerability and a rough severity.
+- **Fix timeline:** depends on severity and scope; issues that expose users or data are
+  treated with the highest priority.
+- **Disclosure:** when a fix is released, the advisory is published and you are credited
+  unless you prefer to stay anonymous.
+
+## Scope
+
+- In scope: this repository's code (web part source, manifests, solution package
+  configuration) and its build/CI configuration.
+- Out of scope: vulnerabilities in third-party dependencies, including the SharePoint
+  Framework packages (report upstream, but tell us so we can pin/patch), in SharePoint
+  Online / Microsoft 365 itself, and in SAP Signavio or other embedded process tools.
+
+## Supported versions
+
+| Version | Supported |
+|---------|-----------|
+| pre-release (no tagged release yet) | latest `main` only |
+
+This table will be updated once the project has tagged releases.
 
 ## Safe harbor
 
-No legal action against researchers who report in good faith, give reasonable time to fix,
-and limit testing to their own repositories and deployments.
+I will not take legal action against researchers who report vulnerabilities in good
+faith, follow this policy, give reasonable time to fix the issue before public
+disclosure, and do not exfiltrate data beyond what is needed to demonstrate the issue.
+Testing must be limited to your own deployment — do not attack other people's instances.

@@ -1,48 +1,79 @@
-# project-template — Claude Instructions
+# spfx-procview — Claude Instructions
 
+<!-- template:optional:graphiti -->
+<!-- section:claude-graphiti -->
 ## Graphiti Memory (Knowledge Graph)
-**group_id**: `project-template`
+**group_id**: `spfx-procview`
 
-- Query the graph first before searching files:
-  `search_memory_facts(query="…", group_ids=["project-template"])`.
-- After significant changes, update via `add_memory` (`group_id: "project-template"`).
-- Optional — skip silently if no Graphiti MCP server is available.
+- **Query the graph first** before searching files:
+  `search_memory_facts(query="…", group_ids=["spfx-procview"])`,
+  `search_nodes(query="…", group_ids=["spfx-procview"])`.
+- **After significant changes**, update via `add_memory` (`group_id: "spfx-procview"`,
+  `source: "text"`, descriptive `name`). Split dense content into multiple episodes.
+- Requires a running Graphiti MCP server — skip silently if none is available.
+<!-- /section:claude-graphiti -->
+<!-- /template:optional:graphiti -->
 
 ## Overview
 
-This repository is the **single source of truth for project scaffolding**: a stack-agnostic
-`core/` plus per-stack `modules/`, instantiated into new repositories by the `/new-project`
-skill of the coding-kit plugin and kept in sync via `/update-conventions`. See `README.md`
-and `MANIFEST.md`.
+SPFx web part to embed SAP Signavio process diagrams in SharePoint with adjustable size.
 
-## Structure rules (binding)
+SharePoint's built-in embed web part only supports iframes, so the size of an embedded
+SAP Signavio diagram cannot be controlled from the page. This SharePoint Framework (SPFx)
+web part takes the shared/embed link of a Signavio process, renders the diagram directly
+with a configurable size, and optionally shows a link to the Signavio Collaboration Hub
+below it. Target users: SharePoint site owners and editors; the solution package is
+deployed tenant-wide by IT. Signavio is the only supported tool for now — the design
+should allow further process tools to be added later. Stack: SPFx 1.23.2 (no-framework
+template, Heft toolchain, npm), Node 22 via mise; see `CODING-STANDARDS.md` §13.
+Full context: README.md
 
-- **Repo root = this repository itself** (its own docs, CI, settings). **`core/` and
-  `modules/` = template content** that ships into projects. Never mix the two.
-- The whole repo is public — template content **and** its own docs (README, CHANGELOG,
-  MANIFEST) alike are **English** and **free of personal data**: no real names (people,
-  customers, or concrete downstream projects), private emails, absolute local paths, IPs,
-  or hostnames. In template content, identity is parameterised (`{{OWNER}}`, …) or resolved
-  at runtime (`git config`, `gh api`) by the skills; in the changelog and other docs, refer
-  to instantiated projects generically ("a downstream project"), never by name.
-- Placeholder and marker conventions are defined in `MANIFEST.md`. Use only the documented
-  placeholders; register new ones there first.
-- **Sync invariant:** every change to a managed template file requires, in the same commit —
-  a `VERSION` bump, a `CHANGELOG.md` entry, and (if files were added/removed/re-policied)
-  a `MANIFEST.md` update. No exceptions; `/update-conventions` depends on it.
-- No static tool-version claims in template *texts* (write "current LTS", not a number).
-  Where pins are technically required (mise tools, action SHAs, packageManager), they are
-  exact and Renovate keeps them fresh.
+## Status & where to start
 
+Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
+requirements defined (`REQUIREMENTS.md`, F-001–F-009 in `PROGRESS.md`) — no feature
+implemented yet. Next: `/prep-step F-001` (starts with a spike on a real shared link).
+
+<!-- section:claude-startup -->
+Read `README.md` and `REQUIREMENTS.md` (while it exists). Then `PROGRESS.md`: its open-tasks
+section and the `FEATURE-INDEX` block are the working context — read those; when the file
+has grown large, scan the Done table and backlog instead of reading every entry. Skip
+`PROGRESS-ARCHIVE.md` at startup — consult it only for the rationale of a specific finished
+task. **To continue: open `PROGRESS.md`, take the first open task, run `/prep-step` to plan,
+`/build-step` to implement, then `/step-done` to finish.** Work the open tasks top to bottom.
+<!-- /section:claude-startup -->
+
+<!-- section:claude-conventions -->
 ## Conventions
 
-- Repo language: English (public). Conventional Commits, English, imperative mood; body ends
-  with `Co-Authored-By: Claude <noreply@anthropic.com>`.
-- Commit email must be the GitHub noreply address — verify via `git config user.email`
-  before any commit; resolve with `gh api user` if wrong. **Never auto-commit — ask first.**
-- Checks: `just check` must be green before any commit (validates JSON/YAML, privacy lint).
+- **Languages** (chosen at instantiation, independent of repo visibility — identifiers,
+  Conventional-Commit tokens, status tokens, and governance docs are always English):
+  - Living docs (PROGRESS, REQUIREMENTS, decision logs): **English**
+  - CLAUDE.md prose (project parts of this file): **English**
+  - Code comments & docstrings: **English**
+  - Commit-message prose: **English**
+  - README & public docs: **English**
+- Git: **Conventional Commits** (tokens English), prose in English,
+  imperative mood; body ends with
+  `Co-Authored-By: Claude <noreply@anthropic.com>`. Commit email = **GitHub noreply**
+  (verify `git config user.email`; fix via `gh api user`). **Never auto-commit — ask first.**
+- License: **Apache-2.0**; dependencies must be permissive-licensed (no GPL/AGPL) —
+  deviations only as a conscious, documented decision.
+- Toolchain: **mise + just + lefthook** are mandatory; all checks run via **`just check`**
+  and it must be green before any commit.
+- Secrets and private material never enter the tree; operational internals go to
+  `private/` (gitignored). Living docs stay free of private info (names, customers, local
+  paths, IPs) — the project must remain publishable at any time.
+<!-- /section:claude-conventions -->
 
+<!-- section:claude-workflow -->
 ## Workflow & skills
 
-Tasks are F-numbers in `PROGRESS.md` (+ `FEATURE-INDEX` block). Use the coding-kit plugin
-skills: `/add-feature` (intake), `/prep-step` (plan), `/step-done` (finish), `/audit-code`.
+Tasks are F-numbers in `PROGRESS.md` (+ `FEATURE-INDEX` block); finished work is archived
+in `PROGRESS-ARCHIVE.md`. Skills come from the **coding-kit plugin**: `/add-feature`
+(intake), `/prep-step` (plan + decompose), `/build-step` (implement the plan), `/step-done`
+(review, secrets scan, docs, commit question), `/audit-code` (full audit). Details:
+`HOW-TO-CODE-WITH-CLAUDE.md`.
+Coding rules: `CODING-STANDARDS.md`. Project-local deviations from template conventions
+are registered in `.claude/convention-overrides.md`.
+<!-- /section:claude-workflow -->

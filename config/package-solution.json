@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "spfx-procview-client-side-solution",
+    "id": "58159b55-6eaf-4b07-842b-c07152bb4275",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "xnyzer",
+      "websiteUrl": "https://github.com/xnyzer/spfx-procview",
+      "privacyUrl": "https://github.com/xnyzer/spfx-procview#privacy",
+      "termsOfUseUrl": "https://github.com/xnyzer/spfx-procview/blob/main/LICENSE",
+      "mpnId": "Undefined-1.23.2"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "Embeds SAP Signavio process diagrams in SharePoint pages with adjustable size."
+      },
+      "longDescription": {
+        "default": "SharePoint Framework web part that displays a shared SAP Signavio process diagram (Simple image link) directly on the page, without an iframe, at a configurable size, with an optional link to the Signavio Collaboration Hub."
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "spfx-procview Feature",
+        "description": "The feature that activates elements of the spfx-procview solution.",
+        "id": "3c9873a5-52b6-4a4b-a0c6-9690b433f109",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/spfx-procview.sppkg"
+  }
+}

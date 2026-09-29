@@ -1,7 +1,13 @@
 pre-commit:
   parallel: true
   jobs:
+    # gitleaks scans the staged diff itself — no file list needed
     - name: secrets-scan
       run: gitleaks git --pre-commit --staged --redact
-    - name: validate
-      run: just check
+    # formats the tree; fixes to already-staged files are re-staged automatically
+    - name: format
+      run: just format
+      stage_fixed: true
+    # blocks private identifiers (paths, IPs, emails, private/blocklist.txt terms)
+    - name: privacy-lint
+      run: sh scripts/privacy-lint.sh {staged_files}

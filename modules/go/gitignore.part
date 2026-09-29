@@ -1,4 +1,0 @@
-# go module
-bin/
-dist/
-coverage.out

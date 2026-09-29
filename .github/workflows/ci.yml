@@ -14,9 +14,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+      - run: just setup
       - run: just check
+  # module:ci-jobs — stack modules append additional jobs below this line
+  # Server-side backstop for the local pre-commit hooks (which can be skipped):
+  # shared-link keys (e.g. Signavio authkeys) are not GitHub push-protection patterns.
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install_args: gitleaks
+      - run: gitleaks git --redact --no-banner
+      - run: sh scripts/privacy-lint.sh --all
+  # The deliverable: fails when the .sppkg can no longer be packaged
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+      - run: just setup
+      - run: just build

@@ -1,51 +1,90 @@
-# project-template
+# spfx-procview
 
-A stack-agnostic GitHub project template: one **core** every project gets, plus per-stack
-**modules**. It is the single source of truth for project scaffolding and conventions,
-designed to be instantiated by the `/new-project` skill from
-[coding-kit](https://github.com/xnyzer/coding-kit) and kept up to date in existing projects
-via `/update-conventions`.
+SPFx web part to embed SAP Signavio process diagrams in SharePoint with adjustable size.
 
-> The user-facing documentation of the whole system (in German) lives in the
-> [coding-kit](https://github.com/xnyzer/coding-kit) README. This file only documents the
-> template repository itself.
+SharePoint's built-in embed web part only renders iframes, which leaves no way to control
+how large an embedded SAP Signavio diagram appears on the page. `spfx-procview` is a
+SharePoint Framework web part that takes a Signavio shared/embed link, displays the
+process diagram at a configurable size, and can optionally link to the Signavio
+Collaboration Hub underneath. It is built to be deployed tenant-wide by IT and designed so
+that further process tools can be supported later.
 
-## Structure
+## Status
+
+Early development — see `PROGRESS.md` for the roadmap.
+
+<!-- section:readme-getting-started -->
+## Getting started
+
+Toolchain is pinned via [mise](https://mise.jdx.dev); everything else follows from it:
 
 ```
-core/       Files every project receives (governance docs, .claude/, .github/, tooling).
-            English, personal-data-free, parameterised with `{{…}}` placeholder tokens.
-modules/    Per-stack additions (docs-only, ts-node, python, go; stubs: swift-ios, java).
-            A module contributes its justfile, mise tools, gitignore entries, CI parts,
-            and its language fragment (plus any declared catalog fragments) composed
-            into CODING-STANDARDS.md. modules/standards/ holds the cross-cutting
-            catalog of reusable standards fragments with the trigger→fragment mapping.
-MANIFEST.md Which files are managed by the template (core vs. module), their update
-            policy, and the placeholder/marker conventions.
-VERSION     Template version, stamped into projects as .claude/template-version.
-CHANGELOG.md What changed between template versions.
+mise install   # toolchain (incl. just, lefthook, gitleaks)
+just setup     # dependencies + git hooks
+just check     # full gate: format check, lint, types, tests
 ```
 
-Everything else at the repository root belongs to this repository itself (its own
-CLAUDE.md, PROGRESS.md, CI) — it is never copied into projects.
+| Recipe | Purpose |
+|--------|---------|
+| `just setup` | Install dependencies and git hooks |
+| `just dev` | Run the project locally |
+| `just test` | Run the test suite |
+| `just lint` | Static analysis |
+| `just format` | Auto-format the codebase |
+| `just check` | The full gate — must be green before every commit |
+| `just build` | Production build |
+<!-- /section:readme-getting-started -->
 
-## Usage
+## Development (SharePoint Framework)
 
-Intended path: run `/new-project` (from the coding-kit plugin) — it creates a repository
-from this template, fills the placeholders, instantiates one stack module, and stamps the
-template version. Using GitHub's "Use this template" button works too, but leaves you with
-raw placeholders and all modules; instantiation is manual in that case (see MANIFEST.md).
+Built with SharePoint Framework **1.23.2** (Heft toolchain, no UI framework) on Node 22.
 
-## Versioning
+- **Local debugging:** `just dev` serves the web part to the SharePoint hosted workbench.
+  Set your tenant first, e.g. `export SPFX_SERVE_TENANT_DOMAIN=contoso.sharepoint.com`
+  (replaces `{tenantDomain}` in `config/serve.json`). The dev server runs on
+  `https://localhost:4321`; trust its development certificate once per machine with
+  `npx heft trust-dev-cert` (remove it again with `npx heft untrust-dev-cert`). Without a
+  trusted certificate, `just dev` itself opens an admin-password prompt (macOS: a Terminal
+  window running `sudo security add-trusted-cert`) and launches the workbench URL in the
+  browser — trust the certificate deliberately first.
+- **Package:** `just build` creates `sharepoint/solution/spfx-procview.sppkg`.
+- **Deploy:** upload the `.sppkg` to the tenant (or site collection) App Catalog. The
+  solution uses `skipFeatureDeployment`, so it can be made available to all sites at once.
 
-Semantic versioning of the template itself: any change to a managed file bumps `VERSION`
-and gets a `CHANGELOG.md` entry. `/update-conventions` uses the stamped version plus
-`MANIFEST.md` to diff a project against the template baseline.
+### Upgrading SPFx
 
-Convention flow is exclusively downward (template → project). Conventions originate here;
-improvements discovered in a downstream project come back only as a manually initiated
-adoption proposal (a session in this repository, or a GitHub issue) — never as an
-automatic write. See `MANIFEST.md` (§ Sync direction).
+SPFx releases dictate their toolchain (TypeScript, ESLint, Heft, webpack) and the supported
+Node major, so an upgrade is always one deliberate task — Renovate only lists new SPFx
+releases on its Dependency Dashboard and never bumps the toolchain on its own
+(`renovate.json`, ADR-0001).
+
+1. Generate an upgrade report, e.g. with the CLI for Microsoft 365:
+   `npx -p @pnp/cli-microsoft365 m365 spfx project upgrade --shell bash --output md`.
+2. Apply all steps together — SPFx packages, toolchain packages, `mise.toml` Node major,
+   `engines` in `package.json`, `Node` rule in `renovate.json`.
+3. `just check` and `just build` must be green; re-check `npm audit` against ADR-0001
+   (drop the `qs` override once the toolchain ships a fixed version).
+
+**Deadline:** SPFx 1.23 supports Node 22 only, and Node 22 reaches end of life on
+**2027-04-30** — an upgrade to an SPFx release on a newer Node must land before then.
+
+## Privacy
+
+The web part stores only its own settings (e.g. the diagram link) in the SharePoint page.
+It sets no cookies, sends no telemetry and calls no API of its own. To display a diagram,
+each visitor's browser loads the image directly from the configured process tool (for
+Signavio: the SAP Signavio host of the shared link) — like any embedded image, that request
+reveals the visitor's IP address and browser details to the tool's provider. Shared
+"Simple image" links are readable by anyone who has them; embed only diagrams approved for
+that kind of sharing.
+
+## Documentation
+
+- `REQUIREMENTS.md` — intent (transitional; dissolved into `PROGRESS.md`)
+- `PROGRESS.md` — roadmap and task list
+- `CODING-STANDARDS.md` — binding coding rules
+- `HOW-TO-CODE-WITH-CLAUDE.md` — development workflow (Claude Code + coding-kit skills)
+- `CONTRIBUTING.md`, `SECURITY.md`, `AI-DISCLOSURE.md` — governance
 
 ## License
 

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "0253008c-46f4-4e61-b423-57d13df20000",
+  "alias": "ProcViewWebPart",
+  "componentType": "WebPart",
+
+  // The "*" signifies that the version should be taken from the package.json
+  "version": "*",
+  "manifestVersion": 2,
+
+  // If true, the component can only be installed on sites where Custom Script is allowed.
+  // Components that allow authors to embed arbitrary script code should set this to true.
+  // https://support.office.com/en-us/article/Turn-scripting-capabilities-on-or-off-1f2c515f-5d7e-448a-9fd7-835da935584f
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart", "TeamsPersonalApp", "TeamsTab", "SharePointFullPage"],
+  "supportsThemeVariants": true,
+
+  "preconfiguredEntries": [
+    {
+      "groupId": "1bc7927e-4a5e-4520-b540-71305c79c20a", // Planning and process
+      "group": { "default": "Planning and process" },
+      "title": { "default": "Process diagram (ProcView)" },
+      "description": { "default": "Embeds a process diagram (SAP Signavio) with adjustable size." },
+      "officeFabricIconFontName": "VisioDiagram",
+      "properties": {}
+    }
+  ]
+}

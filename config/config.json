@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "proc-view-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/procView/ProcViewWebPart.js",
+          "manifest": "./src/webparts/procView/ProcViewWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "ProcViewWebPartStrings": "lib/webparts/procView/loc/{locale}.js"
+  }
+}

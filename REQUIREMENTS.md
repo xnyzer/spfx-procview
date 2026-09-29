@@ -1,0 +1,111 @@
+# spfx-procview — Requirements
+
+<!-- section:requirements-head -->
+> **Transitional artifact.** This document captures intent until every requirement has
+> been turned into an F-number in `PROGRESS.md`. Once that transfer is complete, checked,
+> and confirmed by the owner, this file is dissolved and the summary in `CLAUDE.md` is
+> updated (`/define-requirements` and `/refine-requirements` manage this lifecycle).
+> Content is written in English.
+<!-- /section:requirements-head -->
+
+## Goals
+
+1. **Embed without iframes, at a controllable size.** Page editors place a shared SAP
+   Signavio process diagram on a modern SharePoint page and decide how large it appears —
+   something the built-in iframe embed cannot do.
+2. **Always current, native look.** The diagram stays up to date automatically (live image
+   link) and the web part blends into the page design: theme colors, section backgrounds,
+   controls in the page's look and feel.
+3. **Deploy once, extend later.** IT deploys a single solution package tenant-wide; the
+   architecture keeps the door open for further process tools beyond Signavio.
+
+## Core features
+
+1. **Process-tool provider interface + Signavio provider** — a small provider contract
+   (recognise link → image URL, optional hub URL, validation); Signavio is the first
+   implementation: accepts the "Simple image" link
+   (`https://<signavio-host>/p/model/<model-id>/png?inline&authkey=<key>`), validates
+   scheme, host allow-list and shape, and derives the Collaboration Hub link.
+2. **Diagram display with size control** — renders the image as `<img>` (no iframe);
+   property pane for link, size mode (fit to width / fixed width / fixed height, px or %),
+   and alt text.
+3. **Optional Collaboration Hub link** below the diagram — auto-derived from the model id,
+   overridable URL and link text, toggle on/off.
+4. **Empty and error states** — "not configured yet" placeholder with guidance for
+   editors; clear message (plus hub link, if any) when the image cannot be loaded.
+5. **Theme, section backgrounds, accessibility** — `supportsThemeVariants`, semantic theme
+   colors, keyboard operability, alt text, sufficient contrast.
+6. **Zoom and pan** — zoom in/out/reset controls and drag/touch panning inside the web part
+   frame; controls styled from the page theme (Fluent UI Core icons).
+7. **Full-screen view (lightbox)** — open the diagram in a large overlay at natural size;
+   close via button, Escape, or backdrop.
+8. **Microsoft Teams hosting** — the web part works as a Teams tab and personal app
+   (hosts already declared in the manifest), including Teams themes.
+9. **Release via CI + IT deployment guide** — GitHub Actions builds the `.sppkg` and attaches
+   it to a GitHub release; a guide describes App Catalog deployment for IT.
+
+## Out of scope
+
+- **No editing or commenting** of diagrams — read-only display; interaction happens via
+  the Collaboration Hub link.
+- **No own BPMN rendering** — no bpmn-js, no BPMN XML parsing; we show the image the tool
+  renders.
+- **No Signavio API and no sign-in** — only links shared for read-only access; no
+  authentication against Signavio.
+- **SharePoint Online modern pages only** — no classic pages, no SharePoint Server
+  on-premises.
+- **No further process tools yet** — only the provider architecture that allows them.
+
+## Constraints
+
+- **Platform:** SharePoint Online (and Teams) via SharePoint Framework 1.23.2, no UI
+  framework, Node 22; toolchain and rules in `CODING-STANDARDS.md` §13.
+- **No iframes** for the diagram — the image link is rendered directly.
+- **Shared links are effectively public:** a "Simple image" link with its `authkey` lets
+  anyone who has it see the diagram, and it is visible to every page visitor. Only
+  diagrams approved for this kind of sharing may be embedded (data classification is the
+  editor's responsibility; documented in the IT guide).
+- **No real links in the repository:** `authkey` values and model ids of real diagrams
+  never enter code, tests, docs, or issues — use placeholders.
+- **Image endpoint properties (verified 2026-09-29):** returns `image/png`, `no-store`
+  caching (always current), no CORS headers — usable via `<img>` only, not via `fetch`;
+  SVG is not available through the shared link (HTTP 403).
+- **Dependencies:** permissive licenses only; any new runtime dependency needs an ADR
+  (every byte ships to every page visitor).
+- **License:** Apache-2.0, public repository.
+
+## Decision log
+
+Dated entries; never rewrite history — supersede with a newer entry instead.
+
+### Product decisions
+
+| Date | Decision | Why |
+|------|----------|-----|
+| 2026-09-29 | Scope: SAP Signavio only, behind a provider interface for later tools | Immediate need is Signavio; other tools are plausible later and should not require a rewrite |
+| 2026-09-29 | Initial scope includes zoom/pan, full-screen view, Teams hosting and CI releases | Chosen by the owner in the requirements interview |
+| 2026-09-29 | Non-goals: no editing/commenting, no own BPMN rendering, no Signavio API/sign-in, modern SharePoint Online only | Keep the web part a lightweight, read-only embed that IT can deploy without integration effort |
+| 2026-09-29 | Collaboration Hub link is derived from the image link by default, overridable | The model id is part of the image link; editors should not have to paste two links |
+
+### Technical decisions
+
+| Date | Decision | Why |
+|------|----------|-----|
+| 2026-09-29 | SPFx 1.23.2 (current stable), Heft toolchain, npm, Node 22 | Latest stable release; its tooling dictates Node 22 and the Heft rig |
+| 2026-09-29 | No UI framework (`--framework none`) instead of React | Measured: 7.9 KB vs 8.7 KB bundle (React is provided by SharePoint) — size is not the driver; the web part is simple, theming works without React, and plain TypeScript stays closer to the maintainer's skill set. Revisit via ADR if the UI grows |
+| 2026-09-29 | Render the Signavio "Simple image" PNG via `<img>` | Verified against a real shared link: HTTP 200 `image/png`, anonymous with `authkey`, `no-store`; iframe headers (`x-frame-options`) do not apply to images |
+| 2026-09-29 | Hub link format `https://<host>/p/portal#/model/<model-id>` | The model root URL of a shared link redirects there |
+
+## Open questions
+
+- [ ] **PNG resolution:** the sample diagram renders at 720 × 457 px and no size parameter
+      changes that (`scale`, `width`, `dpi`, … ignored; `/png_hd` requires sign-in). Does
+      the PNG grow with larger diagrams? This determines how useful zoom and full-screen are
+      (clarify in the F-001 spike with a large real diagram).
+- [ ] **Regional hosts:** exact list of Signavio hosts to allow (EU `editor.signavio.com`,
+      `app-us`, `app-au`, … per Signavio docs) — verify before hard-coding the allow-list.
+- [ ] **Hub link target:** is `/p/portal#/model/<id>` right for all users, or should the
+      Collaboration Hub form `/p/hub/model/<id>?t=<workspace-id>` be used (needs the
+      workspace id, which the image link does not contain)?
+- [ ] **SharePoint CSP:** does the tenant's Content Security Policy for SPFx affect loading
+      images from Signavio hosts (`img-src`)?

@@ -1,7 +1,37 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": [
-    "Renovate for the template repo itself — extends the coding-kit shareable preset."
-  ],
-  "extends": ["github>xnyzer/coding-kit"]
+  "extends": ["github>xnyzer/coding-kit"],
+  "packageRules": [
+    {
+      "description": "SPFx packages move in lockstep with their toolchain (TypeScript, ESLint, Heft, Node) — Renovate only lists the release on the Dependency Dashboard; the upgrade itself is a deliberate task (see README 'Upgrading SPFx')",
+      "groupName": "SharePoint Framework",
+      "dependencyDashboardApproval": true,
+      "matchPackageNames": [
+        "@microsoft/sp-*",
+        "@microsoft/spfx-*",
+        "@microsoft/eslint-config-spfx",
+        "@microsoft/eslint-plugin-spfx",
+        "@microsoft/generator-sharepoint"
+      ]
+    },
+    {
+      "description": "Toolchain versions are dictated by the SPFx release — change only with an SPFx upgrade",
+      "matchPackageNames": [
+        "typescript",
+        "eslint",
+        "@rushstack/heft",
+        "@types/jest",
+        "@types/webpack-env",
+        "css-loader",
+        "tslib"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "SPFx 1.23 supports Node 22 only — Node majors change only with an SPFx upgrade",
+      "matchDepNames": ["node"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ]
 }

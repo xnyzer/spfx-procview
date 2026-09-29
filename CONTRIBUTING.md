@@ -1,57 +1,61 @@
-# Contributing to project-template
+# Contributing to spfx-procview
 
 Thanks for your interest in contributing!
 
-## What this repo is
+## Setup
 
-The repository root is the template project itself; `core/` and `modules/` are **template
-content** that ships into projects. Read `MANIFEST.md` before changing template content.
+Toolchain management is via [mise](https://mise.jdx.dev) — it provides every tool this
+repo needs (including `just`, `lefthook`, `gitleaks` and the stack toolchain):
 
-## The sync invariant (binding)
+```
+mise install   # install pinned toolchain
+just setup     # install dependencies + git hooks
+just check     # full gate: format check, lint, types, tests — must be green
+```
 
-Every change to a managed template file requires, in the same commit:
-
-1. a `VERSION` bump,
-2. a `CHANGELOG.md` entry,
-3. a `MANIFEST.md` update if files were added, removed, or re-policied.
-
-`/update-conventions` in downstream projects depends on this — breaking it breaks updates.
-
-## Where conventions originate
-
-Conventions always originate **here in the template** and flow exclusively downward
-(template → project) via `/new-project` and `/update-conventions`. Improvements discovered
-in an instantiated project are contributed as a manually initiated adoption proposal — a
-session in this repository, or a GitHub issue — never as an automatic write from a project.
-
-## Rules for template content
-
-- English only, free of personal data: no real names, private emails, absolute local
-  paths, IPs, hostnames. Identity is parameterised (`{{OWNER}}`, …) or resolved at runtime.
-- Only registered placeholders (see `MANIFEST.md`); `just check` enforces the registry.
-- No static tool-version claims in prose — write "current LTS", not a number. Technical
-  pins (action SHAs, mise tools) are exact; Renovate keeps them fresh.
+If you work with Claude Code, read `HOW-TO-CODE-WITH-CLAUDE.md` — it documents the
+project workflow and the coding-kit plugin skills this repo is built around.
 
 ## License of contributions
 
 This project is licensed under **Apache-2.0** (see `LICENSE`). By submitting a
 contribution you agree that it is licensed under the same terms (inbound = outbound).
 
-## Commits
+## Commit email policy
 
-- **Conventional Commits**, English, imperative mood; explain trade-offs in the body
+This repository's history may be public. Commit emails must use the GitHub noreply format:
+
+```
+<numeric-id>+<github-username>@users.noreply.github.com
+```
+
+Do not use a private or corporate email address. If a real email slips into history, it
+has to be scrubbed with `git filter-repo` and force-pushed — preventing is far cheaper
+than cleaning.
+
+## Commit messages
+
+- **Conventional Commits** (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`, …),
+  English, imperative mood.
+- Where a commit involves a design choice, describe the *why* briefly in the body
   (`Decision: X over Y because …`).
 - End the body with `Co-Authored-By: Claude <noreply@anthropic.com>` when applicable.
-- Commit emails must be GitHub noreply addresses
-  (`<numeric-id>+<username>@users.noreply.github.com`) — this history is public.
 
 ## Secrets policy
 
-Never commit secrets, tokens, private keys, private email addresses, or deployment
-internals. `lefthook` runs gitleaks plus the template validator before every commit
-(`just setup` installs the hooks).
+Never commit secrets, tokens, passwords, private keys, private email addresses, or
+deployment internals (IPs, hostnames, key names). Operational internals belong in the
+gitignored `private/` directory. The pre-commit hook runs gitleaks (secrets) and a
+privacy lint (local paths, IPs, emails, plus terms from an optional gitignored
+`private/blocklist.txt` — see `private/README.md`) on staged changes.
+
+## Code style
+
+Follow `CODING-STANDARDS.md` — it is the binding reference, including the stack-specific
+section at the end. Run `just check` before committing.
 
 ## Pull requests
 
-Target `main`; CI must be green; keep changes focused — one concern per PR. Squash-merge
-is the default.
+- Target the `main` branch; CI must be green.
+- Describe the change and the reasoning. Keep changes focused — one concern per PR.
+- Squash-merge is the default; branches are deleted after merge.
