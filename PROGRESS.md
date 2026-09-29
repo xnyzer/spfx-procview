@@ -31,12 +31,15 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 and reject anything else — today only for Signavio, later for other process tools.
 
 **Idea:** Define a small provider contract (does this link belong to me? → image URL, hub URL,
-validation errors) and implement it for Signavio "Simple image" links. Starts with a short
-spike against a large real diagram to settle the open questions on resolution and hosts.
+validation errors) and implement it for Signavio "Simple image" links — the only accepted
+input (Signavio: Share → Embed diagram → tab "Simple image"). PNG resolution is already
+settled (natural size); the host allow-list still needs verifying.
 
 **Solution sketch:**
 - Pure functions outside the web part class (testable with Jest): parse, validate
   (`https:`, host allow-list, `/p/model/<id>/png`, `authkey` present), derive hub link
+- Recognise typical wrong inputs (embed code with `signavio.js`/`authToken`, hub or model
+  links without `/png`) and return a hint pointing to the "Simple image" tab
 - Provider registry with Signavio as the only entry
 - No new dependencies
 - Real shared links for the spike live in `private/test-links.md` (gitignored); tests use
@@ -44,37 +47,44 @@ spike against a large real diagram to settle the open questions on resolution an
 
 **Dependencies:** —
 
-### F-002 — Diagram display with size control
+### F-002 — Configuration pane + diagram display with size control
 
 **Status:** BACKLOG
 
 **Problem:** SharePoint's iframe embed gives no control over the diagram size — the core pain
 point of the project.
 
-**Idea:** Replace the scaffold's sample UI with an `<img>` rendering of the provider's image
-URL and property pane settings for link, size mode (fit to width / fixed width / fixed
-height, px or %) and alt text.
+**Idea:** A small configuration pane — image link; width and height, each px or `auto`;
+read-only info with the image's maximum (natural) size; checkboxes "Offer zoom" and
+"Show Collaboration Hub link"; optional alt text — and an `<img>` rendering of the
+provider's image URL.
 
 **Solution sketch:**
-- Property pane: text field with provider validation, dropdown for size mode, numeric size
+- Property pane: link text field with provider validation (`onGetErrorMessage`); width/
+  height fields accepting a number or `auto`; natural size read via `naturalWidth ×
+  naturalHeight` after the image loads and shown as a label; two checkboxes (feature
+  flags for F-003/F-006)
+- Sizing: both `auto` → natural size capped at column width; one fixed → aspect ratio;
+  both fixed → fit inside the box (`object-fit: contain`), never distorted
 - DOM built with escaping / DOM properties only (CODING-STANDARDS §13)
 - Builds on the minimal placeholder web part (generator sample UI already removed)
 
 **Dependencies:** F-001
 
-### F-003 — Optional Collaboration Hub link
+### F-003 — Collaboration Hub link (checkbox)
 
 **Status:** BACKLOG
 
 **Problem:** Readers need a way from the static image to the interactive diagram in the
 Collaboration Hub.
 
-**Idea:** Show a link below the diagram, derived from the model id by default, with an
-overridable URL and link text and an on/off toggle.
+**Idea:** When "Show Collaboration Hub link" is checked (F-002 pane), show a link below the
+diagram — always derived from the model id, no manual override.
 
 **Solution sketch:**
-- Property pane group "Collaboration Hub link"
-- Opens in a new tab (`rel="noopener"`), styled as a theme link
+- Link text from `loc/`; opens in a new tab with `rel="noopener noreferrer"`, styled as a
+  theme link
+- Target format per the open question in REQUIREMENTS (`/p/portal#/model/<id>` for now)
 
 **Dependencies:** F-001, F-002
 
@@ -84,8 +94,9 @@ overridable URL and link text and an on/off toggle.
 
 **Problem:** A freshly added or misconfigured web part must not show a broken image.
 
-**Idea:** Placeholder with editor guidance when no link is configured; readable error
-message (plus hub link if available) when the image fails to load.
+**Idea:** Placeholder with editor guidance when no link is configured (where to find the
+"Simple image" link in Signavio); readable error message (plus hub link if enabled) when
+the image fails to load.
 
 **Solution sketch:**
 - SPFx placeholder pattern (Fluent UI Core classes) in edit mode
@@ -109,19 +120,20 @@ variables, SCSS theme tokens) for all elements, and check accessibility basics.
 
 **Dependencies:** F-002, F-003, F-004
 
-### F-006 — Zoom and pan
+### F-006 — Zoom and pan (checkbox)
 
 **Status:** BACKLOG
 
 **Problem:** Large process diagrams are hard to read at page width.
 
-**Idea:** Zoom in/out/reset controls and drag/touch panning inside the web part frame,
-styled from the page theme.
+**Idea:** When "Offer zoom" is checked (F-002 pane): zoom in/out/reset controls and drag/
+touch panning inside the web part frame, styled from the page theme.
 
 **Solution sketch:**
 - CSS transform on the image inside a clipped container; pointer events for panning
 - Fluent UI Core icon font from `@microsoft/sp-office-ui-fabric-core` (no new dependency)
-- Usefulness depends on the PNG resolution (open question from F-001)
+- Maximum zoom = natural image size (the PNG renders at natural diagram size — sharp up to
+  100 %)
 
 **Dependencies:** F-002, F-005
 
@@ -201,11 +213,11 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 <!-- FEATURE-INDEX
 next-feature: F-011
 F-001 Provider interface + Signavio provider
-F-002 Diagram display with size control
-F-003 Optional Collaboration Hub link
+F-002 Configuration pane + diagram display with size control
+F-003 Collaboration Hub link (checkbox)
 F-004 Empty and error states
 F-005 Theme, section backgrounds, accessibility
-F-006 Zoom and pan
+F-006 Zoom and pan (checkbox)
 F-007 Full-screen view (lightbox)
 F-008 Microsoft Teams hosting
 F-009 Release via CI + IT deployment guide

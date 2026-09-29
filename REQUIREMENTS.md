@@ -22,21 +22,37 @@
 ## Core features
 
 1. **Process-tool provider interface + Signavio provider** — a small provider contract
-   (recognise link → image URL, optional hub URL, validation); Signavio is the first
-   implementation: accepts the "Simple image" link
-   (`https://<signavio-host>/p/model/<model-id>/png?inline&authkey=<key>`), validates
-   scheme, host allow-list and shape, and derives the Collaboration Hub link.
-2. **Diagram display with size control** — renders the image as `<img>` (no iframe);
-   property pane for link, size mode (fit to width / fixed width / fixed height, px or %),
-   and alt text.
-3. **Optional Collaboration Hub link** below the diagram — auto-derived from the model id,
-   overridable URL and link text, toggle on/off.
+   (recognise link → image URL, hub URL, validation); Signavio is the first
+   implementation. It accepts **only the "Simple image" link** — in Signavio: Share →
+   Embed diagram → tab "Simple image"
+   (`https://<signavio-host>/p/model/<model-id>/png?inline&authkey=<key>`) — validates
+   scheme, host allow-list and shape, and derives the Collaboration Hub link. Input from
+   the embed-code tab, hub links or other URLs is rejected with a hint to use the
+   "Simple image" tab.
+2. **Configuration pane + diagram display with size control** — a small property pane:
+   - image link (the "Simple image" link),
+   - width and height, each a pixel value or `auto`,
+   - read-only info: the image's maximum (natural) size, read from the loaded image
+     (`naturalWidth × naturalHeight`),
+   - checkbox "Offer zoom" (enables feature 6),
+   - checkbox "Show Collaboration Hub link" (enables feature 3),
+   - optional alternative text (accessibility; a generic label is used when empty).
+
+   The diagram renders as `<img>` (no iframe). Sizing: both `auto` → natural size, capped
+   at the available column width; one value fixed → the other follows the aspect ratio;
+   both fixed → the diagram fits inside that box keeping its aspect ratio (never
+   distorted).
+3. **Collaboration Hub link** below the diagram when "Show Collaboration Hub link" is
+   checked — the URL is always derived from the model id (no manual override).
 4. **Empty and error states** — "not configured yet" placeholder with guidance for
-   editors; clear message (plus hub link, if any) when the image cannot be loaded.
+   editors (where to find the "Simple image" link); clear message (plus hub link, if
+   enabled) when the image cannot be loaded.
 5. **Theme, section backgrounds, accessibility** — `supportsThemeVariants`, semantic theme
    colors, keyboard operability, alt text, sufficient contrast.
-6. **Zoom and pan** — zoom in/out/reset controls and drag/touch panning inside the web part
-   frame; controls styled from the page theme (Fluent UI Core icons).
+6. **Zoom and pan** (only when "Offer zoom" is checked) — zoom in/out/reset controls and
+   drag/touch panning inside the web part frame, up to the image's natural size (100 % is
+   the sharpest the PNG gets); controls styled from the page theme (Fluent UI Core
+   icons).
 7. **Full-screen view (lightbox)** — open the diagram in a large overlay at natural size;
    close via button, Escape, or backdrop.
 8. **Microsoft Teams hosting** — the web part works as a Teams tab and personal app
@@ -55,6 +71,8 @@
 - **SharePoint Online modern pages only** — no classic pages, no SharePoint Server
   on-premises.
 - **No further process tools yet** — only the provider architecture that allows them.
+- **No Signavio embed code** — the official embed (tab "Embed code", `signavio.js`
+  mashup) is not accepted as input; the "Simple image" link is the only input.
 
 ## Constraints
 
@@ -69,7 +87,9 @@
   never enter code, tests, docs, or issues — use placeholders.
 - **Image endpoint properties (verified 2026-09-29):** returns `image/png`, `no-store`
   caching (always current), no CORS headers — usable via `<img>` only, not via `fetch`;
-  SVG is not available through the shared link (HTTP 403).
+  SVG is not available through the shared link (HTTP 403). The PNG renders at the
+  diagram's natural size (verified: 3193 × 2232 px for a large BPMN diagram, 720 × 457 px
+  for a small map) — its natural size is the web part's "maximum size" info.
 - **Dependencies:** permissive licenses only; any new runtime dependency needs an ADR
   (every byte ships to every page visitor).
 - **License:** Apache-2.0, public repository.
@@ -86,6 +106,9 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-29 | Initial scope includes zoom/pan, full-screen view, Teams hosting and CI releases | Chosen by the owner in the requirements interview |
 | 2026-09-29 | Non-goals: no editing/commenting, no own BPMN rendering, no Signavio API/sign-in, modern SharePoint Online only | Keep the web part a lightweight, read-only embed that IT can deploy without integration effort |
 | 2026-09-29 | Collaboration Hub link is derived from the image link by default, overridable | The model id is part of the image link; editors should not have to paste two links |
+| 2026-09-29 | Input is the "Simple image" link only; the Signavio embed code is not accepted | Owner decision: one clear input; the embed code's viewer shows the same PNG anyway |
+| 2026-09-29 | Configuration pane: image link, width/height (px or `auto`), natural-size info, checkboxes "Offer zoom" and "Show Collaboration Hub link" | Owner specification — a small pane an editor understands without training |
+| 2026-09-29 | Collaboration Hub link is an on/off checkbox, always derived — **supersedes** the "overridable" entry above | Keep the pane minimal; the derived link is the right target for every model |
 
 ### Technical decisions
 
@@ -95,13 +118,13 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-29 | No UI framework (`--framework none`) instead of React | Measured: 7.9 KB vs 8.7 KB bundle (React is provided by SharePoint) — size is not the driver; the web part is simple, theming works without React, and plain TypeScript stays closer to the maintainer's skill set. Revisit via ADR if the UI grows |
 | 2026-09-29 | Render the Signavio "Simple image" PNG via `<img>` | Verified against a real shared link: HTTP 200 `image/png`, anonymous with `authkey`, `no-store`; iframe headers (`x-frame-options`) do not apply to images |
 | 2026-09-29 | Hub link format `https://<host>/p/portal#/model/<model-id>` | The model root URL of a shared link redirects there |
+| 2026-09-29 | The PNG is the only diagram source (no SVG, no mashup script) | Spike with a large diagram: PNG at natural size (sharp up to 100 % zoom); the official `signavio.js` mashup (9.5 MB React viewer) renders the very same `…/png?authkey=…` — its auth token is `{pngKey}_{jsonKey}_{svgKey}`, the SVG key is unused and `/svg` answers 403 |
 
 ## Open questions
 
-- [ ] **PNG resolution:** the sample diagram renders at 720 × 457 px and no size parameter
-      changes that (`scale`, `width`, `dpi`, … ignored; `/png_hd` requires sign-in). Does
-      the PNG grow with larger diagrams? This determines how useful zoom and full-screen are
-      (clarify in the F-001 spike with a large real diagram).
+- [x] **PNG resolution:** ~~does the PNG grow with larger diagrams?~~ Yes — it renders at
+      the diagram's natural size (3193 × 2232 px for a large BPMN diagram; size parameters
+      are still ignored). Resolved 2026-09-29, see technical decisions.
 - [ ] **Regional hosts:** exact list of Signavio hosts to allow (EU `editor.signavio.com`,
       `app-us`, `app-au`, … per Signavio docs) — verify before hard-coding the allow-list.
 - [ ] **Hub link target:** is `/p/portal#/model/<id>` right for all users, or should the
@@ -109,3 +132,5 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
       workspace id, which the image link does not contain)?
 - [ ] **SharePoint CSP:** does the tenant's Content Security Policy for SPFx affect loading
       images from Signavio hosts (`img-src`)?
+- [ ] **Full-screen view (F-007):** always available, tied to "Offer zoom", or its own
+      checkbox in the configuration pane?
