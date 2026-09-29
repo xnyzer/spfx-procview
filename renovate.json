@@ -1,0 +1,7 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "Renovate for the template repo itself — extends the coding-kit shareable preset."
+  ],
+  "extends": ["github>xnyzer/coding-kit"]
+}

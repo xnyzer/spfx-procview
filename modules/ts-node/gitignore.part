@@ -1,0 +1,4 @@
+# ts-node module
+node_modules/
+dist/
+coverage/

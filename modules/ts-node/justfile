@@ -1,0 +1,33 @@
+# {{PROJECT_NAME}} — standard recipes (ts-node module)
+
+default:
+    @just --list
+
+# Install dependencies + git hooks
+setup:
+    pnpm install
+    lefthook install
+
+# Run the project locally
+dev:
+    @echo "ts-node module: wire your dev entrypoint here (e.g. node --watch dist/index.js after a build)."
+
+# Run the test suite
+test:
+    pnpm exec vitest run
+
+# Static analysis: Biome (format + lint, zero warnings) and the type checker
+lint:
+    pnpm exec biome ci --error-on-warnings .
+    pnpm exec tsc --noEmit
+
+# Auto-format + safe lint fixes (incl. import organizing)
+format:
+    pnpm exec biome check --write .
+
+# Full gate — must be green before every commit
+check: lint test
+
+# Production build (tests excluded via tsconfig.build.json)
+build:
+    pnpm exec tsc -p tsconfig.build.json

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/{{OWNER}}/{{PROJECT_NAME}}/security
+    about: Go to the Security tab and click "Report a vulnerability" to report privately. Do NOT open a public issue.

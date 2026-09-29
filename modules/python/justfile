@@ -1,0 +1,38 @@
+# {{PROJECT_NAME}} — standard recipes (python module)
+
+default:
+    @just --list
+
+# Install dependencies (creates .venv + uv.lock) + git hooks
+setup:
+    uv sync
+    lefthook install
+
+# Run the project locally
+dev:
+    @echo "python module: wire your dev entrypoint here (e.g. uv run python -m <package>)."
+
+# Run the test suite
+test:
+    uv run pytest
+
+# Static analysis: ruff lint + pyright (strict)
+lint:
+    uv run ruff check .
+    uv run pyright
+
+# Auto-format + safe lint fixes (incl. import sorting)
+format:
+    uv run ruff format .
+    uv run ruff check --fix .
+
+# Full gate — must be green before every commit
+check:
+    uv run ruff format --check .
+    uv run ruff check .
+    uv run pyright
+    uv run pytest
+
+# Build distribution artifacts
+build:
+    uv build

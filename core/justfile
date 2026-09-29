@@ -1,0 +1,35 @@
+# {{PROJECT_NAME}} — standard recipes
+# Docs-only default: a stack module replaces this file with real implementations.
+# The recipe set (setup/dev/test/lint/format/check/build) is the stable contract —
+# skills and CI call only these names.
+
+default:
+    @just --list
+
+# Install dependencies + git hooks
+setup:
+    lefthook install
+
+# Run the project locally
+dev:
+    @echo "docs-only: nothing to run — add a stack module via /choose-stack."
+
+# Run the test suite
+test:
+    @echo "docs-only: no tests configured."
+
+# Static analysis
+lint:
+    @echo "docs-only: no linter configured."
+
+# Auto-format the codebase
+format:
+    @echo "docs-only: nothing to format."
+
+# Full gate — must be green before every commit
+check:
+    @echo "docs-only: no code checks configured."
+
+# Production build
+build:
+    @echo "docs-only: nothing to build."

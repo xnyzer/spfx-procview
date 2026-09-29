@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest a new feature or improvement
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature. Please fill out the form below so we can understand the use case.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the user-facing problem or use case. Focus on the *what* and *why*, not the *how*.
+      placeholder: Today users cannot do X. They want to be able to Y so that Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution (optional)
+      description: If you have a concrete idea how to solve it, describe it here. Mockups, API sketches, or links to similar implementations are welcome.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered (optional)
+      description: Other approaches you thought about and why they would not work as well.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context (optional)
+      description: Any additional information, screenshots, or links.

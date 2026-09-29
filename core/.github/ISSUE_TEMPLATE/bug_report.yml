@@ -1,0 +1,62 @@
+name: Bug report
+description: Report something that is broken or behaves unexpectedly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill out the form below so we can reproduce and fix the issue.
+
+        **Security issues:** please do not open a public bug. Use the [Security tab](https://github.com/{{OWNER}}/{{PROJECT_NAME}}/security) and click "Report a vulnerability" instead — see SECURITY.md.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I do X, Y happens instead of Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      placeholder: Z should happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps someone else can follow to see the bug.
+      placeholder: |
+        1. Run …
+        2. Do …
+        3. See error …
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: A release tag if there is one, otherwise the output of `git rev-parse --short HEAD`.
+      placeholder: e.g. v0.3.0 or 5b1a433
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS and runtime version, if relevant. Use "N/A" otherwise.
+      placeholder: e.g. macOS 15.5, Node 24
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Paste any relevant error output or logs. Will be rendered as code.
+      render: shell

@@ -1,0 +1,42 @@
+# {{PROJECT_NAME}} — standard recipes (go module)
+
+default:
+    @just --list
+
+# Download dependencies + install git hooks
+setup:
+    go mod download
+    lefthook install
+
+# Run the project locally
+dev:
+    go run .
+
+# Run the test suite (race detector on)
+test:
+    go test -race ./...
+
+# Static analysis: vet + golangci-lint (standard set)
+lint:
+    go vet ./...
+    golangci-lint run
+
+# Auto-format (gofmt + goimports via golangci-lint)
+format:
+    golangci-lint fmt
+
+# Full gate — must be green before every commit
+check:
+    @unformatted="$(gofmt -l .)"; if [ -n "$unformatted" ]; then echo "not gofmt-clean:"; echo "$unformatted"; echo "Run: just format"; exit 1; fi
+    go vet ./...
+    golangci-lint run
+    go build ./...
+    go test -race ./...
+
+# Build all packages
+build:
+    go build ./...
+
+# License gate: no GPL/AGPL/LGPL dependencies (also runs as its own CI job)
+license-check:
+    go run github.com/google/go-licenses@latest check ./... --disallowed_types=forbidden,restricted
