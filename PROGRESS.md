@@ -25,27 +25,78 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-001 — Provider interface + Signavio provider
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** The web part must turn an editor-supplied link into a displayable diagram image
 and reject anything else — today only for Signavio, later for other process tools.
 
 **Idea:** Define a small provider contract (does this link belong to me? → image URL, hub URL,
 validation errors) and implement it for Signavio "Simple image" links — the only accepted
-input (Signavio: Share → Embed diagram → tab "Simple image"). PNG resolution is already
-settled (natural size); the host allow-list still needs verifying.
+input (Signavio: Share → Embed diagram → tab "Simple image"). PNG resolution is settled
+(natural size); the regional hosts are verified (see below).
 
-**Solution sketch:**
-- Pure functions outside the web part class (testable with Jest): parse, validate
-  (`https:`, host allow-list, `/p/model/<id>/png`, `authkey` present), derive hub link
-- Recognise typical wrong inputs (embed code with `signavio.js`/`authToken`, hub or model
-  links without `/png`) and return a hint pointing to the "Simple image" tab
-- Provider registry with Signavio as the only entry
-- No new dependencies
-- Real shared links for the spike live in `private/test-links.md` (gitignored); tests use
-  placeholder links only — model ids/authkeys are on the privacy-lint blocklist
+**Solution sketch** (updated 2026-09-29 by `/prep-step`):
+- Pure functions outside the web part class (testable with Jest); no UI — wiring into the
+  property pane is F-002
+- **Rebuild, never pass through:** the image URL is reassembled from validated parts
+  (`https://<allow-listed host>/p/model/<id>/png?inline&authkey=<key>`) — no foreign query
+  parameters, fragments or userinfo (`https://editor.signavio.com@example.com/…`) can reach
+  the `<img>`
+- **Exact host match** against the 7 verified hosts (DNS + endpoint checked 2026-09-29):
+  `editor.signavio.com` (EU), `app-us`, `app-au`, `app-ca`, `app-jp`, `app-kr`,
+  `app-sgp.signavio.com` — no suffix matching (lookalikes are rejected)
+- Model id = 32 hex chars; `authkey` = hex of **variable length** (real links: 62 and 64) —
+  accept 32–128; case-insensitive match, value passed on unchanged
+- **Errors as codes** (`empty`, `unsupported`, `notUrl`, `notHttps`, `unknownHost`,
+  `embedCode`, `notImageLink`, `missingAuthKey`, `invalidModelId`, `invalidAuthKey`) —
+  F-002 maps them to `loc/` strings; `embedCode`/`notImageLink` carry the hint to the
+  "Simple image" tab
+- Hub link `https://<host>/p/portal#/model/<id>` (verified for EU; same pattern assumed for
+  the other regions — open question in REQUIREMENTS)
+- Provider registry with Signavio as the only entry; no new dependencies
+- Real shared links live in `private/test-links.md` (gitignored); tests use placeholder
+  links only — model ids/authkeys are on the privacy-lint blocklist
 
 **Dependencies:** —
+
+#### F-001a — Provider contract, registry, test pipeline
+
+**What:** Types for the provider contract and parse result (success with `imageUrl`,
+`hubUrl`, `modelId`; failure with an error code), a registry that trims input, rejects
+empty input and asks each provider; first Jest test in the project.
+
+**Files:** `src/providers/types.ts`, `src/providers/registry.ts`,
+`src/providers/registry.test.ts`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] `just check` runs ≥ 1 real Jest test (`Total` > 0)
+- [ ] A deliberately failing assertion makes `just check` fail (then reverted)
+- [ ] Empty/whitespace input → `empty`; input no provider claims → `unsupported`
+- [ ] Registry tested with a stub provider (no Signavio dependency yet)
+
+#### F-001b — Signavio provider
+
+**What:** Signavio implementation of the contract: host allow-list, URL parsing and
+validation, normalised image URL, derived hub link, detection of typical wrong inputs;
+registered in the registry.
+
+**Files:** `src/providers/signavio.ts`, `src/providers/signavio.test.ts`,
+`src/providers/registry.ts` (registration)
+
+**Dependencies:** F-001a
+
+**Acceptance criteria:**
+- [ ] Valid links for all 7 hosts are recognised (with and without `inline`); output URL
+      and hub link are normalised
+- [ ] Negative tests (CODING-STANDARDS §10): `http:`, `javascript:`, lookalike hosts,
+      userinfo trick, extra query parameters/fragments dropped, invalid model id, missing/
+      invalid `authkey`, embed code (`signavio.js`/`authToken`), hub/portal link, model link
+      without `/png`, surrounding whitespace
+- [ ] Tests contain placeholder ids/keys only — privacy-lint (with blocklist) green
+- [ ] Local, uncommitted check: both real links from `private/test-links.md` parse
+      correctly against the compiled output
 
 ### F-002 — Configuration pane + diagram display with size control
 
@@ -212,7 +263,7 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 
 <!-- FEATURE-INDEX
 next-feature: F-011
-F-001 Provider interface + Signavio provider
+F-001 Provider interface + Signavio provider (PLANNED)
 F-002 Configuration pane + diagram display with size control
 F-003 Collaboration Hub link (checkbox)
 F-004 Empty and error states

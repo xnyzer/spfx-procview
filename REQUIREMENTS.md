@@ -119,14 +119,16 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-29 | Render the Signavio "Simple image" PNG via `<img>` | Verified against a real shared link: HTTP 200 `image/png`, anonymous with `authkey`, `no-store`; iframe headers (`x-frame-options`) do not apply to images |
 | 2026-09-29 | Hub link format `https://<host>/p/portal#/model/<model-id>` | The model root URL of a shared link redirects there |
 | 2026-09-29 | The PNG is the only diagram source (no SVG, no mashup script) | Spike with a large diagram: PNG at natural size (sharp up to 100 % zoom); the official `signavio.js` mashup (9.5 MB React viewer) renders the very same `…/png?authkey=…` — its auth token is `{pngKey}_{jsonKey}_{svgKey}`, the SVG key is unused and `/svg` answers 403 |
+| 2026-09-29 | Host allow-list: exactly `editor.signavio.com`, `app-us`, `app-au`, `app-ca`, `app-jp`, `app-kr`, `app-sgp` (`.signavio.com`), exact match only | Verified via docs, DNS and endpoint behaviour; exact matching rejects lookalike hosts |
 
 ## Open questions
 
 - [x] **PNG resolution:** ~~does the PNG grow with larger diagrams?~~ Yes — it renders at
       the diagram's natural size (3193 × 2232 px for a large BPMN diagram; size parameters
       are still ignored). Resolved 2026-09-29, see technical decisions.
-- [ ] **Regional hosts:** exact list of Signavio hosts to allow (EU `editor.signavio.com`,
-      `app-us`, `app-au`, … per Signavio docs) — verify before hard-coding the allow-list.
+- [x] **Regional hosts:** resolved 2026-09-29 — 7 hosts verified via Signavio/SAP docs, DNS
+      and the `/p/model/…/png` endpoint: `editor.signavio.com` (EU), `app-us`, `app-au`,
+      `app-ca`, `app-jp`, `app-kr`, `app-sgp.signavio.com` (`app-eu`/`app-sg` do not exist).
 - [ ] **Hub link target:** is `/p/portal#/model/<id>` right for all users, or should the
       Collaboration Hub form `/p/hub/model/<id>?t=<workspace-id>` be used (needs the
       workspace id, which the image link does not contain)?
