@@ -17,7 +17,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 | Step | Description | Completed |
 |------|-------------|-----------|
-| — | _(nothing finished yet)_ | — |
+| F-001a | Provider contract, registry and first Jest tests (test pipeline verified) | 2026-09-29 |
 
 ---
 
@@ -54,27 +54,10 @@ input (Signavio: Share → Embed diagram → tab "Simple image"). PNG resolution
 - Hub link `https://<host>/p/portal#/model/<id>` (verified for EU; same pattern assumed for
   the other regions — open question in REQUIREMENTS)
 - Provider registry with Signavio as the only entry; no new dependencies
-- Real shared links live in `private/test-links.md` (gitignored); tests use placeholder
+- Real shared links are kept only locally under `private/` (gitignored); tests use placeholder
   links only — model ids/authkeys are on the privacy-lint blocklist
 
 **Dependencies:** —
-
-#### F-001a — Provider contract, registry, test pipeline
-
-**What:** Types for the provider contract and parse result (success with `imageUrl`,
-`hubUrl`, `modelId`; failure with an error code), a registry that trims input, rejects
-empty input and asks each provider; first Jest test in the project.
-
-**Files:** `src/providers/types.ts`, `src/providers/registry.ts`,
-`src/providers/registry.test.ts`
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] `just check` runs ≥ 1 real Jest test (`Total` > 0)
-- [ ] A deliberately failing assertion makes `just check` fail (then reverted)
-- [ ] Empty/whitespace input → `empty`; input no provider claims → `unsupported`
-- [ ] Registry tested with a stub provider (no Signavio dependency yet)
 
 #### F-001b — Signavio provider
 
@@ -95,7 +78,7 @@ registered in the registry.
       invalid `authkey`, embed code (`signavio.js`/`authToken`), hub/portal link, model link
       without `/png`, surrounding whitespace
 - [ ] Tests contain placeholder ids/keys only — privacy-lint (with blocklist) green
-- [ ] Local, uncommitted check: both real links from `private/test-links.md` parse
+- [ ] Local, uncommitted check: the locally kept real links parse
       correctly against the compiled output
 
 ### F-002 — Configuration pane + diagram display with size control
