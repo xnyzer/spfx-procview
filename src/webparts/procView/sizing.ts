@@ -56,13 +56,8 @@ export function parseDimension(input: unknown, allowPercent: boolean): Dimension
   return { ok: false, error: 'invalid' };
 }
 
-/** CSS for the diagram image; property names as used by `style.setProperty`. */
-export interface IImageStyle {
-  width: string;
-  height: string;
-  'max-width': string;
-  'object-fit': string;
-}
+/** CSS property → value, as used by `style.setProperty`. */
+export type CssDeclarations = Record<string, string>;
 
 function toCss(dimension: Dimension): string {
   switch (dimension.kind) {
@@ -75,18 +70,35 @@ function toCss(dimension: Dimension): string {
   }
 }
 
+/** Styles for the frame around the image and for the image itself. */
+export interface IDiagramStyles {
+  frame: CssDeclarations;
+  image: CssDeclarations;
+}
+
 /**
- * Sizing rules: the image never grows wider than its column (`max-width: 100%`); with one
+ * Sizing rules: the diagram never grows wider than its column (`max-width: 100%`); with one
  * value set, the other follows the aspect ratio; whenever the height is fixed, the image
  * is fitted into its box (`object-fit: contain`) so a width capped by the column can never
  * distort it.
+ *
+ * The frame hugs the image (`width: fit-content`) so an overlay can sit at the image's
+ * corner. A percentage width therefore goes on the frame (it resolves against the column)
+ * and the image fills it — a percentage on an image inside a shrink-to-fit frame would be
+ * circular. Pixel and automatic widths stay on the image.
  */
-export function imageStyle(width: Dimension, height: Dimension): IImageStyle {
+export function diagramStyles(width: Dimension, height: Dimension): IDiagramStyles {
   return {
-    width: toCss(width),
-    height: toCss(height),
-    'max-width': '100%',
-    'object-fit': height.kind === 'auto' ? 'fill' : 'contain'
+    frame: {
+      width: width.kind === 'percent' ? `${width.value}%` : 'fit-content',
+      'max-width': '100%'
+    },
+    image: {
+      width: width.kind === 'percent' ? '100%' : toCss(width),
+      height: toCss(height),
+      'max-width': '100%',
+      'object-fit': height.kind === 'auto' ? 'fill' : 'contain'
+    }
   };
 }
 

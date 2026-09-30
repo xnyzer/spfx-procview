@@ -25,62 +25,12 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-002b | Configuration pane, diagram display, caption with alignment toolbar | 2026-09-30 |
 | F-002 | Configuration pane + diagram display with size control (F-002a, F-002b) | 2026-09-30 |
 | F-003a | Collaboration Hub link below the diagram: toggle, link text, alignment | 2026-09-30 |
+| F-003b | Hub link as overlay in the bottom-right corner; image frame; manifest defaults | 2026-09-30 |
+| F-003 | Collaboration Hub link (F-003a, F-003b) | 2026-09-30 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-003 — Collaboration Hub link (checkbox)
-
-**Status:** PLANNED
-
-**Problem:** Readers need a way from the static image to the interactive diagram in the
-Collaboration Hub.
-
-**Idea:** Add a pane group "Collaboration Hub link" (introduced here, together with its
-function): toggle "Show link to the Collaboration Hub" (default off; toggle instead of the
-originally planned checkbox — SharePoint standard for on/off settings, owner's choice); when checked, the link text
-(default "Open in Signavio"), the position — below the diagram (own alignment, default right)
-or on the diagram, bottom right (overlay) — and, for "below", the alignment. The URL is
-always derived from the model id (no manual override).
-
-**Solution sketch** (updated 2026-09-30 by `/prep-step`; size: medium):
-- Link fields appear only when the checkbox is checked (uncluttered pane)
-- Link: `target="_blank"`, `rel="noopener noreferrer"`, external-link icon (inline SVG,
-  theme colour), screen-reader-only "(opens in a new tab)"; text via `textContent` only
-- Shown only with checkbox **and** a valid image link; without a link only the placeholder
-- Readers need a Signavio account: `/p/portal` and `/p/hub/model/<id>` answer 401 without a
-  session; `/p/model/<id>` redirects to `/p/portal#/model/<id>` — the current `hubUrl`. If the
-  portal link fails for signed-in users, switch to the canonical `/p/model/<id>`
-- Overlay is always visible but subtle, fully opaque on hover/keyboard focus — never
-  hover-only (touch devices, discoverability, WCAG 2.1 SC 1.4.13); no transition with
-  `prefers-reduced-motion`, system border in forced-colors mode
-- Default link text is Signavio-specific; with a second process tool it must come from the
-  provider
-
-**Dependencies:** F-001, F-002 (both done)
-
-#### F-003b — Overlay in the bottom-right corner
-
-**What:** Option "Position" (Below the diagram / On the diagram, bottom right); the
-alignment field is hidden for the overlay. The image gets a frame (`position: relative`)
-so the overlay sits at the image corner, not the column corner; width, height and
-`max-width` move to the frame, the image fills it (`object-fit` unchanged).
-
-**Files:** `renderDiagram.ts`, `renderDiagram.test.ts`, `sizing.ts` (if the style split
-needs it), `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`, `loc/en-us.js`,
-`loc/mystrings.d.ts`, `linkErrors.test.ts`
-
-**Dependencies:** F-003a
-
-**Acceptance criteria:**
-- [ ] jsdom test: frame and overlay structure; overlay only for position "bottom right"
-- [ ] Existing sizing tests adapted and green (styles now on the frame)
-- [ ] Overlay: always visible, opaque on hover/focus; reduced-motion and forced-colors rules
-- [ ] `just check` and `just build` green
-- [ ] Owner: both positions and all sizing combinations checked again in the local workbench
-      (the frame touches the sizing logic); known limit — with fixed width and height the
-      image may be letterboxed and the overlay sits at the frame corner
 
 ### F-004 — Empty and error states
 
@@ -220,7 +170,7 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 next-feature: F-012
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
-F-003 Collaboration Hub link (checkbox) (PLANNED)
+F-003 Collaboration Hub link (DONE)
 F-004 Empty and error states
 F-005 Theme, section backgrounds, accessibility
 F-006 Zoom and pan (checkbox)

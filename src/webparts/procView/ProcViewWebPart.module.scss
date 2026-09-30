@@ -8,6 +8,12 @@
   margin: 0;
 }
 
+// Hugs the image (width/max-width set inline, see sizing.ts) so the overlay link sits at the
+// image's corner, not the column's
+.frame {
+  position: relative;
+}
+
 // Block-level so the image sits flush without the inline baseline gap;
 // width, height, max-width and object-fit come from the settings (sizing.ts)
 .image {
@@ -19,6 +25,36 @@
   font-size: 0.875em;
   color: '[theme:bodySubtext, default: #605e5c]';
   color: var(--bodySubtext);
+}
+
+// Hub link as overlay: always visible but subtle (translucent background, full-strength
+// text for contrast); solid on hover/focus — never hover-only (touch, discoverability)
+.hubOverlay {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  font-size: 0.875em;
+  background: color-mix(in srgb, '[theme:white, default: #ffffff]' 80%, transparent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.15s ease-in-out;
+
+  .frame:hover &,
+  &:hover,
+  &:focus-visible {
+    background: '[theme:white, default: #ffffff]';
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  // Windows high contrast: system colours and a visible border
+  @media (forced-colors: active) {
+    background: Canvas;
+    border: 1px solid CanvasText;
+  }
 }
 
 .hubLink {

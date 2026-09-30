@@ -8,6 +8,91 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-003 — Collaboration Hub link
+
+_Completed 2026-09-30 via F-003a and F-003b (planned as "checkbox"; built with a toggle)._
+
+**Problem:** Readers need a way from the static image to the interactive diagram in the
+Collaboration Hub.
+
+**Idea:** Add a pane group "Collaboration Hub link" (introduced here, together with its
+function): toggle "Show link to the Collaboration Hub" (default off; toggle instead of the
+originally planned checkbox — SharePoint standard for on/off settings, owner's choice); when checked, the link text
+(default "Open in Signavio"), the position — below the diagram (own alignment, default right)
+or on the diagram, bottom right (overlay) — and, for "below", the alignment. The URL is
+always derived from the model id (no manual override).
+
+**Solution sketch** (updated 2026-09-30 by `/prep-step`; size: medium):
+- Link fields appear only when the checkbox is checked (uncluttered pane)
+- Link: `target="_blank"`, `rel="noopener noreferrer"`, external-link icon (inline SVG,
+  theme colour), screen-reader-only "(opens in a new tab)"; text via `textContent` only
+- Shown only with checkbox **and** a valid image link; without a link only the placeholder
+- Readers need a Signavio account: `/p/portal` and `/p/hub/model/<id>` answer 401 without a
+  session; `/p/model/<id>` redirects to `/p/portal#/model/<id>` — the current `hubUrl`. If the
+  portal link fails for signed-in users, switch to the canonical `/p/model/<id>`
+- Overlay is always visible but subtle, fully opaque on hover/keyboard focus — never
+  hover-only (touch devices, discoverability, WCAG 2.1 SC 1.4.13); no transition with
+  `prefers-reduced-motion`, system border in forced-colors mode
+- Default link text is Signavio-specific; with a second process tool it must come from the
+  provider
+
+**Dependencies:** F-001, F-002 (both done)
+
+### F-003b — Overlay in the bottom-right corner
+
+_Part of F-003 — Collaboration Hub link. Completed 2026-09-30._
+
+**What:** Option "Position" (Below the diagram / On the diagram, bottom right); the
+alignment field is hidden for the overlay. The image gets a frame so the overlay sits at the
+image corner, not the column corner.
+
+**Files:** `renderDiagram.ts`, `renderDiagram.test.ts`, `sizing.ts`, `sizing.test.ts`,
+`ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`, `ProcViewWebPart.manifest.json`,
+`loc/en-us.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts` (all under
+`src/webparts/procView/`)
+
+**Dependencies:** F-003a
+
+**Acceptance criteria:**
+- [x] jsdom test: frame and overlay structure; overlay only for position "bottom right" —
+      link inside the frame after the image, no link paragraph, alignment ignored, none
+      without a valid diagram; `parseHubLinkPosition` fallback tests
+- [x] Existing sizing tests adapted and green — `diagramStyles` covers all six
+      combinations for frame and image
+- [x] Overlay: always visible, opaque on hover/focus; reduced-motion and forced-colors rules
+      (CSS; visually confirmed by the owner)
+- [x] `just check` and `just build` green — 135 tests, `.sppkg` 21.9 KB (isolated copy)
+- [x] Owner: both positions and the sizing combinations checked in the local workbench;
+      known limit — with fixed width and height the image may be letterboxed and the
+      overlay sits at the frame corner
+
+**Implemented:**
+- `sizing.ts` — `imageStyle` replaced by `diagramStyles(width, height)` → `{ frame, image }`:
+  the frame hugs the image (`width: fit-content`, `max-width: 100%`); a percentage width goes
+  on the frame and the image fills it (`width: 100%`) — a percentage on an image inside a
+  shrink-to-fit frame would be circular; pixel/auto widths, height and `object-fit` stay on
+  the image. Sizing rules unchanged.
+- `renderDiagram.ts` — `figure > div.frame > img (+ overlay a)` and optional `figcaption`;
+  `HubLinkPosition` + `parseHubLinkPosition` (unknown → `below`); one `hubAnchor()` builder
+  for both positions.
+- `ProcViewWebPart.ts` — property `hubLinkPosition`; `PropertyPaneChoiceGroup` "Position";
+  the alignment toolbar only for "below"; pane refresh on position changes.
+- Styles — `.frame` (`position: relative`); `.hubOverlay`: absolute bottom right, background
+  `color-mix(<theme white> 80%, transparent)` with full-strength text, shadow, solid on
+  hover/focus, no transition under `prefers-reduced-motion`, `Canvas`/`CanvasText` border in
+  forced-colors mode.
+- Manifest — initial values `showHubLink: false`, `hubLinkPosition: "below"`,
+  `hubLinkAlign: "right"` (plus `captionAlign: "center"`), matching the code fallbacks.
+
+**Decisions / deviations:**
+- The plan moved width/height to the frame; built as a split instead (percent width on the
+  frame, pixel/auto on the image) — avoids the circular percentage in a shrink-to-fit box.
+- Overlay subtlety via a translucent background instead of element opacity — text keeps
+  full contrast.
+- Defaults as manifest initial values (owner found the "Below" radio unselected): the pane
+  selection follows the stored property; the code fallback alone rendered correctly but
+  left the radio empty in the local workbench. Existing instances keep their stored values.
+
 ### F-003a — Link below the diagram
 
 _Part of F-003 — Collaboration Hub link. Completed 2026-09-30._

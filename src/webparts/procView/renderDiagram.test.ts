@@ -1,6 +1,6 @@
-import { parseTextAlign, renderDiagram } from './renderDiagram';
+import { parseHubLinkPosition, parseTextAlign, renderDiagram } from './renderDiagram';
 import type { IDiagramView } from './renderDiagram';
-import { imageStyle } from './sizing';
+import { diagramStyles } from './sizing';
 import type { IDiagramLink } from '../../providers/types';
 
 // Placeholder link — real model ids and keys never enter the repository.
@@ -14,7 +14,7 @@ const LINK: IDiagramLink = {
 function view(overrides: Partial<IDiagramView> = {}): IDiagramView {
   return {
     link: LINK,
-    style: imageStyle({ kind: 'percent', value: 50 }, { kind: 'px', value: 600 }),
+    style: diagramStyles({ kind: 'percent', value: 50 }, { kind: 'px', value: 600 }),
     altText: 'Order process',
     caption: '',
     captionAlign: 'center',
@@ -22,11 +22,13 @@ function view(overrides: Partial<IDiagramView> = {}): IDiagramView {
     classNames: {
       root: 'root',
       figure: 'figure',
+      frame: 'frame',
       image: 'image',
       caption: 'caption',
       placeholder: 'placeholder',
       hubLink: 'hubLink',
       hubAnchor: 'hubAnchor',
+      hubOverlay: 'hubOverlay',
       srOnly: 'srOnly'
     },
     ...overrides
@@ -56,8 +58,18 @@ describe('renderDiagram — valid link', () => {
     expect(image?.getAttribute('decoding')).toBe('async');
   });
 
-  it('applies the sizing styles', () => {
-    expect(image?.style.getPropertyValue('width')).toBe('50%');
+  it('puts the image into a frame inside the figure', () => {
+    const frame = image?.parentElement as HTMLElement;
+    expect(frame.tagName).toBe('DIV');
+    expect(frame.className).toBe('frame');
+    expect(frame.parentElement?.tagName).toBe('FIGURE');
+  });
+
+  it('applies the sizing styles to frame and image', () => {
+    const frame = image?.parentElement as HTMLElement;
+    expect(frame.style.getPropertyValue('width')).toBe('50%');
+    expect(frame.style.getPropertyValue('max-width')).toBe('100%');
+    expect(image?.style.getPropertyValue('width')).toBe('100%');
     expect(image?.style.getPropertyValue('height')).toBe('600px');
     expect(image?.style.getPropertyValue('max-width')).toBe('100%');
     expect(image?.style.getPropertyValue('object-fit')).toBe('contain');
@@ -112,7 +124,8 @@ describe('renderDiagram — caption', () => {
       );
       const caption = figure?.lastElementChild as HTMLElement;
       expect(caption.tagName).toBe('FIGCAPTION');
-      expect(figure?.firstElementChild?.tagName).toBe('IMG');
+      expect(figure?.firstElementChild?.className).toBe('frame');
+      expect(figure?.firstElementChild?.firstElementChild?.tagName).toBe('IMG');
       expect(caption.textContent).toBe('Order-to-cash');
       expect(caption.className).toBe('caption');
       expect(caption.style.getPropertyValue('text-align')).toBe(align);
@@ -148,6 +161,7 @@ describe('renderDiagram — Collaboration Hub link', () => {
   const HUB = {
     url: LINK.hubUrl as string,
     text: 'Open in Signavio',
+    position: 'below' as const,
     align: 'right' as const,
     newTabHint: '(opens in a new tab)'
   };
@@ -196,5 +210,57 @@ describe('renderDiagram — Collaboration Hub link', () => {
   it('renders no link without a valid diagram (placeholder only)', () => {
     const root = renderDiagram(document, view({ link: undefined, hubLink: HUB }));
     expect(root.querySelector('a')).toBeNull();
+  });
+});
+
+describe('renderDiagram — hub link as overlay', () => {
+  const OVERLAY = {
+    url: LINK.hubUrl as string,
+    text: 'Open in Signavio',
+    position: 'overlay' as const,
+    align: 'left' as const,
+    newTabHint: '(opens in a new tab)'
+  };
+
+  it('places the link inside the image frame, after the image', () => {
+    const root = renderDiagram(document, view({ caption: 'Order-to-cash', hubLink: OVERLAY }));
+    const frame = root.querySelector('.frame') as HTMLElement;
+    expect(Array.from(frame.children).map((child) => child.tagName)).toEqual(['IMG', 'A']);
+    expect(frame.lastElementChild?.className).toBe('hubAnchor hubOverlay');
+  });
+
+  it('renders no link paragraph below the diagram', () => {
+    const root = renderDiagram(document, view({ hubLink: OVERLAY }));
+    expect(root.querySelector('p')).toBeNull();
+    expect(Array.from(root.children).map((child) => child.tagName)).toEqual(['FIGURE']);
+    expect(root.querySelectorAll('a')).toHaveLength(1);
+  });
+
+  it('keeps the link attributes and the screen-reader hint', () => {
+    const anchor = renderDiagram(document, view({ hubLink: OVERLAY })).querySelector('a') as HTMLAnchorElement;
+    expect(anchor.getAttribute('href')).toBe(LINK.hubUrl);
+    expect(anchor.target).toBe('_blank');
+    expect(anchor.rel).toBe('noopener noreferrer');
+    expect(anchor.textContent).toBe('Open in Signavio (opens in a new tab)');
+  });
+
+  it('ignores the alignment (the overlay is always bottom right)', () => {
+    const anchor = renderDiagram(document, view({ hubLink: OVERLAY })).querySelector('a') as HTMLAnchorElement;
+    expect(anchor.style.getPropertyValue('text-align')).toBe('');
+  });
+
+  it('renders no overlay without a valid diagram', () => {
+    expect(renderDiagram(document, view({ link: undefined, hubLink: OVERLAY })).querySelector('a')).toBeNull();
+  });
+});
+
+describe('parseHubLinkPosition', () => {
+  it('accepts overlay and below', () => {
+    expect(parseHubLinkPosition('overlay')).toBe('overlay');
+    expect(parseHubLinkPosition('below')).toBe('below');
+  });
+
+  it.each([[undefined], [''], ['corner'], ['OVERLAY'], [1], [{}]])('falls back to below for %p', (value) => {
+    expect(parseHubLinkPosition(value)).toBe('below');
   });
 });

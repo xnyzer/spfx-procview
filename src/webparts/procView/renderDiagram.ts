@@ -1,5 +1,5 @@
 import type { IDiagramLink } from '../../providers/types';
-import type { IImageStyle } from './sizing';
+import type { CssDeclarations, IDiagramStyles } from './sizing';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -10,10 +10,19 @@ export function parseTextAlign(value: unknown, fallback: TextAlign): TextAlign {
   return value === 'left' || value === 'center' || value === 'right' ? value : fallback;
 }
 
-/** Link to the tool's interactive view, rendered below the diagram. */
+export type HubLinkPosition = 'below' | 'overlay';
+
+/** Hub link position from untrusted property data — anything unknown means `below`. */
+export function parseHubLinkPosition(value: unknown): HubLinkPosition {
+  return value === 'overlay' ? 'overlay' : 'below';
+}
+
+/** Link to the tool's interactive view — below the diagram or as overlay in its corner. */
 export interface IHubLinkView {
   url: string;
   text: string;
+  position: HubLinkPosition;
+  /** Alignment for `below`; ignored for the overlay (always bottom right). */
   align: TextAlign;
   /** Screen-reader-only note appended to the link text, e.g. "(opens in a new tab)". */
   newTabHint: string;
@@ -23,22 +32,24 @@ export interface IHubLinkView {
 export interface IDiagramView {
   /** Validated link; `undefined` shows the placeholder instead of an image. */
   link: IDiagramLink | undefined;
-  style: IImageStyle;
+  style: IDiagramStyles;
   altText: string;
   /** Visible caption below the image; empty → none. */
   caption: string;
   captionAlign: TextAlign;
-  /** Link below the diagram (after the caption); `undefined` → none. */
+  /** Hub link (below the caption or as overlay on the image); `undefined` → none. */
   hubLink?: IHubLinkView;
   placeholderText: string;
   classNames: {
     root: string;
     figure: string;
+    frame: string;
     image: string;
     caption: string;
     placeholder: string;
     hubLink: string;
     hubAnchor: string;
+    hubOverlay: string;
     srOnly: string;
   };
   /** Called with the image's natural size once it has loaded. */
@@ -64,6 +75,11 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
   const figure = doc.createElement('figure');
   figure.className = view.classNames.figure;
 
+  // Hugs the image, so an overlay can sit at the image's corner (sizing.ts)
+  const frame = doc.createElement('div');
+  frame.className = view.classNames.frame;
+  applyStyles(frame, view.style.frame);
+
   const image = doc.createElement('img');
   image.className = view.classNames.image;
   image.alt = view.altText;
@@ -71,9 +87,7 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
   image.setAttribute('referrerpolicy', 'no-referrer');
   image.setAttribute('loading', 'lazy');
   image.setAttribute('decoding', 'async');
-  (Object.keys(view.style) as (keyof IImageStyle)[]).forEach((property) => {
-    image.style.setProperty(property, view.style[property]);
-  });
+  applyStyles(image, view.style.image);
 
   const onImageLoad = view.onImageLoad;
   if (onImageLoad) {
@@ -81,7 +95,13 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
   }
   // Set last, so the load listener is in place before the request starts
   image.src = view.link.imageUrl;
-  figure.appendChild(image);
+  frame.appendChild(image);
+  if (view.hubLink?.position === 'overlay') {
+    const overlay = hubAnchor(doc, view.hubLink, view.classNames);
+    overlay.className = `${view.classNames.hubAnchor} ${view.classNames.hubOverlay}`;
+    frame.appendChild(overlay);
+  }
+  figure.appendChild(frame);
 
   if (view.caption !== '') {
     const caption = doc.createElement('figcaption');
@@ -92,10 +112,20 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
   }
 
   root.appendChild(figure);
-  if (view.hubLink) {
-    root.appendChild(renderHubLink(doc, view.hubLink, view.classNames));
+  if (view.hubLink?.position === 'below') {
+    const paragraph = doc.createElement('p');
+    paragraph.className = view.classNames.hubLink;
+    paragraph.style.setProperty('text-align', view.hubLink.align);
+    paragraph.appendChild(hubAnchor(doc, view.hubLink, view.classNames));
+    root.appendChild(paragraph);
   }
   return root;
+}
+
+function applyStyles(element: HTMLElement, declarations: CssDeclarations): void {
+  Object.keys(declarations).forEach((property) => {
+    element.style.setProperty(property, declarations[property]);
+  });
 }
 
 /** Small "external link" icon (arrow out of a box). */
@@ -115,11 +145,8 @@ function externalLinkIcon(doc: Document): SVGElement {
   return svg;
 }
 
-function renderHubLink(doc: Document, hubLink: IHubLinkView, classNames: IDiagramView['classNames']): HTMLElement {
-  const paragraph = doc.createElement('p');
-  paragraph.className = classNames.hubLink;
-  paragraph.style.setProperty('text-align', hubLink.align);
-
+/** The hub link itself — the same anchor below the diagram and as overlay. */
+function hubAnchor(doc: Document, hubLink: IHubLinkView, classNames: IDiagramView['classNames']): HTMLAnchorElement {
   const anchor = doc.createElement('a');
   anchor.className = classNames.hubAnchor;
   anchor.href = hubLink.url;
@@ -133,7 +160,5 @@ function renderHubLink(doc: Document, hubLink: IHubLinkView, classNames: IDiagra
   hint.className = classNames.srOnly;
   hint.textContent = ` ${hubLink.newTabHint}`;
   anchor.appendChild(hint);
-
-  paragraph.appendChild(anchor);
-  return paragraph;
+  return anchor;
 }

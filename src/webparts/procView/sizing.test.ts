@@ -1,4 +1,4 @@
-import { dimensionErrorKey, imageStyle, MAX_PX, parseDimension } from './sizing';
+import { diagramStyles, dimensionErrorKey, MAX_PX, parseDimension } from './sizing';
 import type { Dimension, DimensionResult } from './sizing';
 
 const auto: Dimension = { kind: 'auto' };
@@ -56,16 +56,30 @@ describe('parseDimension — rejected input', () => {
   });
 });
 
-describe('imageStyle', () => {
-  it.each<[string, Dimension, Dimension, Record<string, string>]>([
-    ['auto / auto', auto, auto, { width: 'auto', height: 'auto', 'object-fit': 'fill' }],
-    ['px / auto', px(800), auto, { width: '800px', height: 'auto', 'object-fit': 'fill' }],
-    ['% / auto', pct(50), auto, { width: '50%', height: 'auto', 'object-fit': 'fill' }],
-    ['auto / px', auto, px(600), { width: 'auto', height: '600px', 'object-fit': 'contain' }],
-    ['px / px', px(800), px(600), { width: '800px', height: '600px', 'object-fit': 'contain' }],
-    ['% / px', pct(50), px(600), { width: '50%', height: '600px', 'object-fit': 'contain' }]
-  ])('%s', (_label, width, height, expected) => {
-    expect(imageStyle(width, height)).toEqual({ ...expected, 'max-width': '100%' });
+describe('diagramStyles', () => {
+  it.each<[string, Dimension, Dimension, Record<string, string>, Record<string, string>]>([
+    ['auto / auto', auto, auto, { width: 'fit-content' }, { width: 'auto', height: 'auto', 'object-fit': 'fill' }],
+    ['px / auto', px(800), auto, { width: 'fit-content' }, { width: '800px', height: 'auto', 'object-fit': 'fill' }],
+    ['% / auto', pct(50), auto, { width: '50%' }, { width: '100%', height: 'auto', 'object-fit': 'fill' }],
+    ['auto / px', auto, px(600), { width: 'fit-content' }, { width: 'auto', height: '600px', 'object-fit': 'contain' }],
+    [
+      'px / px',
+      px(800),
+      px(600),
+      { width: 'fit-content' },
+      { width: '800px', height: '600px', 'object-fit': 'contain' }
+    ],
+    ['% / px', pct(50), px(600), { width: '50%' }, { width: '100%', height: '600px', 'object-fit': 'contain' }]
+  ])('%s', (_label, width, height, frame, image) => {
+    expect(diagramStyles(width, height)).toEqual({
+      frame: { ...frame, 'max-width': '100%' },
+      image: { ...image, 'max-width': '100%' }
+    });
+  });
+
+  it('never puts a percentage on the image except 100% of its frame', () => {
+    const { image } = diagramStyles(pct(30), auto);
+    expect(image.width).toBe('100%');
   });
 });
 

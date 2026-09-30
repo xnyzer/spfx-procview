@@ -23,6 +23,9 @@ declare interface IProcViewWebPartStrings {
   HubLinkTextDescription: string;
   HubLinkDefaultText: string;
   HubLinkAlignLabel: string;
+  HubLinkPositionLabel: string;
+  PositionBelow: string;
+  PositionOverlay: string;
   NewTabHint: string;
   SizeGroupName: string;
   WidthLabel: string;

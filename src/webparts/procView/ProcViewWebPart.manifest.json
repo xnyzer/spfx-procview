@@ -22,8 +22,13 @@
       "title": { "default": "Process diagram (ProcView)" },
       "description": { "default": "Embeds a process diagram (SAP Signavio) with adjustable size." },
       "officeFabricIconFontName": "VisioDiagram",
+      // Initial values — they must match the fallbacks in the code (ProcViewWebPart.ts,
+      // renderDiagram.ts) so the property pane shows the defaults as selected
       "properties": {
-        "captionAlign": "center"
+        "captionAlign": "center",
+        "showHubLink": false,
+        "hubLinkPosition": "below",
+        "hubLinkAlign": "right"
       }
     }
   ]

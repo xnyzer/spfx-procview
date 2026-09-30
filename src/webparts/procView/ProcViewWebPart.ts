@@ -3,6 +3,7 @@ import {
   type IPropertyPaneConfiguration,
   type IPropertyPaneCustomFieldProps,
   type IPropertyPaneField,
+  PropertyPaneChoiceGroup,
   PropertyPaneFieldType,
   PropertyPaneLabel,
   PropertyPaneTextField,
@@ -16,9 +17,9 @@ import * as strings from 'ProcViewWebPartStrings';
 import { parseDiagramLink } from '../../providers/registry';
 import { LINK_ERROR_KEYS } from './linkErrors';
 import { renderAlignmentButtons } from './alignmentField';
-import { parseTextAlign, renderDiagram } from './renderDiagram';
+import { parseHubLinkPosition, parseTextAlign, renderDiagram } from './renderDiagram';
 import type { TextAlign } from './renderDiagram';
-import { dimensionErrorKey, imageStyle, parseDimension } from './sizing';
+import { diagramStyles, dimensionErrorKey, parseDimension } from './sizing';
 import type { Dimension, DimensionField } from './sizing';
 
 export interface IProcViewWebPartProps {
@@ -39,6 +40,8 @@ export interface IProcViewWebPartProps {
   hubLinkText?: string;
   /** `left`, `center` or `right` (default). */
   hubLinkAlign?: string;
+  /** `below` (default) the diagram or `overlay` in its bottom-right corner. */
+  hubLinkPosition?: string;
 }
 
 type AlignProperty = 'captionAlign' | 'hubLinkAlign';
@@ -64,7 +67,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
 
     const view = renderDiagram(document, {
       link,
-      style: imageStyle(this._dimension('width'), this._dimension('height')),
+      style: diagramStyles(this._dimension('width'), this._dimension('height')),
       altText: this._text(this.properties.altText) || strings.DefaultAltText,
       caption: this._text(this.properties.caption),
       captionAlign: this._align('captionAlign'),
@@ -73,6 +76,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
           ? {
               url: link.hubUrl,
               text: this._text(this.properties.hubLinkText) || strings.HubLinkDefaultText,
+              position: parseHubLinkPosition(this.properties.hubLinkPosition),
               align: this._align('hubLinkAlign'),
               newTabHint: strings.NewTabHint
             }
@@ -81,11 +85,13 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       classNames: {
         root: styles.procView,
         figure: styles.figure,
+        frame: styles.frame,
         image: styles.image,
         caption: styles.caption,
         placeholder: styles.placeholder,
         hubLink: styles.hubLink,
         hubAnchor: styles.hubAnchor,
+        hubOverlay: styles.hubOverlay,
         srOnly: styles.srOnly
       },
       onImageLoad: link ? (width, height) => this._onImageLoad(link.imageUrl, width, height) : undefined
@@ -188,7 +194,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     };
   }
 
-  /** Hub link settings — text and alignment appear only while the link is switched on. */
+  /** Hub link settings — text and position appear only while the link is switched on; the
+   * alignment only for the position below the diagram (the overlay is always bottom right). */
   private _hubLinkFields(): IPropertyPaneField<unknown>[] {
     const fields: IPropertyPaneField<unknown>[] = [
       PropertyPaneToggle('showHubLink', {
@@ -197,6 +204,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
         offText: strings.ToggleOff
       })
     ];
+    const position = parseHubLinkPosition(this.properties.hubLinkPosition);
     if (this.properties.showHubLink === true) {
       fields.push(
         PropertyPaneTextField('hubLinkText', {
@@ -204,8 +212,17 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
           description: strings.HubLinkTextDescription,
           placeholder: strings.HubLinkDefaultText
         }),
-        this._alignField('hubLinkAlign', strings.HubLinkAlignLabel)
+        PropertyPaneChoiceGroup('hubLinkPosition', {
+          label: strings.HubLinkPositionLabel,
+          options: [
+            { key: 'below', text: strings.PositionBelow, checked: position === 'below' },
+            { key: 'overlay', text: strings.PositionOverlay, checked: position === 'overlay' }
+          ]
+        })
       );
+      if (position === 'below') {
+        fields.push(this._alignField('hubLinkAlign', strings.HubLinkAlignLabel));
+      }
     }
     return fields;
   }
@@ -254,7 +271,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
 
   /** Re-evaluates the pane when the hub link is switched on or off (conditional fields). */
   protected onPropertyPaneFieldChanged(propertyPath: string): void {
-    if (propertyPath === 'showHubLink') {
+    if (propertyPath === 'showHubLink' || propertyPath === 'hubLinkPosition') {
       this.context.propertyPane.refresh();
     }
   }

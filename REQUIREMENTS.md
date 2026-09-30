@@ -140,6 +140,7 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-30 | `<img>` with `referrerpolicy="no-referrer"` | The tool does not learn which SharePoint page embeds the diagram; the image endpoint works without a referrer |
 | 2026-09-30 | Web part property values are treated as untrusted: non-string values count as empty | Page data can be malformed; the local workbench even converts URLs into objects — the web part must degrade to its placeholder, never crash |
 | 2026-09-30 | Custom property pane fields use the documented `PropertyPaneFieldType.Custom` object pattern | `PropertyPaneCustomField()` is not public API in SPFx 1.23 |
+| 2026-09-30 | Default values of settings are stored as initial values in the web part manifest, matching the code fallbacks | The property pane selects what is stored; a code-only fallback renders correctly but shows no selection |
 | 2026-09-30 | Local testing via the community "SPFx Local Workbench" VS Code extension; on-page testing via the SPFx Debug Toolbar in an IT test site (F-011) | The online workbench is deprecated since SPFx 1.23 and retired on 2026-12-01; the owner has no tenant; free developer tenants are restricted to Visual Studio/partner subscribers |
 
 ## Open questions
