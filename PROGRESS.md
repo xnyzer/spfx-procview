@@ -41,7 +41,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-013 — Link to the GitHub repository in the property pane
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** Editors and IT have no pointer from the web part to its source code,
 documentation and issue tracker — useful for support and for reporting problems.
@@ -50,14 +50,57 @@ documentation and issue tracker — useful for support and for reporting problem
 repository (https://github.com/xnyzer/spfx-procview), opening in a new tab. F-009 later
 adds the version number to the same group.
 
-**Solution sketch:**
-- Last property pane group (e.g. "About") with the built-in `PropertyPaneLink`; URL as a
-  constant in code (not a setting, not user input)
-- Group name and link text in all four languages (`loc/`, enforced by the F-012 tests)
+**Solution sketch** (updated at prep-step, 2026-09-30; size: small, no substeps):
+- **Not `PropertyPaneLink`:** it has no `rel` option, but CODING-STANDARDS requires
+  `rel="noopener noreferrer"` on every new-tab link — browsers imply `noopener`, not
+  `noreferrer`, so GitHub would learn the tenant name on every click
+- Instead a small custom pane field (`PropertyPaneFieldType.Custom`, the alignment
+  toolbar's pattern) rendering a plain link: `target="_blank"`,
+  `rel="noopener noreferrer"`, the screen-reader new-tab hint; it reuses `hubAnchor`
+  (its parameter narrowed to url, text and hint — behaviour unchanged)
+- New `aboutField.ts`: repository URL constant + render function (F-009 adds the version
+  there later, e.g. "ProcView 1.2.0 · Source code on GitHub")
+- Last pane group; texts (owner-approved): EN "About" / "Source code and documentation on
+  GitHub", DE "Info" / "Quellcode und Dokumentation auf GitHub", FR "À propos" / "Code
+  source et documentation sur GitHub", ES "Acerca de" / "Código fuente y documentación en
+  GitHub"
+- The pane is not inside a section → page-theme colours (static token fallback) are right
 - No new dependencies, endpoints or settings
 
-**To analyse (prep-step):** group name and link text; whether SharePoint renders the pane
-link with `rel="noopener"` (modern browsers imply it for new tabs)
+**Files:** `aboutField.ts`, `aboutField.test.ts` (new), `ProcViewWebPart.ts`,
+`renderDiagram.ts`, `loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts` (all under
+`src/webparts/procView/`); `README.md`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] The link is the last pane group and opens the repository in a new tab
+- [ ] Tests: `rel="noopener noreferrer"`, `target="_blank"`, exact URL, screen-reader hint
+- [ ] Group name and link text in all four languages (F-012 tests green)
+- [ ] Owner sees the link in the local workbench
+- [ ] `just check` green (isolated copy while the dev server runs)
+
+### F-014 — Own Teams app icons instead of the generator placeholders
+
+**Status:** BACKLOG
+
+**Problem:** `teams/` holds the placeholder icons the SPFx generator created (a generic
+"apps" glyph). They are Microsoft assets under the SPFx license terms, not a permissive
+licence, and are not recognisable as this web part.
+
+**Idea:** A simple own icon (e.g. a small process diagram: boxes and arrows), with the SVG
+as source in the repository and the two PNGs Teams requires generated from it: 192 × 192
+full colour and 32 × 32 white outline on transparent background.
+
+**Solution sketch:**
+- Replace `teams/<web part id>_color.png` and `_outline.png` (same file names)
+- SVG source in the repository; the PNGs are derived from it
+- No new runtime dependency; the old files stay in the git history (accepted by the owner)
+
+**To analyse (prep-step):** how to render SVG → PNG without a converter on this machine
+(small dependency-free Python rasteriser for the simple shapes, or headless Chrome);
+colour and motif; whether the same icon should replace the toolbox icon (today the Fluent
+icon "VisioDiagram")
 
 **Dependencies:** —
 
@@ -157,7 +200,7 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 ---
 
 <!-- FEATURE-INDEX
-next-feature: F-014
+next-feature: F-015
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
@@ -170,5 +213,6 @@ F-009 Versioning, release via CI + IT deployment guide
 F-010 SPFx upgrade before Node 22 end of life
 F-011 Local testing setup + online workbench retirement (DONE)
 F-012 Localisation: German, English, French, Spanish (DONE)
-F-013 Link to the GitHub repository in the property pane
+F-013 Link to the GitHub repository in the property pane (PLANNED)
+F-014 Own Teams app icons instead of the generator placeholders
 -->
