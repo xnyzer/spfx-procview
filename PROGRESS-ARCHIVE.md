@@ -8,6 +8,57 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-012a — German + test scaffold for all languages
+
+_Part of F-012 — Localisation: German, English, French, Spanish. Completed 2026-09-30._
+
+**What:** German language file; completeness/consistency tests generalised to every file
+in `loc/`; manifest `de-DE` entries; `just dev` gets an optional locale parameter
+(`just dev de-de` → `heft start --locales de-de`); docs.
+
+**Files:** `loc/de-de.js` (new), `linkErrors.test.ts`, `ProcViewWebPart.manifest.json`
+(all under `src/webparts/procView/`); `justfile`; `README.md`; `CLAUDE.md`;
+`REQUIREMENTS.md`
+
+**Dependencies:** —
+
+**Signavio labels (German UI, provided by the owner):** Share → "Freigeben", Embed diagram →
+"Diagramm einbetten", tabs "Einbettung" (embed code) and "Einfaches Bild", field "Link zum
+PNG-Bild"; read-only sharing → "Lesezugriff freigeben" / "Lesezugriff auf Diagramm
+widerrufen"; "Collaboration Hub" stays as product name.
+
+**Acceptance criteria:**
+- [x] Tests fail for a missing, empty or extra key, a lost `{0}`/`{1}`, or a "Empty: …"
+      hint that does not match the default text — in any language file (mutation run on
+      `de-de.js`: each of the five faults turned at least one test red)
+- [x] German texts use the Signavio labels above and no form of address where possible
+- [x] How the local workbench switches the language is verified and documented in the
+      README — `--locales de-de` makes the debug manifest serve only the German file (a
+      single `path` entry); the extension loads that file and reuses a dev server already
+      running on port 4321
+- [x] Owner accepted the German texts in the local workbench (by running step-done)
+- [x] `just check` green — 177 tests (isolated copy while the dev server runs)
+
+**Implemented:**
+- `loc/de-de.js` — all 65 texts; Signavio labels from the German UI; no "Sie"/"du"
+  (infinitive instructions such as "Den Link … einfügen"); German typographic quotes and
+  `50 %` (the width parser accepts the space).
+- `linkErrors.test.ts` — `LOCALES` list and `loadStrings(locale)`; per language: every
+  declared key non-empty, no extra keys, placeholders equal to the English text, the
+  "Empty: …" hints contain that language's default link/alt texts; the "Simple image" tab
+  check uses the tab name of each language (`SIMPLE_IMAGE_TAB`).
+- Manifest — `de-DE` for `title`, `description` and `group` (comment: `group` only affects
+  the classic picker).
+- `justfile` — `dev locale=""`, passing `--locales <locale>` when given.
+- Docs — README: "Languages" note for editors and "Testing a language"; CLAUDE.md: the
+  "Texts" note covers all language files and how to add one; REQUIREMENTS.md: decision log
+  entries (languages, Signavio labels/form of address, no committed pseudo-locale).
+
+**Decisions / deviations:** The tests use an explicit `LOCALES` list instead of reading the
+`loc/` folder — the rig's TypeScript config includes no Node types. The toolbox entry stays
+English in the local workbench (it always uses the manifest default); check it on a
+SharePoint page.
+
 ### F-004 — Empty and error states
 
 _Completed 2026-09-30 via F-004a and F-004b._

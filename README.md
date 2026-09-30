@@ -41,6 +41,13 @@ release pipeline follow (F-009). See `PROGRESS.md` for the roadmap.
 Shared "Simple image" links are readable by anyone who has them — embed only diagrams that
 are approved for that kind of sharing.
 
+**Languages:** the web part shows its texts (settings, messages, toolbox entry) in the
+language SharePoint uses for the page — English or German so far; any other language falls
+back to English. Instructions name the Signavio menu items as Signavio shows them in that
+language (German: **Freigeben → Diagramm einbetten**, tab **"Einfaches Bild"**). Texts that
+editors enter (caption, alternative text, link text) are shown as entered — translate them
+with SharePoint's multilingual pages if needed.
+
 <!-- section:readme-getting-started -->
 ## Getting started
 
@@ -97,6 +104,12 @@ Known issue in SPFx Local Workbench 0.2.0: it turns every text value containing 
 every URL — into a Dynamic-Data object before it reaches the web part, so a pasted image link
 arrives as "empty" and the web part shows "Add a process diagram" instead of the diagram. SharePoint itself is not affected; a fixed
 extension release (or a local patch of the extension) is needed to test links locally.
+
+**Testing a language:** stop the dev server, run `just dev de-de` (any file name from
+`src/webparts/procView/loc/`) in a terminal, then use "SPFx Local Workbench: Open Local
+Workbench" — the extension reuses a dev server that is already running. The server then
+serves only that language file. The toolbox entry (title and description from the manifest)
+stays English in the local workbench; check it on a SharePoint page.
 
 The dev server picks up code changes while running, but **not changes to `loc/*.js`** (the
 texts): after editing them, restart it — otherwise the workbench shows technical field

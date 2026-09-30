@@ -5,25 +5,42 @@ import type { LinkErrorCode } from '../../providers/types';
 
 type StringsFactory = () => Record<string, unknown>;
 
+/** Every language file in `loc/` — a new language file must be added here. */
+const LOCALES = ['en-us', 'de-de'] as const;
+type Locale = (typeof LOCALES)[number];
+
 /**
- * Loads the AMD locale module `loc/en-us.js` by providing a minimal `define`. Call once:
- * Jest caches the module, so a second load would not run `define` again.
+ * Loads the AMD locale module `loc/<locale>.js` by providing a minimal `define`. Call once
+ * per locale: Jest caches the module, so a second load would not run `define` again.
  */
-function loadEnUsStrings(): Record<string, unknown> {
+function loadStrings(locale: Locale): Record<string, unknown> {
   let strings: Record<string, unknown> = {};
   const host = globalThis as unknown as { define?: (deps: string[], factory: StringsFactory) => void };
   host.define = (_deps: string[], factory: StringsFactory) => {
     strings = factory();
   };
   try {
-    jest.requireActual('./loc/en-us.js');
+    jest.requireActual(`./loc/${locale}.js`);
   } finally {
     delete host.define;
   }
   return strings;
 }
 
-const enUs = loadEnUsStrings();
+const STRINGS = LOCALES.reduce(
+  (all, locale) => {
+    all[locale] = loadStrings(locale);
+    return all;
+  },
+  {} as Record<Locale, Record<string, unknown>>
+);
+const enUs = STRINGS['en-us'];
+
+/** The Signavio tab with the image link, as the Signavio UI names it in each language. */
+const SIMPLE_IMAGE_TAB: Record<Locale, string> = {
+  'en-us': '"Simple image"',
+  'de-de': '„Einfaches Bild“'
+};
 
 const ALL_CODES: LinkErrorCode[] = [
   'empty',
@@ -48,10 +65,10 @@ describe('LINK_ERROR_KEYS', () => {
     expect(new Set(keys).size).toBe(ALL_CODES.length);
   });
 
-  it('points wrong-input codes to the "Simple image" tab', () => {
-    const strings = enUs;
-    expect(strings[LINK_ERROR_KEYS.embedCode]).toContain('"Simple image"');
-    expect(strings[LINK_ERROR_KEYS.notImageLink]).toContain('"Simple image"');
+  it.each(LOCALES)('points wrong-input codes to the "Simple image" tab (%s)', (locale) => {
+    const strings = STRINGS[locale];
+    expect(strings[LINK_ERROR_KEYS.embedCode]).toContain(SIMPLE_IMAGE_TAB[locale]);
+    expect(strings[LINK_ERROR_KEYS.notImageLink]).toContain(SIMPLE_IMAGE_TAB[locale]);
   });
 });
 
@@ -142,11 +159,38 @@ const ALL_STRING_KEYS: Record<keyof IProcViewWebPartStrings, true> = {
   DimensionErrorPercentHeight: true
 };
 
-describe('loc/en-us.js completeness', () => {
+const DECLARED_KEYS = Object.keys(ALL_STRING_KEYS) as (keyof IProcViewWebPartStrings)[];
+
+/** The `{0}`, `{1}` … placeholders of a text, sorted. */
+function placeholders(text: string): string[] {
+  return (text.match(/\{\d+\}/g) || []).sort();
+}
+
+describe.each(LOCALES)('loc/%s.js', (locale) => {
+  const strings = STRINGS[locale];
+
   it('has a non-empty text for every key declared in mystrings.d.ts', () => {
-    (Object.keys(ALL_STRING_KEYS) as (keyof IProcViewWebPartStrings)[]).forEach((key) => {
-      expect(typeof enUs[key]).toBe('string');
-      expect((enUs[key] as string).trim()).not.toBe('');
+    DECLARED_KEYS.forEach((key) => {
+      expect(typeof strings[key]).toBe('string');
+      expect((strings[key] as string).trim()).not.toBe('');
     });
+  });
+
+  it('has no keys beyond mystrings.d.ts (catches typos)', () => {
+    expect(Object.keys(strings).sort()).toEqual([...DECLARED_KEYS].sort());
+  });
+
+  it('keeps the placeholders of the English text', () => {
+    DECLARED_KEYS.forEach((key) => {
+      expect({ key, placeholders: placeholders(strings[key] as string) }).toEqual({
+        key,
+        placeholders: placeholders(enUs[key] as string)
+      });
+    });
+  });
+
+  it('names the default texts in the "empty" hints', () => {
+    expect(strings.HubLinkTextDescription).toContain(strings.HubLinkDefaultText as string);
+    expect(strings.AltTextDescription).toContain(strings.DefaultAltText as string);
   });
 });

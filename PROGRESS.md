@@ -30,6 +30,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-004a | Empty/error states: state table, messages, policy-violation tracker (pure, tested) | 2026-09-30 |
 | F-004b | Empty/error states wired into the web part (display mode, load errors, Configure) | 2026-09-30 |
 | F-004 | Empty and error states (F-004a, F-004b) | 2026-09-30 |
+| F-012a | German language file; tests for every language file; `just dev <locale>` | 2026-09-30 |
 
 ---
 
@@ -67,33 +68,6 @@ texts in the manifest (title, description, group) are localised as well.
 
 **Dependencies:** F-004
 
-#### F-012a — German + test scaffold for all languages
-
-**What:** German language file; completeness/consistency tests generalised to every file
-in `loc/`; manifest `de-DE` entries; `just dev` gets an optional locale parameter
-(`just dev de-de` → `heft start --locales de-de`); docs.
-
-**Files:** `loc/de-de.js` (new), `linkErrors.test.ts`, `ProcViewWebPart.manifest.json`
-(all under `src/webparts/procView/`); `justfile`; `README.md` (section "Languages", local
-testing of a locale); `CLAUDE.md` (project note "Texts": all language files);
-`REQUIREMENTS.md` (decision log)
-
-**Dependencies:** —
-
-**Signavio labels (German UI, provided by the owner):** Share → "Freigeben", Embed diagram →
-"Diagramm einbetten", tabs "Einbettung" (embed code) and "Einfaches Bild", field "Link zum
-PNG-Bild"; read-only sharing → "Lesezugriff freigeben" / "Lesezugriff auf Diagramm
-widerrufen"; "Collaboration Hub" stays as product name.
-
-**Acceptance criteria:**
-- [ ] Tests fail for a missing, empty or extra key, a lost `{0}`/`{1}`, or a "Empty: …"
-      hint that does not match the default text — in any language file
-- [ ] German texts use the Signavio labels above and no form of address where possible
-- [ ] How the local workbench switches the language is verified (`--locales` or the
-      extension's culture setting) and documented in the README
-- [ ] Owner sees the property pane and all messages in German in the local workbench
-- [ ] `just check` green (isolated copy while the dev server runs)
-
 #### F-012b — French and Spanish
 
 **What:** French and Spanish language files and manifest entries; Signavio labels
@@ -103,7 +77,7 @@ owner to switch the Signavio UI language).
 **Files:** `loc/fr-fr.js`, `loc/es-es.js` (new), `ProcViewWebPart.manifest.json` (under
 `src/webparts/procView/`); `README.md` (native-speaker review note)
 
-**Dependencies:** F-012a
+**Dependencies:** F-012a (done)
 
 **Acceptance criteria:**
 - [ ] The F-012a tests are green for all four languages

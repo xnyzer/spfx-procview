@@ -126,6 +126,8 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-30 | Hub link: configurable text (default "Open in Signavio"), position below the diagram (own alignment) or as overlay in the bottom-right corner; URL still derived | Owner request; the link must be placeable independently of the caption |
 | 2026-09-30 | The overlay is always visible (subtle), never hover-only | Touch devices have no hover, hidden links are not discovered, WCAG 2.1 SC 1.4.13 — owner accepted |
 | 2026-09-30 | On/off settings use a toggle (SharePoint standard), not a checkbox — first applied to the hub link | Owner decision; matches the SharePoint property pane conventions |
+| 2026-09-30 | Languages: English, German, French, Spanish (F-012); other languages fall back to English; texts entered by editors are not translated | Owner request; editor texts are page content, translated via SharePoint's multilingual pages |
+| 2026-09-30 | Instructions name Signavio menu items as the Signavio UI shows them in each language; German texts avoid a form of address ("Sie"/"du") where possible | Owner decision during F-012 planning; editors recognise the labels they see in Signavio |
 
 ### Technical decisions
 
@@ -142,6 +144,7 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-30 | Custom property pane fields use the documented `PropertyPaneFieldType.Custom` object pattern | `PropertyPaneCustomField()` is not public API in SPFx 1.23 |
 | 2026-09-30 | Default values of settings are stored as initial values in the web part manifest, matching the code fallbacks | The property pane selects what is stored; a code-only fallback renders correctly but shows no selection |
 | 2026-09-30 | Local testing via the community "SPFx Local Workbench" VS Code extension; on-page testing via the SPFx Debug Toolbar in an IT test site (F-011) | The online workbench is deprecated since SPFx 1.23 and retired on 2026-12-01; the owner has no tenant; free developer tenants are restricted to Visual Studio/partner subscribers |
+| 2026-09-30 | Pseudo-locale `qps-ploc` is not committed; locales are tested locally with `just dev <locale>` (`heft start --locales`) | Every file in `loc/` ships in the package; the typed completeness tests already catch missing texts. Verified: with `--locales de-de` the debug manifest serves only the German file, which the local workbench loads |
 
 ## Open questions
 

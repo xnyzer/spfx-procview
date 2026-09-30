@@ -15,9 +15,10 @@ setup:
     lefthook install
 
 # Serve the web part on https://localhost:4321 for the local workbench or a SharePoint page
-# with the Debug Toolbar (README "Development") — no browser, no tenant needed
-dev:
-    npx --no-install heft start --clean --nobrowser
+# with the Debug Toolbar (README "Development") — no browser, no tenant needed.
+# Optional language file to serve, e.g. `just dev de-de` (default: en-us)
+dev locale="":
+    npx --no-install heft start --clean --nobrowser {{ if locale == "" { "" } else { "--locales " + locale } }}
 
 # Build (TypeScript + Heft lint) and run the Jest suite
 test:

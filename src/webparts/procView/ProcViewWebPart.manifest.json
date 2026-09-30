@@ -18,9 +18,14 @@
   "preconfiguredEntries": [
     {
       "groupId": "1bc7927e-4a5e-4520-b540-71305c79c20a", // Planning and process
-      "group": { "default": "Planning and process" },
-      "title": { "default": "Process diagram (ProcView)" },
-      "description": { "default": "Embeds a process diagram (SAP Signavio) with adjustable size." },
+      // "group" only affects the classic picker; modern pages show SharePoint's own
+      // localised name of the predefined groupId
+      "group": { "default": "Planning and process", "de-DE": "Planung und Prozess" },
+      "title": { "default": "Process diagram (ProcView)", "de-DE": "Prozessdiagramm (ProcView)" },
+      "description": {
+        "default": "Embeds a process diagram (SAP Signavio) with adjustable size.",
+        "de-DE": "Bindet ein Prozessdiagramm (SAP Signavio) in einstellbarer Größe ein."
+      },
       "officeFabricIconFontName": "VisioDiagram",
       // Initial values — they must match the fallbacks in the code (ProcViewWebPart.ts,
       // renderDiagram.ts) so the property pane shows the defaults as selected

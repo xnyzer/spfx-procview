@@ -37,8 +37,9 @@ requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-012 in `PROGRESS.md`)
 (provider contract, Signavio link validation), F-002 (configuration pane, sized diagram
 display, caption with alignment toolbar), F-003 (Collaboration Hub link below the diagram or
 as corner overlay), F-004 (empty and error states per display mode, incl. blocked-image
-detection) and F-011 (local testing via the SPFx Local Workbench extension; no online
-workbench) — 169 Jest tests. Next: `/prep-step F-012` (localisation DE/EN/FR/ES).
+detection), F-011 (local testing via the SPFx Local Workbench extension; no online
+workbench) and F-012a (German texts, tests for every language file) — 177 Jest tests.
+Next: `/build-step F-012b` (French and Spanish).
 
 ## Project notes (learned the hard way)
 
@@ -48,9 +49,14 @@ workbench) — 169 Jest tests. Next: `/prep-step F-012` (localisation DE/EN/FR/E
   serves from (the workbench then fails with a 404). While the owner's dev server runs, run
   the checks in an isolated copy (rsync without build folders, `node_modules` symlinked) —
   never in the project folder.
-- **Texts:** every new string goes into `loc/en-us.js`, `loc/mystrings.d.ts` and the
-  completeness list in `linkErrors.test.ts` (typed, so a gap fails the build); the dev
-  server must be restarted after `loc/` or manifest changes.
+- **Texts:** every new string goes into `loc/mystrings.d.ts`, **every** language file in
+  `loc/` (`en-us.js`, `de-de.js`, …) and the completeness list in `linkErrors.test.ts`
+  (typed, so a gap fails the build; the tests check every file listed in `LOCALES` for
+  missing/extra keys and placeholders). A new language: add the file, extend `LOCALES` and
+  `SIMPLE_IMAGE_TAB` in that test and the manifest's `title`/`description`/`group`. Signavio
+  menu labels follow the Signavio UI of that language; German avoids "Sie"/"du". Test a
+  language locally with `just dev de-de`. The dev server must be restarted after `loc/` or
+  manifest changes.
 - **Defaults** of settings live as initial values in the web part manifest and must match
   the code fallbacks — the property pane selects what is stored.
 - **Real Signavio links never enter the repository** (model ids/authkeys; they are kept only
