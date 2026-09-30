@@ -31,17 +31,18 @@
    "Simple image" tab.
 2. **Configuration pane + diagram display with size control** — a small property pane:
    - image link (the "Simple image" link),
-   - width and height, each a pixel value or `auto`,
+   - width as pixels, percent of the column (`NN%`) or `auto`; height as pixels or `auto`
+     (a percentage height is meaningless — the column has no fixed height),
    - read-only info: the image's maximum (natural) size, read from the loaded image
      (`naturalWidth × naturalHeight`),
-   - checkbox "Offer zoom" (enables feature 6),
-   - checkbox "Show Collaboration Hub link" (enables feature 3),
+   - checkbox "Offer zoom" (enables feature 6 — added to the pane together with it),
+   - checkbox "Show Collaboration Hub link" (enables feature 3 — added together with it),
    - optional alternative text (accessibility; a generic label is used when empty).
 
-   The diagram renders as `<img>` (no iframe). Sizing: both `auto` → natural size, capped
-   at the available column width; one value fixed → the other follows the aspect ratio;
-   both fixed → the diagram fits inside that box keeping its aspect ratio (never
-   distorted).
+   The diagram renders as `<img>` (no iframe, no referrer sent to the tool). Sizing: both
+   `auto` → natural size, capped at the available column width; one value fixed (px or %)
+   → the other follows the aspect ratio; both fixed → the diagram fits inside that box
+   keeping its aspect ratio (never distorted).
 3. **Collaboration Hub link** below the diagram when "Show Collaboration Hub link" is
    checked — the URL is always derived from the model id (no manual override).
 4. **Empty and error states** — "not configured yet" placeholder with guidance for
@@ -109,6 +110,8 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-29 | Input is the "Simple image" link only; the Signavio embed code is not accepted | Owner decision: one clear input; the embed code's viewer shows the same PNG anyway |
 | 2026-09-29 | Configuration pane: image link, width/height (px or `auto`), natural-size info, checkboxes "Offer zoom" and "Show Collaboration Hub link" | Owner specification — a small pane an editor understands without training |
 | 2026-09-29 | Collaboration Hub link is an on/off checkbox, always derived — **supersedes** the "overridable" entry above | Keep the pane minimal; the derived link is the right target for every model |
+| 2026-09-30 | Width also accepts percent of the column (`NN%`); height stays px or `auto` | Owner decision; percent of the column is responsive, a percentage height has no reference |
+| 2026-09-30 | The checkboxes "Show Collaboration Hub link" and "Offer zoom" are introduced with F-003/F-006, not in F-002 | No setting without its function in any intermediate state |
 
 ### Technical decisions
 
@@ -120,6 +123,8 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-29 | Hub link format `https://<host>/p/portal#/model/<model-id>` | The model root URL of a shared link redirects there |
 | 2026-09-29 | The PNG is the only diagram source (no SVG, no mashup script) | Spike with a large diagram: PNG at natural size (sharp up to 100 % zoom); the official `signavio.js` mashup (9.5 MB React viewer) renders the very same `…/png?authkey=…` — its auth token is `{pngKey}_{jsonKey}_{svgKey}`, the SVG key is unused and `/svg` answers 403 |
 | 2026-09-29 | Host allow-list: exactly `editor.signavio.com`, `app-us`, `app-au`, `app-ca`, `app-jp`, `app-kr`, `app-sgp` (`.signavio.com`), exact match only | Verified via docs, DNS and endpoint behaviour; exact matching rejects lookalike hosts |
+| 2026-09-30 | `<img>` with `referrerpolicy="no-referrer"` | The tool does not learn which SharePoint page embeds the diagram; the image endpoint works without a referrer |
+| 2026-09-30 | Local testing via the community "SPFx Local Workbench" VS Code extension; on-page testing via the SPFx Debug Toolbar in an IT test site (F-011) | The online workbench is deprecated since SPFx 1.23 and retired on 2026-12-01; the owner has no tenant; free developer tenants are restricted to Visual Studio/partner subscribers |
 
 ## Open questions
 
