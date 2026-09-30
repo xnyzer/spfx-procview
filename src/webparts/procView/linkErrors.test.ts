@@ -146,6 +146,8 @@ const ALL_STRING_KEYS: Record<keyof IProcViewWebPartStrings, true> = {
   AccessibilityGroupName: true,
   AltTextLabel: true,
   AltTextDescription: true,
+  AboutGroupName: true,
+  RepositoryLinkText: true,
   LinkErrorEmpty: true,
   LinkErrorUnsupported: true,
   LinkErrorNotUrl: true,

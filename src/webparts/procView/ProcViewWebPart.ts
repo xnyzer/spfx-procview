@@ -16,6 +16,7 @@ import styles from './ProcViewWebPart.module.scss';
 import * as strings from 'ProcViewWebPartStrings';
 import { parseDiagramLink } from '../../providers/registry';
 import { LINK_ERROR_KEYS } from './linkErrors';
+import { renderAboutField } from './aboutField';
 import { renderAlignmentButtons } from './alignmentField';
 import { outcomeFor, resolveMessage, resolveState } from './messages';
 import type { ILoadError } from './messages';
@@ -236,6 +237,10 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
                   description: strings.AltTextDescription
                 })
               ]
+            },
+            {
+              groupName: strings.AboutGroupName,
+              groupFields: [this._aboutField()]
             }
           ]
         }
@@ -311,6 +316,26 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
                 selected: styles.alignSelected
               },
               onChange: (key) => changeCallback?.(property, key)
+            })
+          ),
+        onDispose: (element: HTMLElement) => element.replaceChildren()
+      }
+    };
+  }
+
+  /** Info field with the repository link — read-only, the target is a field id, not a stored property. */
+  private _aboutField(): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
+    return {
+      type: PropertyPaneFieldType.Custom,
+      targetProperty: 'aboutInfo',
+      properties: {
+        key: 'aboutInfoField',
+        onRender: (element: HTMLElement) =>
+          element.replaceChildren(
+            renderAboutField(document, {
+              linkText: strings.RepositoryLinkText,
+              newTabHint: strings.NewTabHint,
+              classNames: { root: styles.aboutField, hubAnchor: styles.hubAnchor, srOnly: styles.srOnly }
             })
           ),
         onDispose: (element: HTMLElement) => element.replaceChildren()

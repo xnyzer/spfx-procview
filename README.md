@@ -34,6 +34,7 @@ there is **no release yet** — versioning and the release pipeline follow (F-00
      height in pixels or empty. The diagram is never wider than its column and never
      distorted.
    - **Accessibility** — alternative text for screen readers (default "Process diagram").
+   - **About** — link to this repository (source code, documentation, issues).
 4. **When something is wrong:** editors see what to fix (no link yet, a wrong link such as
    the embed code, or why the image could not be loaded — e.g. revoked sharing, or a
    network/firewall blocking the Signavio domain). Readers see a short message instead, or

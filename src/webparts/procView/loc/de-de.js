@@ -58,6 +58,8 @@ define([], function () {
     AccessibilityGroupName: 'Barrierefreiheit',
     AltTextLabel: 'Alternativtext',
     AltTextDescription: 'Beschreibt das Diagramm für Screenreader. Leer: „Prozessdiagramm“.',
+    AboutGroupName: 'Info',
+    RepositoryLinkText: 'Quellcode und Dokumentation auf GitHub',
 
     LinkErrorEmpty: 'Den Link zum PNG-Bild von der Registerkarte „Einfaches Bild“ einfügen.',
     LinkErrorUnsupported:

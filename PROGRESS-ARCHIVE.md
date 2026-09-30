@@ -8,6 +8,66 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-013 — Link to the GitHub repository in the property pane
+
+_Completed 2026-09-30._
+
+**Problem:** Editors and IT have no pointer from the web part to its source code,
+documentation and issue tracker — useful for support and for reporting problems.
+
+**Idea:** A small info group at the end of the property pane with a link to the public
+repository (https://github.com/xnyzer/spfx-procview), opening in a new tab. F-009 later
+adds the version number to the same group.
+
+**Solution sketch** (updated at prep-step, 2026-09-30; size: small, no substeps):
+- **Not `PropertyPaneLink`:** it has no `rel` option, but CODING-STANDARDS requires
+  `rel="noopener noreferrer"` on every new-tab link — browsers imply `noopener`, not
+  `noreferrer`, so GitHub would learn the tenant name on every click
+- Instead a small custom pane field (`PropertyPaneFieldType.Custom`, the alignment
+  toolbar's pattern) rendering a plain link: `target="_blank"`,
+  `rel="noopener noreferrer"`, the screen-reader new-tab hint; it reuses `hubAnchor`
+  (its parameter narrowed to url, text and hint — behaviour unchanged)
+- New `aboutField.ts`: repository URL constant + render function (F-009 adds the version
+  there later, e.g. "ProcView 1.2.0 · Source code on GitHub")
+- Last pane group; texts (owner-approved): EN "About" / "Source code and documentation on
+  GitHub", DE "Info" / "Quellcode und Dokumentation auf GitHub", FR "À propos" / "Code
+  source et documentation sur GitHub", ES "Acerca de" / "Código fuente y documentación en
+  GitHub"
+- The pane is not inside a section → page-theme colours (static token fallback) are right
+- No new dependencies, endpoints or settings
+
+**Files:** `aboutField.ts`, `aboutField.test.ts` (new), `ProcViewWebPart.ts`,
+`renderDiagram.ts`, `loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts` (all under
+`src/webparts/procView/`); `README.md`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] The link is the last pane group and opens the repository in a new tab (owner, local
+      workbench)
+- [x] Tests: `rel="noopener noreferrer"`, `target="_blank"`, exact URL, screen-reader hint
+      (`aboutField.test.ts`, 4 tests)
+- [x] Group name and link text in all four languages (F-012 tests green)
+- [x] Owner sees the link in the local workbench
+- [x] `just check` green — 198 tests (isolated copy while the dev server runs)
+
+**Implemented:**
+- `aboutField.ts` — `REPOSITORY_URL` and `renderAboutField` (a `<p>` with the link built by
+  `hubAnchor`: new tab, `rel="noopener noreferrer"`, external-link icon, screen-reader
+  new-tab hint).
+- `ProcViewWebPart.ts` — last pane group `AboutGroupName` with the custom field
+  `_aboutField()` (target `aboutInfo`, not a stored property).
+- `renderDiagram.ts` — `hubAnchor` takes only url, text and hint (behaviour unchanged).
+- `ProcViewWebPart.module.scss` — `.aboutField` with `position: relative`.
+- `loc/*.js`, `mystrings.d.ts`, `linkErrors.test.ts` — `AboutGroupName`,
+  `RepositoryLinkText` in all four languages.
+- README — "About" in the settings list.
+
+**Decisions / deviations:** The owner noticed a second scrollbar in the property pane: the
+link's absolutely positioned screen-reader hint had no positioned ancestor in the pane, so
+it overflowed the page below the pane's scroll area. `position: relative` on the field keeps
+it inside; the owner closed the step after the fix.
+
 ### F-005 — Theme, section backgrounds, accessibility
 
 _Completed 2026-09-30._

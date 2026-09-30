@@ -205,3 +205,12 @@
     outline: 2px solid Highlight;
   }
 }
+
+// Repository link at the end of the property pane (custom field, see aboutField.ts).
+// Positioned, so the link's absolutely positioned screen-reader hint stays inside the pane's
+// scroll area — otherwise it overflows the page and adds a second scrollbar
+.aboutField {
+  position: relative;
+  margin: 8px 0 0;
+  font-size: 14px;
+}

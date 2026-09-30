@@ -34,51 +34,11 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-012b | French and Spanish language files and toolbox texts | 2026-09-30 |
 | F-012 | Localisation: German, English, French, Spanish (F-012a, F-012b) | 2026-09-30 |
 | F-005 | Section-aware theme colours for every page element; accessibility check | 2026-09-30 |
+| F-013 | Repository link in the property pane ("About" group, custom field with `rel="noopener noreferrer"`) | 2026-09-30 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-013 — Link to the GitHub repository in the property pane
-
-**Status:** PLANNED
-
-**Problem:** Editors and IT have no pointer from the web part to its source code,
-documentation and issue tracker — useful for support and for reporting problems.
-
-**Idea:** A small info group at the end of the property pane with a link to the public
-repository (https://github.com/xnyzer/spfx-procview), opening in a new tab. F-009 later
-adds the version number to the same group.
-
-**Solution sketch** (updated at prep-step, 2026-09-30; size: small, no substeps):
-- **Not `PropertyPaneLink`:** it has no `rel` option, but CODING-STANDARDS requires
-  `rel="noopener noreferrer"` on every new-tab link — browsers imply `noopener`, not
-  `noreferrer`, so GitHub would learn the tenant name on every click
-- Instead a small custom pane field (`PropertyPaneFieldType.Custom`, the alignment
-  toolbar's pattern) rendering a plain link: `target="_blank"`,
-  `rel="noopener noreferrer"`, the screen-reader new-tab hint; it reuses `hubAnchor`
-  (its parameter narrowed to url, text and hint — behaviour unchanged)
-- New `aboutField.ts`: repository URL constant + render function (F-009 adds the version
-  there later, e.g. "ProcView 1.2.0 · Source code on GitHub")
-- Last pane group; texts (owner-approved): EN "About" / "Source code and documentation on
-  GitHub", DE "Info" / "Quellcode und Dokumentation auf GitHub", FR "À propos" / "Code
-  source et documentation sur GitHub", ES "Acerca de" / "Código fuente y documentación en
-  GitHub"
-- The pane is not inside a section → page-theme colours (static token fallback) are right
-- No new dependencies, endpoints or settings
-
-**Files:** `aboutField.ts`, `aboutField.test.ts` (new), `ProcViewWebPart.ts`,
-`renderDiagram.ts`, `loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts` (all under
-`src/webparts/procView/`); `README.md`
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] The link is the last pane group and opens the repository in a new tab
-- [ ] Tests: `rel="noopener noreferrer"`, `target="_blank"`, exact URL, screen-reader hint
-- [ ] Group name and link text in all four languages (F-012 tests green)
-- [ ] Owner sees the link in the local workbench
-- [ ] `just check` green (isolated copy while the dev server runs)
 
 ### F-014 — Own Teams app icons instead of the generator placeholders
 
@@ -213,6 +173,6 @@ F-009 Versioning, release via CI + IT deployment guide
 F-010 SPFx upgrade before Node 22 end of life
 F-011 Local testing setup + online workbench retirement (DONE)
 F-012 Localisation: German, English, French, Spanish (DONE)
-F-013 Link to the GitHub repository in the property pane (PLANNED)
+F-013 Link to the GitHub repository in the property pane (DONE)
 F-014 Own Teams app icons instead of the generator placeholders
 -->

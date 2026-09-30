@@ -54,6 +54,8 @@ define([], function () {
     AccessibilityGroupName: 'Accessibility',
     AltTextLabel: 'Alternative text',
     AltTextDescription: 'Describes the diagram for screen readers. Empty: "Process diagram".',
+    AboutGroupName: 'About',
+    RepositoryLinkText: 'Source code and documentation on GitHub',
 
     LinkErrorEmpty: 'Paste the diagram\'s "Simple image" link.',
     LinkErrorUnsupported:

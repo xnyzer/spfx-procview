@@ -151,10 +151,13 @@ function externalLinkIcon(doc: Document): SVGElement {
   return svg;
 }
 
-/** The hub link itself — the same anchor below the diagram, as overlay and in messages. */
+/**
+ * An external link that opens in a new tab without opener access or referrer — the hub link
+ * below the diagram, as overlay and in messages, and the repository link in the pane.
+ */
 export function hubAnchor(
   doc: Document,
-  hubLink: IHubLinkView,
+  hubLink: Pick<IHubLinkView, 'url' | 'text' | 'newTabHint'>,
   classNames: Pick<IDiagramView['classNames'], 'hubAnchor' | 'srOnly'>
 ): HTMLAnchorElement {
   const anchor = doc.createElement('a');
