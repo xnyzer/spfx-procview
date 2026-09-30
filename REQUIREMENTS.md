@@ -47,11 +47,16 @@
    values — the diagram is never wider than its column); one value fixed (px or %)
    → the other follows the aspect ratio; both fixed → the diagram fits inside that box
    keeping its aspect ratio (never distorted).
-3. **Collaboration Hub link** below the diagram when "Show Collaboration Hub link" is
-   checked — the URL is always derived from the model id (no manual override).
+3. **Collaboration Hub link** when "Show Collaboration Hub link" is checked — the URL is
+   always derived from the model id (no manual override); configurable link text (default
+   "Open in Signavio") and position: below the diagram (own alignment, default right) or on
+   the diagram, bottom right (overlay, always visible but subtle, opaque on hover/focus).
+   Readers need a Signavio account to open it.
 4. **Empty and error states** — "not configured yet" placeholder with guidance for
    editors (where to find the "Simple image" link); clear message (plus hub link, if
-   enabled) when the image cannot be loaded.
+   enabled) when the image cannot be loaded, naming the likely causes (sharing revoked,
+   wrong link, domain blocked by network/firewall); a specific message when a security
+   policy blocks the image domain.
 5. **Theme, section backgrounds, accessibility** — `supportsThemeVariants`, semantic theme
    colors, keyboard operability, alt text, sufficient contrast.
 6. **Zoom and pan** (only when "Offer zoom" is checked) — zoom in/out/reset controls and
@@ -118,6 +123,8 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-30 | The checkboxes "Show Collaboration Hub link" and "Offer zoom" are introduced with F-003/F-006, not in F-002 | No setting without its function in any intermediate state |
 | 2026-09-30 | The diagram is never wider than its column, even for larger pixel widths (no scrolling inside the web part) | Owner decision; keeps the page layout intact — scrolling was offered and rejected |
 | 2026-09-30 | Optional caption below the diagram with left/center/right alignment (default center) in a compact icon toolbar; alignment applies to the caption only | Owner request during F-002; dropdown and large icon tiles were tried and rejected as less clear |
+| 2026-09-30 | Hub link: configurable text (default "Open in Signavio"), position below the diagram (own alignment) or as overlay in the bottom-right corner; URL still derived | Owner request; the link must be placeable independently of the caption |
+| 2026-09-30 | The overlay is always visible (subtle), never hover-only | Touch devices have no hover, hidden links are not discovered, WCAG 2.1 SC 1.4.13 — owner accepted |
 
 ### Technical decisions
 
@@ -145,7 +152,10 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 - [ ] **Hub link target:** is `/p/portal#/model/<id>` right for all users, or should the
       Collaboration Hub form `/p/hub/model/<id>?t=<workspace-id>` be used (needs the
       workspace id, which the image link does not contain)?
-- [ ] **SharePoint CSP:** does the tenant's Content Security Policy for SPFx affect loading
-      images from Signavio hosts (`img-src`)?
+- [x] **SharePoint CSP:** resolved 2026-09-30 — SharePoint Online's CSP (enforced since
+      2026-03-01) applies to scripts only ("CSP is only enforced for scripts", MS Learn:
+      Trusted Script Sources); "HTML Field Security" allowed domains apply to iframes (Embed
+      web part). Neither blocks the web part's `<img>`; F-004 still detects an `img-src`
+      violation as a safeguard.
 - [ ] **Full-screen view (F-007):** always available, tied to "Offer zoom", or its own
       checkbox in the configuration pane?

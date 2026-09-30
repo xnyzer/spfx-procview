@@ -31,22 +31,77 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-003 — Collaboration Hub link (checkbox)
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** Readers need a way from the static image to the interactive diagram in the
 Collaboration Hub.
 
-**Idea:** Add the checkbox "Show Collaboration Hub link" to the configuration pane (introduced
-here, together with its function) and, when checked, show a link below the diagram —
-always derived from the model id, no manual override.
+**Idea:** Add a pane group "Collaboration Hub link" (introduced here, together with its
+function): checkbox "Show Collaboration Hub link" (default off); when checked, the link text
+(default "Open in Signavio"), the position — below the diagram (own alignment, default right)
+or on the diagram, bottom right (overlay) — and, for "below", the alignment. The URL is
+always derived from the model id (no manual override).
 
-**Solution sketch:**
-- Link text from `loc/`; opens in a new tab with `rel="noopener noreferrer"`, styled as a
-  theme link
-- Placed below the caption (F-002 renders `<figure>` with an optional `<figcaption>`)
-- Target format per the open question in REQUIREMENTS (`/p/portal#/model/<id>` for now)
+**Solution sketch** (updated 2026-09-30 by `/prep-step`; size: medium):
+- Link fields appear only when the checkbox is checked (uncluttered pane)
+- Link: `target="_blank"`, `rel="noopener noreferrer"`, external-link icon (inline SVG,
+  theme colour), screen-reader-only "(opens in a new tab)"; text via `textContent` only
+- Shown only with checkbox **and** a valid image link; without a link only the placeholder
+- Readers need a Signavio account: `/p/portal` and `/p/hub/model/<id>` answer 401 without a
+  session; `/p/model/<id>` redirects to `/p/portal#/model/<id>` — the current `hubUrl`. If the
+  portal link fails for signed-in users, switch to the canonical `/p/model/<id>`
+- Overlay is always visible but subtle, fully opaque on hover/keyboard focus — never
+  hover-only (touch devices, discoverability, WCAG 2.1 SC 1.4.13); no transition with
+  `prefers-reduced-motion`, system border in forced-colors mode
+- Default link text is Signavio-specific; with a second process tool it must come from the
+  provider
 
-**Dependencies:** F-001, F-002
+**Dependencies:** F-001, F-002 (both done)
+
+#### F-003a — Link below the diagram
+
+**What:** Pane group "Collaboration Hub link" with checkbox, link text (empty → "Open in
+Signavio", note "Readers need access to SAP Signavio.") and alignment via the existing icon
+toolbar (default right; the toolbar is generalised — its label id is caption-specific today).
+The link is rendered below the caption.
+
+**Files:** `renderDiagram.ts`, `renderDiagram.test.ts`, `alignmentField.ts`,
+`alignmentField.test.ts`, `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`,
+`loc/en-us.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts` (string completeness)
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] jsdom test: link only with checkbox on **and** valid link; `href` = hub URL;
+      `target="_blank"`, `rel="noopener noreferrer"`; screen-reader note present; default
+      text when empty; text never interpreted as markup; order image → caption → link;
+      alignment applied
+- [ ] Link fields hidden in the pane while the checkbox is off
+- [ ] `just check` and `just build` green (in an isolated copy while the dev server runs)
+- [ ] Owner: clicking the link while signed in to Signavio opens the diagram in the
+      Collaboration Hub
+
+#### F-003b — Overlay in the bottom-right corner
+
+**What:** Option "Position" (Below the diagram / On the diagram, bottom right); the
+alignment field is hidden for the overlay. The image gets a frame (`position: relative`)
+so the overlay sits at the image corner, not the column corner; width, height and
+`max-width` move to the frame, the image fills it (`object-fit` unchanged).
+
+**Files:** `renderDiagram.ts`, `renderDiagram.test.ts`, `sizing.ts` (if the style split
+needs it), `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`, `loc/en-us.js`,
+`loc/mystrings.d.ts`, `linkErrors.test.ts`
+
+**Dependencies:** F-003a
+
+**Acceptance criteria:**
+- [ ] jsdom test: frame and overlay structure; overlay only for position "bottom right"
+- [ ] Existing sizing tests adapted and green (styles now on the frame)
+- [ ] Overlay: always visible, opaque on hover/focus; reduced-motion and forced-colors rules
+- [ ] `just check` and `just build` green
+- [ ] Owner: both positions and all sizing combinations checked again in the local workbench
+      (the frame touches the sizing logic); known limit — with fixed width and height the
+      image may be letterboxed and the overlay sits at the frame corner
 
 ### F-004 — Empty and error states
 
@@ -56,11 +111,22 @@ always derived from the model id, no manual override.
 
 **Idea:** Placeholder with editor guidance when no link is configured (where to find the
 "Simple image" link in Signavio); readable error message (plus hub link if enabled) when
-the image fails to load.
+the image fails to load — including the case that the domain is blocked (owner request,
+2026-09-30: the SharePoint embed web part needed the domain approved by IT first).
 
 **Solution sketch:**
 - SPFx placeholder pattern (Fluent UI Core classes) in edit mode
 - `<img>` `error` handler → error state; strings in `loc/`
+- The browser does not tell an `<img>` why loading failed (no status code), so the generic
+  message lists the likely causes: read-only sharing revoked in Signavio, link incorrect,
+  **network / firewall / proxy blocks the Signavio domain** (ask IT to allow it)
+- Readers see a short message; editors (edit mode) see the detailed causes
+- **Blocked by a security policy:** listen for `securitypolicyviolation` with an `img-src`
+  directive whose `blockedURI` matches the image → specific message naming the domain and
+  pointing to the SharePoint administrator. Background (verified 2026-09-30): SharePoint
+  Online's CSP is enforced for scripts only, and "HTML Field Security" (allowed iframe
+  domains, needed by the Embed web part) applies to iframes — neither blocks this web
+  part's `<img>` today, so this path is a safeguard for future or custom policies
 
 **Dependencies:** F-002
 
@@ -175,7 +241,7 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 next-feature: F-012
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
-F-003 Collaboration Hub link (checkbox)
+F-003 Collaboration Hub link (checkbox) (PLANNED)
 F-004 Empty and error states
 F-005 Theme, section backgrounds, accessibility
 F-006 Zoom and pan (checkbox)
