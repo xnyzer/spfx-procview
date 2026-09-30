@@ -8,6 +8,89 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-005 — Theme, section backgrounds, accessibility
+
+_Completed 2026-09-30._
+
+**Problem:** The web part must look native on any site theme and section background and be
+usable with keyboard and screen readers.
+
+**Idea:** Complete the theme handling started in the scaffold (`onThemeChanged` → CSS
+variables, SCSS theme tokens) for all elements, and check accessibility basics.
+
+**Solution sketch** (updated at prep-step, 2026-09-30; size: small, no substeps):
+- **Bug found:** `onThemeChanged` maps only `bodyText`, `bodySubtext`, `link`,
+  `linkHovered`; every other colour is a static `[theme:…]` token, resolved from the *page*
+  theme. On a strong section background the message box shows the section's white text on
+  the page's light grey (unreadable), the focus outline (`themePrimary`) vanishes, the
+  "Configure" button and the hub overlay keep the page's white background
+- New pure `theme.ts`: the section's `semanticColors` (and `palette.themePrimary` where
+  needed) → CSS custom properties (body background/text/subtext, link, link hovered, focus
+  border, error text, standout background for the message box, divider, button background/
+  text/border/hovered); missing slots are left out so the fallback applies
+- SCSS: every element on the page uses `var(--x, '[theme:…]')` — one declaration with the
+  token as fallback (the current two-declaration pattern drops the colour when a variable
+  is missing); the property pane's alignment toolbar keeps static tokens (the pane is not
+  inside a section)
+- Accessibility is largely in place (alt text with default, `figure`/`figcaption`, radio
+  group with arrow keys, new-tab hint, visible focus, forced colours, reduced motion);
+  alt text stays optional with the generic default (decision 2026-09-29, not "required")
+- Docs: README "Accessibility and themes"; decision log entry
+- First build step: check whether the local workbench's theme picker reaches
+  `onThemeChanged` at all (owner saw no change when switching the theme colour — with a
+  diagram shown almost nothing is theme-dependent, or the workbench does not propagate the
+  theme); if it does not, the visual theme check moves to the IT test site
+- Real section backgrounds exist only in SharePoint → confirm in the IT test site
+
+**Files:** `theme.ts`, `theme.test.ts` (new), `ProcViewWebPart.ts`,
+`ProcViewWebPart.module.scss` (all under `src/webparts/procView/`); `README.md`;
+`REQUIREMENTS.md`
+
+**Dependencies:** F-002, F-003, F-004
+
+**Acceptance criteria:**
+- [x] No element on the page takes a colour that ignores the section (SCSS review; static
+      tokens only in the property pane — `grep "theme:"` shows them only as `var()`
+      fallbacks and in the pane block)
+- [x] Tests: for a strong-section theme, message box text and background come from the
+      same section; missing slots fall back (`theme.test.ts`, 7 tests)
+- [x] Whether the local workbench propagates theme changes is verified and documented —
+      it calls `onThemeChanged` on init and on every theme switch (extension code); README
+      "Testing themes"
+- [x] Diagram, message, "Configure", hub link below, overlay link and focus outline are
+      readable/visible in a light and a dark theme — owner checked in the local workbench
+      and closed the step
+- [x] Keyboard walk-through: everything reachable with Tab, focus always visible (owner)
+- [x] Token fallback inside `var()` verified — the built CSS keeps the token inside
+      `var()`, and `load-themed-styles` `detokenize` turns it into the theme value or the
+      default
+- [x] `just check` green — 194 tests (isolated copy while the dev server runs)
+
+**Implemented:**
+- `theme.ts` — `themeVariables(theme)`: 13 semantic colours (body background/standout
+  background/text/subtext/divider, link, link hovered, focus border, error text, button
+  background/hovered/text/border) plus `palette.themePrimary` → `--<slot>` custom
+  properties; missing, empty or non-string values are left out. `applyThemeVariables`
+  sets them on the web part element and removes the rest, so nothing lingers from a
+  previous theme.
+- `ProcViewWebPart.ts` — `onThemeChanged` calls `applyThemeVariables`; the re-render on
+  theme change is gone (the variables cascade to the rendered elements).
+- `ProcViewWebPart.module.scss` — every page colour as `var(--x, '[theme:x, default: …]')`
+  (one declaration; the old two-declaration pattern dropped the colour when a variable
+  was missing); message box on `bodyStandoutBackground`, info accent `themePrimary`,
+  error accent `errorText`, "Configure" on the button colours, overlay on
+  `bodyBackground`, focus outlines on `focusBorder`. The property pane toolbar keeps
+  static tokens.
+- `theme.test.ts` — page theme, strong section variant, partial/invalid themes, set and
+  remove on an element.
+- Docs — README "Themes and accessibility" (editors) and "Testing themes" (local
+  workbench); REQUIREMENTS.md decision log entry.
+
+**Decisions / deviations:** No code-side fallback needed — tokens inside `var()` work. The
+owner's earlier "nothing changed" came from the diagram view having almost no themed
+elements, not from missing propagation. Real section backgrounds remain to be confirmed in
+the IT test site.
+
 ### F-012 — Localisation: German, English, French, Spanish
 
 _Completed 2026-09-30 via F-012a and F-012b._

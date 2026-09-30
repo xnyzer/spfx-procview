@@ -1,6 +1,5 @@
 .procView {
-  color: '[theme:bodyText, default: #323130]';
-  color: var(--bodyText);
+  color: var(--bodyText, '[theme:bodyText, default: #323130]');
 }
 
 // Reset the browser's default figure margins
@@ -23,8 +22,7 @@
 .caption {
   margin-top: 0.5em;
   font-size: 0.875em;
-  color: '[theme:bodySubtext, default: #605e5c]';
-  color: var(--bodySubtext);
+  color: var(--bodySubtext, '[theme:bodySubtext, default: #605e5c]');
 }
 
 // Hub link as overlay: always visible but subtle (translucent background, full-strength
@@ -36,14 +34,14 @@
   padding: 4px 8px;
   border-radius: 2px;
   font-size: 0.875em;
-  background: color-mix(in srgb, '[theme:white, default: #ffffff]' 80%, transparent);
+  background: color-mix(in srgb, var(--bodyBackground, '[theme:bodyBackground, default: #ffffff]') 80%, transparent);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: background-color 0.15s ease-in-out;
 
   .frame:hover &,
   &:hover,
   &:focus-visible {
-    background: '[theme:white, default: #ffffff]';
+    background: var(--bodyBackground, '[theme:bodyBackground, default: #ffffff]');
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -67,17 +65,15 @@
   align-items: center;
   gap: 4px;
   text-decoration: none;
-  color: '[theme:link, default: #0078d4]';
-  color: var(--link);
+  color: var(--link, '[theme:link, default: #0078d4]');
 
   &:hover {
     text-decoration: underline;
-    color: '[theme:linkHovered, default: #004578]';
-    color: var(--linkHovered);
+    color: var(--linkHovered, '[theme:linkHovered, default: #004578]');
   }
 
   &:focus-visible {
-    outline: 2px solid '[theme:themePrimary, default: #0078d4]';
+    outline: 2px solid var(--focusBorder, '[theme:focusBorder, default: #605e5c]');
     outline-offset: 2px;
   }
 }
@@ -95,21 +91,21 @@
   border: 0;
 }
 
-// Empty/error states (F-004): a quiet box in theme colours, not a warning banner
+// Empty/error states (F-004): a quiet box in theme colours, not a warning banner. Text and
+// background come from the same (section) theme — see theme.ts
 .message {
   padding: 12px 16px;
   border-left: 4px solid;
-  background: '[theme:neutralLighter, default: #f3f2f1]';
-  color: '[theme:bodyText, default: #323130]';
-  color: var(--bodyText);
+  background: var(--bodyStandoutBackground, '[theme:bodyStandoutBackground, default: #faf9f8]');
+  color: var(--bodyText, '[theme:bodyText, default: #323130]');
 }
 
 .messageInfo {
-  border-left-color: '[theme:themePrimary, default: #0078d4]';
+  border-left-color: var(--themePrimary, '[theme:themePrimary, default: #0078d4]');
 }
 
 .messageError {
-  border-left-color: '[theme:errorText, default: #a4262c]';
+  border-left-color: var(--errorText, '[theme:errorText, default: #a4262c]');
 }
 
 .messageTitle {
@@ -130,19 +126,19 @@
   margin-top: 12px;
   padding: 4px 16px;
   min-height: 32px;
-  border: 1px solid '[theme:neutralSecondaryAlt, default: #8a8886]';
+  border: 1px solid var(--buttonBorder, '[theme:buttonBorder, default: #8a8886]');
   border-radius: 2px;
-  background: '[theme:white, default: #ffffff]';
-  color: '[theme:neutralPrimary, default: #323130]';
+  background: var(--buttonBackground, '[theme:buttonBackground, default: #ffffff]');
+  color: var(--buttonText, '[theme:buttonText, default: #323130]');
   font: inherit;
   cursor: pointer;
 
   &:hover {
-    background: '[theme:neutralLighter, default: #f3f2f1]';
+    background: var(--buttonBackgroundHovered, '[theme:buttonBackgroundHovered, default: #f3f2f1]');
   }
 
   &:focus-visible {
-    outline: 2px solid '[theme:themePrimary, default: #0078d4]';
+    outline: 2px solid var(--focusBorder, '[theme:focusBorder, default: #605e5c]');
     outline-offset: 1px;
   }
 }
@@ -156,11 +152,11 @@
 .placeholder {
   margin: 0;
   padding: 1em;
-  color: '[theme:bodySubtext, default: #605e5c]';
-  color: var(--bodySubtext);
+  color: var(--bodySubtext, '[theme:bodySubtext, default: #605e5c]');
 }
 
-// Caption alignment toolbar in the property pane (custom field, see alignmentField.ts)
+// Caption alignment toolbar in the property pane (custom field, see alignmentField.ts). The pane
+// is not inside a section, so static page-theme tokens are right here
 .alignField {
   margin-top: 8px;
 }

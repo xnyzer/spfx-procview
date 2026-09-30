@@ -22,6 +22,7 @@ import type { ILoadError } from './messages';
 import { parseHubLinkPosition, parseTextAlign, renderDiagram } from './renderDiagram';
 import type { IHubLinkView, TextAlign } from './renderDiagram';
 import { renderMessage } from './renderMessage';
+import { applyThemeVariables } from './theme';
 import { trackImageViolations } from './violationTracker';
 import type { IViolationTracker } from './violationTracker';
 import { diagramStyles, dimensionErrorKey, parseDimension } from './sizing';
@@ -160,22 +161,10 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   }
 
   protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
-    if (!currentTheme) {
-      return;
-    }
-
-    const { semanticColors } = currentTheme;
-    if (semanticColors) {
-      this.domElement.style.setProperty('--bodyText', semanticColors.bodyText || null);
-      this.domElement.style.setProperty('--bodySubtext', semanticColors.bodySubtext || null);
-      this.domElement.style.setProperty('--link', semanticColors.link || null);
-      this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered || null);
-    }
-
-    // Theme changes after the first render must reach the elements already on the page
-    if (this.renderedOnce) {
-      this.render();
-    }
+    // On a coloured section this is the section's theme variant — every colour on the page
+    // comes from these variables (theme.ts); they cascade to the rendered elements, so no
+    // re-render is needed
+    applyThemeVariables(this.domElement.style, currentTheme);
   }
 
   protected get dataVersion(): Version {

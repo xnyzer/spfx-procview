@@ -146,6 +146,7 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-30 | Default values of settings are stored as initial values in the web part manifest, matching the code fallbacks | The property pane selects what is stored; a code-only fallback renders correctly but shows no selection |
 | 2026-09-30 | Local testing via the community "SPFx Local Workbench" VS Code extension; on-page testing via the SPFx Debug Toolbar in an IT test site (F-011) | The online workbench is deprecated since SPFx 1.23 and retired on 2026-12-01; the owner has no tenant; free developer tenants are restricted to Visual Studio/partner subscribers |
 | 2026-09-30 | Pseudo-locale `qps-ploc` is not committed; locales are tested locally with `just dev <locale>` (`heft start --locales`) | Every file in `loc/` ships in the package; the typed completeness tests already catch missing texts. Verified: with `--locales de-de` the debug manifest serves only the German file, which the local workbench loads |
+| 2026-09-30 | Every colour on the page comes from the theme SharePoint passes to `onThemeChanged` (all used semantic colours + `palette.themePrimary` as CSS variables, `theme.ts`); static `[theme:…]` tokens only as `var()` fallback and in the property pane | On a coloured section SharePoint passes the section's variant, while static tokens resolve from the page theme — mixing both made the message box unreadable on strong sections (F-005). Verified: `load-themed-styles` replaces tokens inside `var()` |
 
 ## Open questions
 

@@ -53,6 +53,13 @@ against the Signavio UI. Have the French and Spanish texts reviewed by native sp
 before production use. Texts that editors enter (caption, alternative text, link text) are
 shown as entered — translate them with SharePoint's multilingual pages if needed.
 
+**Themes and accessibility:** all colours follow the site theme and the section the web part
+sits in — also on a coloured or dark section background (messages, the "Configure" button,
+links and the focus outline take the section's colours). Everything is reachable with the
+keyboard with a visible focus outline; the diagram has an alternative text (default "Process
+diagram"), links to Signavio announce that they open a new tab, and Windows high-contrast
+mode and "reduce motion" are respected.
+
 <!-- section:readme-getting-started -->
 ## Getting started
 
@@ -109,6 +116,12 @@ Known issue in SPFx Local Workbench 0.2.0: it turns every text value containing 
 every URL — into a Dynamic-Data object before it reaches the web part, so a pasted image link
 arrives as "empty" and the web part shows "Add a process diagram" instead of the diagram. SharePoint itself is not affected; a fixed
 extension release (or a local patch of the extension) is needed to test links locally.
+
+**Testing themes:** the workbench's theme picker passes the chosen theme to the web part, just
+as SharePoint passes a section's colours — a dark theme such as "Dark Teal" shows how
+messages, buttons, links and the focus outline look on a dark section. With only a diagram
+on the canvas little changes (the image itself is not themed); add the hub link or clear the
+image link to see the themed elements. Real section backgrounds exist only in SharePoint.
 
 **Testing a language:** stop the dev server, run `just dev de-de` (any file name from
 `src/webparts/procView/loc/`) in a terminal, then use "SPFx Local Workbench: Open Local
