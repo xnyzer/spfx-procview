@@ -8,6 +8,56 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-003a — Link below the diagram
+
+_Part of F-003 — Collaboration Hub link. Completed 2026-09-30._
+
+**What:** Pane group "Collaboration Hub link" with an on/off setting, link text (empty →
+"Open in Signavio", note "Readers need access to SAP Signavio.") and alignment via the
+existing icon toolbar (default right; the toolbar is generalised). The link is rendered
+below the caption.
+
+**Files:** `renderDiagram.ts`, `renderDiagram.test.ts`, `alignmentField.ts`,
+`alignmentField.test.ts`, `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`,
+`loc/en-us.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts` (all under
+`src/webparts/procView/`); `README.md`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] jsdom test: link only when requested **and** with a valid link; `href` = hub URL;
+      `target="_blank"`, `rel="noopener noreferrer"`; screen-reader note present; text never
+      interpreted as markup; order image → caption → link; alignment applied — 9 tests.
+      _Gap:_ the default text for an empty field is applied in the web part class
+      (`|| strings.HubLinkDefaultText`) and is not covered by a jsdom test
+- [x] Link fields hidden in the pane while the setting is off — conditional fields plus
+      `propertyPane.refresh()` on change; the owner closed the step after the workbench check
+      (in the local workbench, pane refresh is a no-op — reopening the pane may be needed)
+- [x] `just check` and `just build` green — 121 tests, `.sppkg` 21.4 KB (isolated copy)
+- [x] Owner: the link opens the diagram in the Collaboration Hub when signed in to Signavio
+      — confirmed 2026-09-30 (`/p/portal#/model/<id>` works; no fallback needed)
+
+**Implemented:**
+- `renderDiagram.ts` — `TextAlign` + `parseTextAlign(value, fallback)` (replaces the
+  caption-specific parser); optional `hubLink` view rendered as `<p>` after the `<figure>`:
+  `<a>` with text node, inline SVG external-link icon (`aria-hidden`) and a visually hidden
+  " (opens in a new tab)" span.
+- `ProcViewWebPart.ts` — properties `showHubLink`, `hubLinkText`, `hubLinkAlign`; pane group
+  with `PropertyPaneToggle` (On/Off) and, only while on, link text and alignment; one generic
+  `_alignField(property, label)` for caption and link; per-setting defaults (caption center,
+  link right); `onPropertyPaneFieldChanged` refreshes the pane for the conditional fields;
+  theme link colours set as CSS variables.
+- `alignmentField.ts` — label id now `${idPrefix}-label` (unique per field).
+- Styles — `.hubLink`, `.hubAnchor` (theme link colours, underline on hover, focus ring),
+  `.srOnly`.
+- README — the dev server does not pick up `loc/*.js` changes; restart after editing texts.
+
+**Decisions / deviations:**
+- Toggle instead of the planned checkbox — SharePoint standard for on/off settings (owner).
+- Local workbench: the owner first saw technical field names ("HubLinkText"), missing group
+  headings and "undefined" as link text — the running dev server still served the old
+  strings file; a restart fixes it (documented in the README).
+
 ### F-002 — Configuration pane + diagram display with size control
 
 _Completed 2026-09-30 via F-002a and F-002b._

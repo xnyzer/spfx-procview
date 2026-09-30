@@ -1,4 +1,4 @@
-import { parseCaptionAlign, renderDiagram } from './renderDiagram';
+import { parseTextAlign, renderDiagram } from './renderDiagram';
 import type { IDiagramView } from './renderDiagram';
 import { imageStyle } from './sizing';
 import type { IDiagramLink } from '../../providers/types';
@@ -19,7 +19,16 @@ function view(overrides: Partial<IDiagramView> = {}): IDiagramView {
     caption: '',
     captionAlign: 'center',
     placeholderText: 'No process diagram is configured yet.',
-    classNames: { root: 'root', figure: 'figure', image: 'image', caption: 'caption', placeholder: 'placeholder' },
+    classNames: {
+      root: 'root',
+      figure: 'figure',
+      image: 'image',
+      caption: 'caption',
+      placeholder: 'placeholder',
+      hubLink: 'hubLink',
+      hubAnchor: 'hubAnchor',
+      srOnly: 'srOnly'
+    },
     ...overrides
   };
 }
@@ -122,14 +131,70 @@ describe('renderDiagram — caption', () => {
   });
 });
 
-describe('parseCaptionAlign', () => {
+describe('parseTextAlign', () => {
   it('accepts left, center and right', () => {
-    expect(parseCaptionAlign('left')).toBe('left');
-    expect(parseCaptionAlign('center')).toBe('center');
-    expect(parseCaptionAlign('right')).toBe('right');
+    expect(parseTextAlign('left', 'center')).toBe('left');
+    expect(parseTextAlign('center', 'right')).toBe('center');
+    expect(parseTextAlign('right', 'center')).toBe('right');
   });
 
-  it.each([[undefined], [''], ['justify'], ['LEFT'], [42], [{}]])('falls back to center for %p', (value) => {
-    expect(parseCaptionAlign(value)).toBe('center');
+  it.each([[undefined], [''], ['justify'], ['LEFT'], [42], [{}]])('falls back for %p', (value) => {
+    expect(parseTextAlign(value, 'center')).toBe('center');
+    expect(parseTextAlign(value, 'right')).toBe('right');
+  });
+});
+
+describe('renderDiagram — Collaboration Hub link', () => {
+  const HUB = {
+    url: LINK.hubUrl as string,
+    text: 'Open in Signavio',
+    align: 'right' as const,
+    newTabHint: '(opens in a new tab)'
+  };
+
+  it('renders no link when none is requested', () => {
+    expect(renderDiagram(document, view()).querySelector('a')).toBeNull();
+  });
+
+  it('renders the link below the diagram and its caption', () => {
+    const root = renderDiagram(document, view({ caption: 'Order-to-cash', hubLink: HUB }));
+    const children = Array.from(root.children).map((child) => child.tagName);
+    expect(children).toEqual(['FIGURE', 'P']);
+    expect(root.querySelector('figure')?.lastElementChild?.tagName).toBe('FIGCAPTION');
+    expect((root.lastElementChild as HTMLElement).className).toBe('hubLink');
+  });
+
+  it('opens the hub URL in a new tab without opener or referrer', () => {
+    const anchor = renderDiagram(document, view({ hubLink: HUB })).querySelector('a') as HTMLAnchorElement;
+    expect(anchor.getAttribute('href')).toBe(LINK.hubUrl);
+    expect(anchor.target).toBe('_blank');
+    expect(anchor.rel).toBe('noopener noreferrer');
+    expect(anchor.className).toBe('hubAnchor');
+  });
+
+  it('shows the text, a decorative icon and a screen-reader-only new-tab hint', () => {
+    const anchor = renderDiagram(document, view({ hubLink: HUB })).querySelector('a') as HTMLAnchorElement;
+    expect(anchor.firstChild?.textContent).toBe('Open in Signavio');
+    expect(anchor.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    const hint = anchor.querySelector('span');
+    expect(hint?.className).toBe('srOnly');
+    expect(hint?.textContent).toBe(' (opens in a new tab)');
+    expect(anchor.textContent).toBe('Open in Signavio (opens in a new tab)');
+  });
+
+  it.each<['left' | 'center' | 'right']>([['left'], ['center'], ['right']])('aligns the link %s', (align) => {
+    const root = renderDiagram(document, view({ hubLink: { ...HUB, align } }));
+    expect((root.lastElementChild as HTMLElement).style.getPropertyValue('text-align')).toBe(align);
+  });
+
+  it('keeps markup in the link text as plain text', () => {
+    const root = renderDiagram(document, view({ hubLink: { ...HUB, text: '<img src=x onerror=alert(1)>' } }));
+    expect(root.querySelector('a')?.firstChild?.textContent).toBe('<img src=x onerror=alert(1)>');
+    expect(root.querySelectorAll('img')).toHaveLength(1);
+  });
+
+  it('renders no link without a valid diagram (placeholder only)', () => {
+    const root = renderDiagram(document, view({ link: undefined, hubLink: HUB }));
+    expect(root.querySelector('a')).toBeNull();
   });
 });

@@ -70,6 +70,10 @@ every URL — into a Dynamic-Data object before it reaches the web part, so a pa
 shows the placeholder instead of the diagram. SharePoint itself is not affected; a fixed
 extension release (or a local patch of the extension) is needed to test links locally.
 
+The dev server picks up code changes while running, but **not changes to `loc/*.js`** (the
+texts): after editing them, restart it — otherwise the workbench shows technical field
+names or "undefined" for new texts.
+
 `just check` and `just build` clean and rewrite the same build folders the dev server serves
 from (and `just build` writes hashed production bundles). Stop the dev server first, or
 restart it afterwards — otherwise the workbench may fail with "Failed to load …" (404).

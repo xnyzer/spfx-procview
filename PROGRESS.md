@@ -24,6 +24,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-002a | Sizing (px / % of column / auto) and error-message mapping, pure and tested | 2026-09-30 |
 | F-002b | Configuration pane, diagram display, caption with alignment toolbar | 2026-09-30 |
 | F-002 | Configuration pane + diagram display with size control (F-002a, F-002b) | 2026-09-30 |
+| F-003a | Collaboration Hub link below the diagram: toggle, link text, alignment | 2026-09-30 |
 
 ---
 
@@ -37,7 +38,8 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 Collaboration Hub.
 
 **Idea:** Add a pane group "Collaboration Hub link" (introduced here, together with its
-function): checkbox "Show Collaboration Hub link" (default off); when checked, the link text
+function): toggle "Show link to the Collaboration Hub" (default off; toggle instead of the
+originally planned checkbox — SharePoint standard for on/off settings, owner's choice); when checked, the link text
 (default "Open in Signavio"), the position — below the diagram (own alignment, default right)
 or on the diagram, bottom right (overlay) — and, for "below", the alignment. The URL is
 always derived from the model id (no manual override).
@@ -57,29 +59,6 @@ always derived from the model id (no manual override).
   provider
 
 **Dependencies:** F-001, F-002 (both done)
-
-#### F-003a — Link below the diagram
-
-**What:** Pane group "Collaboration Hub link" with checkbox, link text (empty → "Open in
-Signavio", note "Readers need access to SAP Signavio.") and alignment via the existing icon
-toolbar (default right; the toolbar is generalised — its label id is caption-specific today).
-The link is rendered below the caption.
-
-**Files:** `renderDiagram.ts`, `renderDiagram.test.ts`, `alignmentField.ts`,
-`alignmentField.test.ts`, `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`,
-`loc/en-us.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts` (string completeness)
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] jsdom test: link only with checkbox on **and** valid link; `href` = hub URL;
-      `target="_blank"`, `rel="noopener noreferrer"`; screen-reader note present; default
-      text when empty; text never interpreted as markup; order image → caption → link;
-      alignment applied
-- [ ] Link fields hidden in the pane while the checkbox is off
-- [ ] `just check` and `just build` green (in an isolated copy while the dev server runs)
-- [ ] Owner: clicking the link while signed in to Signavio opens the diagram in the
-      Collaboration Hub
 
 #### F-003b — Overlay in the bottom-right corner
 

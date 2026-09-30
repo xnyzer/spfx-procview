@@ -21,6 +21,44 @@
   color: var(--bodySubtext);
 }
 
+.hubLink {
+  margin: 0.5em 0 0;
+  font-size: 0.875em;
+}
+
+.hubAnchor {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: '[theme:link, default: #0078d4]';
+  color: var(--link);
+
+  &:hover {
+    text-decoration: underline;
+    color: '[theme:linkHovered, default: #004578]';
+    color: var(--linkHovered);
+  }
+
+  &:focus-visible {
+    outline: 2px solid '[theme:themePrimary, default: #0078d4]';
+    outline-offset: 2px;
+  }
+}
+
+// Visually hidden but read by screen readers
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .placeholder {
   margin: 0;
   padding: 1em;

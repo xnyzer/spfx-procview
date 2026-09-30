@@ -47,7 +47,7 @@
    values — the diagram is never wider than its column); one value fixed (px or %)
    → the other follows the aspect ratio; both fixed → the diagram fits inside that box
    keeping its aspect ratio (never distorted).
-3. **Collaboration Hub link** when "Show Collaboration Hub link" is checked — the URL is
+3. **Collaboration Hub link** when the toggle "Show link to the Collaboration Hub" is on — the URL is
    always derived from the model id (no manual override); configurable link text (default
    "Open in Signavio") and position: below the diagram (own alignment, default right) or on
    the diagram, bottom right (overlay, always visible but subtle, opaque on hover/focus).
@@ -125,6 +125,7 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-30 | Optional caption below the diagram with left/center/right alignment (default center) in a compact icon toolbar; alignment applies to the caption only | Owner request during F-002; dropdown and large icon tiles were tried and rejected as less clear |
 | 2026-09-30 | Hub link: configurable text (default "Open in Signavio"), position below the diagram (own alignment) or as overlay in the bottom-right corner; URL still derived | Owner request; the link must be placeable independently of the caption |
 | 2026-09-30 | The overlay is always visible (subtle), never hover-only | Touch devices have no hover, hidden links are not discovered, WCAG 2.1 SC 1.4.13 — owner accepted |
+| 2026-09-30 | On/off settings use a toggle (SharePoint standard), not a checkbox — first applied to the hub link | Owner decision; matches the SharePoint property pane conventions |
 
 ### Technical decisions
 

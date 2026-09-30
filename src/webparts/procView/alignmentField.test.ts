@@ -1,6 +1,6 @@
 import { renderAlignmentButtons } from './alignmentField';
 import type { IAlignmentButtonsProps } from './alignmentField';
-import type { CaptionAlign } from './renderDiagram';
+import type { TextAlign } from './renderDiagram';
 
 interface ISetup {
   root: HTMLElement;
@@ -8,7 +8,7 @@ interface ISetup {
   onChange: jest.Mock;
 }
 
-function setup(selected: CaptionAlign = 'center', labelText: string = 'Alignment'): ISetup {
+function setup(selected: TextAlign = 'center', labelText: string = 'Alignment'): ISetup {
   const onChange = jest.fn();
   const props: IAlignmentButtonsProps = {
     labelText,
@@ -40,9 +40,9 @@ describe('renderAlignmentButtons — structure', () => {
   it('renders a labelled radio group with three icon buttons', () => {
     const { root, buttons } = setup();
     const group = root.querySelector('[role="radiogroup"]');
-    const label = root.querySelector('#wp1-caption-align-label');
+    const label = root.querySelector('#wp1-label');
     expect(label?.textContent).toBe('Alignment');
-    expect(group?.getAttribute('aria-labelledby')).toBe('wp1-caption-align-label');
+    expect(group?.getAttribute('aria-labelledby')).toBe('wp1-label');
     expect(buttons).toHaveLength(3);
     buttons.forEach((button) => {
       expect(button.type).toBe('button');
@@ -63,7 +63,7 @@ describe('renderAlignmentButtons — structure', () => {
 
   it('keeps markup in the label as plain text', () => {
     const { root } = setup('center', '<b>x</b>');
-    expect(root.querySelector('#wp1-caption-align-label')?.textContent).toBe('<b>x</b>');
+    expect(root.querySelector('#wp1-label')?.textContent).toBe('<b>x</b>');
     expect(root.querySelector('b')).toBeNull();
   });
 });

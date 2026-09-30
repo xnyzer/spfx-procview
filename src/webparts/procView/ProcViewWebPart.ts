@@ -5,7 +5,8 @@ import {
   type IPropertyPaneField,
   PropertyPaneFieldType,
   PropertyPaneLabel,
-  PropertyPaneTextField
+  PropertyPaneTextField,
+  PropertyPaneToggle
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import type { IReadonlyTheme } from '@microsoft/sp-component-base';
@@ -15,7 +16,8 @@ import * as strings from 'ProcViewWebPartStrings';
 import { parseDiagramLink } from '../../providers/registry';
 import { LINK_ERROR_KEYS } from './linkErrors';
 import { renderAlignmentButtons } from './alignmentField';
-import { parseCaptionAlign, renderDiagram } from './renderDiagram';
+import { parseTextAlign, renderDiagram } from './renderDiagram';
+import type { TextAlign } from './renderDiagram';
 import { dimensionErrorKey, imageStyle, parseDimension } from './sizing';
 import type { Dimension, DimensionField } from './sizing';
 
@@ -31,7 +33,18 @@ export interface IProcViewWebPartProps {
   caption?: string;
   /** `left`, `center` (default) or `right`. */
   captionAlign?: string;
+  /** Show the link to the tool's interactive view (Collaboration Hub). */
+  showHubLink?: boolean;
+  /** Link text; empty → default text. */
+  hubLinkText?: string;
+  /** `left`, `center` or `right` (default). */
+  hubLinkAlign?: string;
 }
+
+type AlignProperty = 'captionAlign' | 'hubLinkAlign';
+
+/** Default alignment per setting: the caption is centred, the hub link sits on the right. */
+const ALIGN_DEFAULTS: Record<AlignProperty, TextAlign> = { captionAlign: 'center', hubLinkAlign: 'right' };
 
 interface INaturalSize {
   imageUrl: string;
@@ -54,14 +67,26 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       style: imageStyle(this._dimension('width'), this._dimension('height')),
       altText: this._text(this.properties.altText) || strings.DefaultAltText,
       caption: this._text(this.properties.caption),
-      captionAlign: parseCaptionAlign(this.properties.captionAlign),
+      captionAlign: this._align('captionAlign'),
+      hubLink:
+        this.properties.showHubLink === true && link?.hubUrl
+          ? {
+              url: link.hubUrl,
+              text: this._text(this.properties.hubLinkText) || strings.HubLinkDefaultText,
+              align: this._align('hubLinkAlign'),
+              newTabHint: strings.NewTabHint
+            }
+          : undefined,
       placeholderText: strings.NotConfiguredMessage,
       classNames: {
         root: styles.procView,
         figure: styles.figure,
         image: styles.image,
         caption: styles.caption,
-        placeholder: styles.placeholder
+        placeholder: styles.placeholder,
+        hubLink: styles.hubLink,
+        hubAnchor: styles.hubAnchor,
+        srOnly: styles.srOnly
       },
       onImageLoad: link ? (width, height) => this._onImageLoad(link.imageUrl, width, height) : undefined
     });
@@ -77,6 +102,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     if (semanticColors) {
       this.domElement.style.setProperty('--bodyText', semanticColors.bodyText || null);
       this.domElement.style.setProperty('--bodySubtext', semanticColors.bodySubtext || null);
+      this.domElement.style.setProperty('--link', semanticColors.link || null);
+      this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered || null);
     }
 
     // Theme changes after the first render must reach the elements already on the page
@@ -120,8 +147,12 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
                   label: strings.CaptionLabel,
                   description: strings.CaptionDescription
                 }),
-                this._captionAlignField()
+                this._alignField('captionAlign', strings.CaptionAlignLabel)
               ]
+            },
+            {
+              groupName: strings.HubLinkGroupName,
+              groupFields: this._hubLinkFields()
             },
             {
               groupName: strings.SizeGroupName,
@@ -157,47 +188,75 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     };
   }
 
-  /** Custom property pane field for the caption alignment (documented SPFx custom-field pattern). */
-  private _captionAlignField(): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
+  /** Hub link settings — text and alignment appear only while the link is switched on. */
+  private _hubLinkFields(): IPropertyPaneField<unknown>[] {
+    const fields: IPropertyPaneField<unknown>[] = [
+      PropertyPaneToggle('showHubLink', {
+        label: strings.ShowHubLinkLabel,
+        onText: strings.ToggleOn,
+        offText: strings.ToggleOff
+      })
+    ];
+    if (this.properties.showHubLink === true) {
+      fields.push(
+        PropertyPaneTextField('hubLinkText', {
+          label: strings.HubLinkTextLabel,
+          description: strings.HubLinkTextDescription,
+          placeholder: strings.HubLinkDefaultText
+        }),
+        this._alignField('hubLinkAlign', strings.HubLinkAlignLabel)
+      );
+    }
+    return fields;
+  }
+
+  /** Alignment of a text setting, falling back to its default for unknown values. */
+  private _align(property: AlignProperty): TextAlign {
+    return parseTextAlign(this.properties[property], ALIGN_DEFAULTS[property]);
+  }
+
+  /** Custom property pane field with the alignment toolbar (documented SPFx custom-field pattern). */
+  private _alignField(property: AlignProperty, labelText: string): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
     return {
       type: PropertyPaneFieldType.Custom,
-      targetProperty: 'captionAlign',
+      targetProperty: property,
       properties: {
-        key: 'captionAlignField',
+        key: `${property}Field`,
         onRender: (
           element: HTMLElement,
           _context?: unknown,
           changeCallback?: (targetProperty?: string, newValue?: unknown) => void
-        ) => this._renderCaptionAlign(element, changeCallback),
+        ) =>
+          element.replaceChildren(
+            renderAlignmentButtons(document, {
+              labelText,
+              options: [
+                { key: 'left', text: strings.AlignLeft },
+                { key: 'center', text: strings.AlignCenter },
+                { key: 'right', text: strings.AlignRight }
+              ],
+              selected: this._align(property),
+              idPrefix: `${this.instanceId}-${property}`,
+              classNames: {
+                root: styles.alignField,
+                label: styles.alignLabel,
+                group: styles.alignGroup,
+                button: styles.alignButton,
+                selected: styles.alignSelected
+              },
+              onChange: (key) => changeCallback?.(property, key)
+            })
+          ),
         onDispose: (element: HTMLElement) => element.replaceChildren()
       }
     };
   }
 
-  /** Compact icon toolbar for the caption alignment (custom property pane field). */
-  private _renderCaptionAlign(
-    element: HTMLElement,
-    changeCallback?: (targetProperty?: string, newValue?: unknown) => void
-  ): void {
-    const toolbar = renderAlignmentButtons(document, {
-      labelText: strings.CaptionAlignLabel,
-      options: [
-        { key: 'left', text: strings.AlignLeft },
-        { key: 'center', text: strings.AlignCenter },
-        { key: 'right', text: strings.AlignRight }
-      ],
-      selected: parseCaptionAlign(this.properties.captionAlign),
-      idPrefix: this.instanceId,
-      classNames: {
-        root: styles.alignField,
-        label: styles.alignLabel,
-        group: styles.alignGroup,
-        button: styles.alignButton,
-        selected: styles.alignSelected
-      },
-      onChange: (key) => changeCallback?.('captionAlign', key)
-    });
-    element.replaceChildren(toolbar);
+  /** Re-evaluates the pane when the hub link is switched on or off (conditional fields). */
+  protected onPropertyPaneFieldChanged(propertyPath: string): void {
+    if (propertyPath === 'showHubLink') {
+      this.context.propertyPane.refresh();
+    }
   }
 
   /** Trimmed text of a property — web part properties are untrusted, non-strings count as empty. */

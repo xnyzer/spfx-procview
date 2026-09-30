@@ -1,9 +1,9 @@
-import type { CaptionAlign } from './renderDiagram';
+import type { TextAlign } from './renderDiagram';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 export interface IAlignmentOption {
-  key: CaptionAlign;
+  key: TextAlign;
   /** Tooltip and accessible name of the button, e.g. "Align left". */
   text: string;
 }
@@ -12,15 +12,15 @@ export interface IAlignmentButtonsProps {
   /** Visible label above the buttons; also names the radio group. */
   labelText: string;
   options: IAlignmentOption[];
-  selected: CaptionAlign;
-  /** Unique per web part instance — used for the label id. */
+  selected: TextAlign;
+  /** Unique per web part instance and field — the label id is `${idPrefix}-label`. */
   idPrefix: string;
   classNames: { root: string; label: string; group: string; button: string; selected: string };
-  onChange: (key: CaptionAlign) => void;
+  onChange: (key: TextAlign) => void;
 }
 
 /** 16×16 alignment icon: four lines, the short ones aligned like the text. */
-function alignIcon(doc: Document, align: CaptionAlign): SVGElement {
+function alignIcon(doc: Document, align: TextAlign): SVGElement {
   const svg = doc.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', '0 0 16 16');
   svg.setAttribute('width', '16');
@@ -47,7 +47,7 @@ function alignIcon(doc: Document, align: CaptionAlign): SVGElement {
 }
 
 /**
- * Compact icon toolbar for the caption alignment, built as an accessible radio group:
+ * Compact icon toolbar for a text alignment, built as an accessible radio group:
  * one tab stop (the selected button), arrow keys/Home/End move the selection, the
  * buttons carry `aria-checked`. It keeps its own state, because a property pane host may
  * render a custom field only once.
@@ -56,7 +56,7 @@ export function renderAlignmentButtons(doc: Document, props: IAlignmentButtonsPr
   const root = doc.createElement('div');
   root.className = props.classNames.root;
 
-  const labelId = `${props.idPrefix}-caption-align-label`;
+  const labelId = `${props.idPrefix}-label`;
   const label = doc.createElement('div');
   label.id = labelId;
   label.className = props.classNames.label;
