@@ -20,23 +20,46 @@ SPFx web part to embed SAP Signavio process diagrams in SharePoint with adjustab
 
 SharePoint's built-in embed web part only supports iframes, so the size of an embedded
 SAP Signavio diagram cannot be controlled from the page. This SharePoint Framework (SPFx)
-web part takes the shared/embed link of a Signavio process, renders the diagram directly
-with a configurable size, and optionally shows a link to the Signavio Collaboration Hub
-below it. Target users: SharePoint site owners and editors; the solution package is
-deployed tenant-wide by IT. Signavio is the only supported tool for now — the design
-should allow further process tools to be added later. Stack: SPFx 1.23.2 (no-framework
-template, Heft toolchain, npm), Node 22 via mise; see `CODING-STANDARDS.md` §13.
-Full context: README.md
+web part takes the **"Simple image" link** of a shared Signavio diagram (the embed code is
+rejected with a hint), renders the image directly (no iframe, no referrer) with a
+configurable size, an optional caption and an optional link to the Signavio Collaboration
+Hub (below the diagram or as corner overlay), and shows clear empty/error states per
+display mode. Target users: SharePoint site owners and editors; the solution package is
+deployed tenant-wide by IT. Signavio is the only supported tool for now — a provider
+interface (`src/providers/`) keeps the door open for further process tools. Stack: SPFx
+1.23.2 (no-framework template, Heft toolchain, npm), Node 22 via mise; see
+`CODING-STANDARDS.md` §13. Full context: README.md
 
 ## Status & where to start
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
-requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-011 in `PROGRESS.md`). Done: F-001
+requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-012 in `PROGRESS.md`). Done: F-001
 (provider contract, Signavio link validation), F-002 (configuration pane, sized diagram
 display, caption with alignment toolbar), F-003 (Collaboration Hub link below the diagram or
 as corner overlay), F-004 (empty and error states per display mode, incl. blocked-image
 detection) and F-011 (local testing via the SPFx Local Workbench extension; no online
 workbench) — 169 Jest tests. Next: `/prep-step F-012` (localisation DE/EN/FR/ES).
+
+## Project notes (learned the hard way)
+
+- **Node 22 only via mise** — the owner's shell provides Node 24 (nvm); run recipes as
+  `mise exec -- just …`.
+- **Dev server vs. checks:** `just check`/`just build` clean the folders the dev server
+  serves from (the workbench then fails with a 404). While the owner's dev server runs, run
+  the checks in an isolated copy (rsync without build folders, `node_modules` symlinked) —
+  never in the project folder.
+- **Texts:** every new string goes into `loc/en-us.js`, `loc/mystrings.d.ts` and the
+  completeness list in `linkErrors.test.ts` (typed, so a gap fails the build); the dev
+  server must be restarted after `loc/` or manifest changes.
+- **Defaults** of settings live as initial values in the web part manifest and must match
+  the code fallbacks — the property pane selects what is stored.
+- **Real Signavio links never enter the repository** (model ids/authkeys; they are kept only
+  locally under `private/`, gitignored, and blocked by the privacy-lint blocklist). Tests use
+  placeholders — low-entropy keys (e.g. `'ab12'.repeat(16)`) so gitleaks stays quiet;
+  attacker hosts in examples only `example.com`.
+- **Local workbench limits** (SPFx Local Workbench 0.2.0): `propertyPane.open/refresh` are
+  no-ops, text values containing `:` arrive as objects (known bug, see README), no live
+  reload — confirm those behaviours in a SharePoint test site.
 
 <!-- section:claude-startup -->
 Read `README.md` and `REQUIREMENTS.md` (while it exists). Then `PROGRESS.md`: its open-tasks

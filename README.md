@@ -4,14 +4,42 @@ SPFx web part to embed SAP Signavio process diagrams in SharePoint with adjustab
 
 SharePoint's built-in embed web part only renders iframes, which leaves no way to control
 how large an embedded SAP Signavio diagram appears on the page. `spfx-procview` is a
-SharePoint Framework web part that takes a Signavio shared/embed link, displays the
-process diagram at a configurable size, and can optionally link to the Signavio
-Collaboration Hub underneath. It is built to be deployed tenant-wide by IT and designed so
-that further process tools can be supported later.
+SharePoint Framework web part that takes the **"Simple image" link** of a shared Signavio
+diagram and displays it directly — no iframe — at a configurable size, with an optional
+caption and an optional link to the Signavio Collaboration Hub. It is built to be deployed
+tenant-wide by IT and designed so that further process tools can be supported later.
 
 ## Status
 
-Early development — see `PROGRESS.md` for the roadmap.
+In development: the core features (display and sizing, caption, Collaboration Hub link,
+empty and error states) are implemented; there is **no release yet** — versioning and the
+release pipeline follow (F-009). See `PROGRESS.md` for the roadmap.
+
+## Using the web part (for page editors)
+
+1. **Get the link in SAP Signavio:** select the diagram, then **Share → Embed diagram**. If
+   the options are disabled, click "Share diagram for read-only access". Copy the link from
+   the **"Simple image"** tab — not the embed code. The image updates automatically when
+   the diagram changes in Signavio.
+2. **Add "Process diagram (ProcView)"** to a SharePoint page (group "Planning and process")
+   and paste the link into **Diagram → Image link** in the property pane. The pane shows the
+   diagram's maximum (natural) size once it has loaded.
+3. **Settings:**
+   - **Caption** — optional text below the diagram; alignment left / center / right.
+   - **Collaboration Hub link** — switch on to show a link to the interactive diagram
+     (readers need access to SAP Signavio); link text (default "Open in Signavio"); position
+     below the diagram (with its own alignment) or on the diagram, bottom right.
+   - **Size** — width in pixels, percent of the column (e.g. `50%`) or empty for automatic;
+     height in pixels or empty. The diagram is never wider than its column and never
+     distorted.
+   - **Accessibility** — alternative text for screen readers (default "Process diagram").
+4. **When something is wrong:** editors see what to fix (no link yet, a wrong link such as
+   the embed code, or why the image could not be loaded — e.g. revoked sharing, or a
+   network/firewall blocking the Signavio domain). Readers see a short message instead, or
+   nothing at all while no link is configured.
+
+Shared "Simple image" links are readable by anyone who has them — embed only diagrams that
+are approved for that kind of sharing.
 
 <!-- section:readme-getting-started -->
 ## Getting started
@@ -67,7 +95,7 @@ pane.
 
 Known issue in SPFx Local Workbench 0.2.0: it turns every text value containing a colon —
 every URL — into a Dynamic-Data object before it reaches the web part, so a pasted image link
-shows the placeholder instead of the diagram. SharePoint itself is not affected; a fixed
+arrives as "empty" and the web part shows "Add a process diagram" instead of the diagram. SharePoint itself is not affected; a fixed
 extension release (or a local patch of the extension) is needed to test links locally.
 
 The dev server picks up code changes while running, but **not changes to `loc/*.js`** (the
@@ -96,6 +124,8 @@ a site you may edit — typically a test site provided by IT:
 - **Package:** `just build` creates `sharepoint/solution/spfx-procview.sppkg`.
 - **Deploy:** upload the `.sppkg` to the tenant (or site collection) App Catalog. The
   solution uses `skipFeatureDeployment`, so it can be made available to all sites at once.
+- **Updates:** the App Catalog only treats a package as an update when its version is
+  higher — versioning and release packages follow with F-009.
 
 ### Upgrading SPFx
 
@@ -120,14 +150,17 @@ The web part stores only its own settings (e.g. the diagram link) in the SharePo
 It sets no cookies, sends no telemetry and calls no API of its own. To display a diagram,
 each visitor's browser loads the image directly from the configured process tool (for
 Signavio: the SAP Signavio host of the shared link) — like any embedded image, that request
-reveals the visitor's IP address and browser details to the tool's provider. Shared
+reveals the visitor's IP address and browser details to the tool's provider. Image requests
+and the Collaboration Hub link send **no referrer**, so the tool does not learn which
+SharePoint page embeds the diagram. Shared
 "Simple image" links are readable by anyone who has them; embed only diagrams approved for
 that kind of sharing.
 
 ## Documentation
 
 - `REQUIREMENTS.md` — intent (transitional; dissolved into `PROGRESS.md`)
-- `PROGRESS.md` — roadmap and task list
+- `PROGRESS.md` — roadmap and task list; `PROGRESS-ARCHIVE.md` — finished tasks with details
+- `docs/adr/` — architecture decisions (ADR-0001: SPFx platform licences and toolchain advisories)
 - `CODING-STANDARDS.md` — binding coding rules
 - `HOW-TO-CODE-WITH-CLAUDE.md` — development workflow (Claude Code + coding-kit skills)
 - `CONTRIBUTING.md`, `SECURITY.md`, `AI-DISCLOSURE.md` — governance
