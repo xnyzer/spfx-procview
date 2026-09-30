@@ -145,8 +145,12 @@ function externalLinkIcon(doc: Document): SVGElement {
   return svg;
 }
 
-/** The hub link itself — the same anchor below the diagram and as overlay. */
-function hubAnchor(doc: Document, hubLink: IHubLinkView, classNames: IDiagramView['classNames']): HTMLAnchorElement {
+/** The hub link itself — the same anchor below the diagram, as overlay and in messages. */
+export function hubAnchor(
+  doc: Document,
+  hubLink: IHubLinkView,
+  classNames: Pick<IDiagramView['classNames'], 'hubAnchor' | 'srOnly'>
+): HTMLAnchorElement {
   const anchor = doc.createElement('a');
   anchor.className = classNames.hubAnchor;
   anchor.href = hubLink.url;

@@ -27,6 +27,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-003a | Collaboration Hub link below the diagram: toggle, link text, alignment | 2026-09-30 |
 | F-003b | Hub link as overlay in the bottom-right corner; image frame; manifest defaults | 2026-09-30 |
 | F-003 | Collaboration Hub link (F-003a, F-003b) | 2026-09-30 |
+| F-004a | Empty/error states: state table, messages, policy-violation tracker (pure, tested) | 2026-09-30 |
 
 ---
 
@@ -65,26 +66,6 @@ the image fails to load — including the case that the domain is blocked (owner
 - `propertyPane.open()` is a no-op in the local workbench (works in SharePoint)
 
 **Dependencies:** F-002
-
-#### F-004a — States and messages (pure, tested)
-
-**What:** State resolution (no link / invalid link / load failed / blocked) × edit/read
-mode → message model with `loc/` keys; DOM builder for messages (text, list of causes,
-optional "Configure" button, optional hub link); violation tracker for
-`securitypolicyviolation` events.
-
-**Files:** `src/webparts/procView/messages.ts`, `messages.test.ts`, `renderMessage.ts`,
-`renderMessage.test.ts`, `violationTracker.ts`, `violationTracker.test.ts` (names may be
-consolidated during the build)
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] Tests for every cell of the state table (incl. read mode "no link" → nothing)
-- [ ] Violation tracker: a simulated `securitypolicyviolation` (jsdom) for the image URL
-      is recognised; other URLs/directives are ignored; listener removable
-- [ ] Texts never interpreted as markup; every message key exists in `loc/`
-- [ ] `just check` green (isolated copy while the dev server runs)
 
 #### F-004b — Wiring in the web part
 

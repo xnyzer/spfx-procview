@@ -8,6 +8,49 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-004a — States and messages (pure, tested)
+
+_Part of F-004 — Empty and error states. Completed 2026-09-30._
+
+**What:** State resolution (no link / invalid link / load failed / blocked) × edit/read
+mode → message model with `loc/` keys; DOM builder for messages (text, list of causes,
+optional "Configure" button, optional hub link); violation tracker for
+`securitypolicyviolation` events.
+
+**Files:** `messages.ts`, `messages.test.ts`, `renderMessage.ts`, `renderMessage.test.ts`,
+`violationTracker.ts`, `violationTracker.test.ts` (new); `renderDiagram.ts` (`hubAnchor`
+exported), `loc/en-us.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts` (all under
+`src/webparts/procView/`)
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] Tests for every cell of the state table (incl. read mode "no link" → nothing) —
+      plus: a stale load error does not apply to a new link; link errors win over a
+      stored load error
+- [x] Violation tracker: a simulated `securitypolicyviolation` (jsdom) for the image URL
+      is recognised (full URL, origin-only report, `default-src` fallback); other
+      URLs/directives and a lookalike origin are ignored; listener removable — a mutation
+      test (plain prefix match) turned the lookalike test red
+- [x] Texts never interpreted as markup; every message key exists in `loc/` (typed keys +
+      completeness test)
+- [x] `just check` green — 167 tests (isolated copy while the dev server runs)
+
+**Implemented:**
+- `messages.ts` — `resolveState(result, loadError)`, `outcomeFor(state, editMode)` →
+  `diagram` / `nothing` / `message` (the F-004 state table), `resolveMessage(model,
+  strings)` with `{0}` substitution, `MESSAGE_KEYS`.
+- `renderMessage.ts` — `section > div.message(.info|.error)` with optional title, body, list
+  of causes, "Configure" button (callback), and the hub link below when asked for; texts
+  via `textContent` only.
+- `violationTracker.ts` — `trackImageViolations(target)` remembers `blockedURI`s of
+  `img-src`/`default-src` violations; `isBlocked(imageUrl)` matches the full URL or an
+  origin-only report (exact origin boundary, no lookalikes); `dispose()`.
+- 13 message strings in `loc/`.
+
+**Decisions / deviations:** message strings added to `loc/` already in F-004a (plan: F-004b)
+— the typed keys need them; the components are not wired into the web part yet (F-004b).
+
 ### F-003 — Collaboration Hub link
 
 _Completed 2026-09-30 via F-003a and F-003b (planned as "checkbox"; built with a toggle)._

@@ -27,6 +27,20 @@ declare interface IProcViewWebPartStrings {
   PositionBelow: string;
   PositionOverlay: string;
   NewTabHint: string;
+
+  MessageNoLinkTitle: string;
+  MessageNoLinkBody: string;
+  MessageInvalidLinkTitle: string;
+  MessageUnavailableReader: string;
+  MessageLoadFailedTitle: string;
+  MessageLoadFailedCauses: string;
+  MessageLoadFailedReader: string;
+  CauseSharingRevoked: string;
+  CauseLinkIncorrect: string;
+  CauseDomainBlocked: string;
+  MessageBlockedTitle: string;
+  MessageBlockedBody: string;
+  ConfigureButton: string;
   SizeGroupName: string;
   WidthLabel: string;
   WidthDescription: string;

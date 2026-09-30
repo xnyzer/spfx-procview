@@ -28,6 +28,23 @@ define([], function () {
     PositionBelow: 'Below the diagram',
     PositionOverlay: 'On the diagram, bottom right',
     NewTabHint: '(opens in a new tab)',
+
+    MessageNoLinkTitle: 'Add a process diagram',
+    MessageNoLinkBody:
+      'In SAP Signavio, open Share → Embed diagram, copy the link from the "Simple image" tab and paste it into the settings of this web part.',
+    MessageInvalidLinkTitle: 'This link cannot be displayed',
+    MessageUnavailableReader: 'The diagram is currently unavailable.',
+    MessageLoadFailedTitle: 'The diagram could not be loaded',
+    MessageLoadFailedCauses: 'Possible causes:',
+    MessageLoadFailedReader: 'The diagram could not be loaded.',
+    CauseSharingRevoked: 'The read-only sharing of the diagram was turned off in SAP Signavio.',
+    CauseLinkIncorrect: 'The link is incomplete or outdated — copy it again from the "Simple image" tab.',
+    CauseDomainBlocked:
+      'Your network, firewall or proxy blocks the SAP Signavio domain — ask your IT department to allow it.',
+    MessageBlockedTitle: 'Images from {0} are blocked',
+    MessageBlockedBody:
+      'A security policy of this site prevents loading the diagram from {0}. Ask your SharePoint administrator to allow this domain.',
+    ConfigureButton: 'Configure',
     SizeGroupName: 'Size',
     WidthLabel: 'Width',
     WidthDescription:
