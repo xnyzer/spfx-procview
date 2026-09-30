@@ -8,6 +8,49 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-002a — Sizing and error messages (pure, tested)
+
+_Part of F-002 — Configuration pane + diagram display with size control. Completed 2026-09-30._
+
+**What:** `parseDimension()` (empty/`auto` → auto, whole number → px, width also `NN%`;
+everything else rejected), `imageStyle(width, height)` returning the CSS for all
+combinations, and a mapping of every `LinkErrorCode` to a `loc/` string key.
+
+**Files:** `src/webparts/procView/sizing.ts` (new), `sizing.test.ts` (new), `linkErrors.ts`
+(new), `linkErrors.test.ts` (new), `loc/mystrings.d.ts`, `loc/en-us.js`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] All sizing combinations tested (auto/auto, px/auto, %/auto, auto/px, px/px, %/px)
+- [x] Negative tests: negative, `0`, decimals, `12px`, `0%`, `101%`, `%` for height,
+      > 10 000, text — plus `12,5`, `1e3`, `50 %%`, `%50`
+- [x] Every `LinkErrorCode` maps to a `loc/` key — enforced by the type and a test; both
+      proven by counter-checks (key removed from `mystrings.d.ts` → TS2322; text removed
+      from `en-us.js` → test fails; files restored and verified identical)
+- [x] `just check` green (76 tests)
+
+**Implemented:**
+- `sizing.ts` — `MAX_PX = 10000`; `parseDimension(input, allowPercent)` returning
+  `auto` / `px` / `percent` or an error (`invalid`, `tooLarge`, `percentNotAllowed`,
+  `percentOutOfRange`); `imageStyle(width, height)` → `width`, `height`,
+  `max-width: 100%` and `object-fit` (`contain` whenever the height is fixed, so a width
+  capped by the column never distorts the image; otherwise `fill`, the aspect ratio then
+  follows from `auto`); `dimensionErrorKey(error, field)` with field-specific hints for
+  width and height.
+- `linkErrors.ts` — `LINK_ERROR_KEYS: Record<LinkErrorCode, keyof IProcViewWebPartStrings>`.
+- `loc/` — 10 link-error and 5 dimension-error strings; `embedCode`/`notImageLink` point to
+  Share → Embed diagram → "Simple image".
+- Tests — `sizing.test.ts` (28), `linkErrors.test.ts` (4); the latter loads the real AMD
+  module `loc/en-us.js` through a minimal `define` shim via `jest.requireActual`, once per
+  file (Jest caches the module).
+
+**Decisions / deviations:**
+- The error strings were added to `loc/` already in F-002a (plan: F-002b) — the type-safe
+  mapping needs the keys to exist.
+- `jest.requireActual` instead of `require()` — ESLint forbids `require()`
+  (`@typescript-eslint/no-require-imports`); no rule was disabled.
+
 ### F-011 — Local testing setup + online workbench retirement
 
 _Completed 2026-09-30._

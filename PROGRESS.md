@@ -21,6 +21,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-001b | Signavio provider: host allow-list, link validation, normalised image/hub URLs, 38 tests | 2026-09-29 |
 | F-001 | Provider interface + Signavio provider (F-001a, F-001b) | 2026-09-29 |
 | F-011 | Local testing via SPFx Local Workbench; online workbench references replaced by the Debug Toolbar | 2026-09-30 |
+| F-002a | Sizing (px / % of column / auto) and error-message mapping, pure and tested | 2026-09-30 |
 
 ---
 
@@ -61,24 +62,6 @@ its function).
 - Visual check: recommended in the local workbench (F-011) — not an acceptance criterion
 
 **Dependencies:** F-001 (done); F-011 recommended first for the visual check
-
-#### F-002a — Sizing and error messages (pure, tested)
-
-**What:** `parseDimension()` (empty/`auto` → auto, whole number → px, width also `NN%`;
-everything else rejected), `imageStyle(width, height)` returning the CSS for all
-combinations, and a mapping of every `LinkErrorCode` to a `loc/` string key.
-
-**Files:** `src/webparts/procView/sizing.ts`, `sizing.test.ts`, `linkErrors.ts`,
-`linkErrors.test.ts`
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] All sizing combinations tested (auto/auto, px/auto, %/auto, auto/px, px/px, %/px)
-- [ ] Negative tests: negative, `0`, decimals, `12px`, `0%`, `101%`, `%` for height,
-      > 10 000, text
-- [ ] Every `LinkErrorCode` maps to a `loc/` key — enforced by the type and a test
-- [ ] `just check` green
 
 #### F-002b — Configuration pane and diagram display
 
