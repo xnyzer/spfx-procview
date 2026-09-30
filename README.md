@@ -12,8 +12,9 @@ tenant-wide by IT and designed so that further process tools can be supported la
 ## Status
 
 In development: the core features (display and sizing, caption, Collaboration Hub link,
-empty and error states) are implemented; there is **no release yet** — versioning and the
-release pipeline follow (F-009). See `PROGRESS.md` for the roadmap.
+empty and error states, texts in English, German, French and Spanish) are implemented;
+there is **no release yet** — versioning and the release pipeline follow (F-009). See
+`PROGRESS.md` for the roadmap.
 
 ## Using the web part (for page editors)
 
@@ -42,11 +43,15 @@ Shared "Simple image" links are readable by anyone who has them — embed only d
 are approved for that kind of sharing.
 
 **Languages:** the web part shows its texts (settings, messages, toolbox entry) in the
-language SharePoint uses for the page — English or German so far; any other language falls
-back to English. Instructions name the Signavio menu items as Signavio shows them in that
-language (German: **Freigeben → Diagramm einbetten**, tab **"Einfaches Bild"**). Texts that
-editors enter (caption, alternative text, link text) are shown as entered — translate them
-with SharePoint's multilingual pages if needed.
+language SharePoint uses for the page — English, German, French or Spanish; any other
+language falls back to English. Instructions name the Signavio menu items as Signavio shows
+them in that language (German: **Freigeben → Diagramm einbetten**, tab **"Einfaches Bild"**,
+taken from the German Signavio UI). French uses the labels of the machine-translated French
+SAP Signavio user guide (**Partager → Incorporer un diagramme**, tab **"Image simple"**) and
+Spanish the English labels (no Spanish Signavio documentation exists) — neither is verified
+against the Signavio UI. Have the French and Spanish texts reviewed by native speakers
+before production use. Texts that editors enter (caption, alternative text, link text) are
+shown as entered — translate them with SharePoint's multilingual pages if needed.
 
 <!-- section:readme-getting-started -->
 ## Getting started

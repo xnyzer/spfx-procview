@@ -8,6 +8,82 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-012 — Localisation: German, English, French, Spanish
+
+_Completed 2026-09-30 via F-012a and F-012b._
+
+**Problem:** All texts and messages exist in English only; editors and readers on German,
+French or Spanish SharePoint sites see a foreign-language web part.
+
+**Idea:** Add language files for de-DE, fr-FR and es-ES next to en-US; SharePoint picks
+the file matching the site/user language automatically (English as fallback). Toolbox
+texts in the manifest (title, description, group) are localised as well.
+
+**Solution sketch** (updated at prep-step, 2026-09-30):
+- `loc/de-de.js`, `loc/fr-fr.js`, `loc/es-es.js`; manifest `title`/`description`/`group`
+  with `de-DE`, `fr-FR`, `es-ES` entries — `group` only affects the classic picker
+  (modern pages show SharePoint's own localised name of the predefined group), localised
+  for completeness only
+- No code change needed: every visible text already comes from `loc/` (verified);
+  `config.json` already maps `{locale}`. SharePoint Online has one UI culture per language
+  (de-DE, fr-FR, es-ES); any other culture falls back to en-US (`defaultPath`)
+- Tests for all four languages: every key present and non-empty, no extra keys,
+  placeholders `{0}`/`{1}` preserved, "Empty: …" hints match the same language's default
+  texts
+- Signavio menu labels appear as Signavio shows them in that language (owner decision);
+  German texts avoid a form of address where possible (no "Sie"/"du", owner decision)
+- Texts entered by editors (caption, alt text, link text) stay as entered — page content,
+  translated via SharePoint's multilingual pages if needed
+- French and Spanish reviewed by native speakers before production use (README note); the
+  pseudo-locale `qps-ploc` is used only ad hoc for a length check, not committed (it would
+  ship in the package; the tests already catch missing texts)
+
+**Dependencies:** F-004
+
+### F-012b — French and Spanish
+
+_Part of F-012 — Localisation: German, English, French, Spanish. Completed 2026-09-30._
+
+**What:** French and Spanish language files and manifest entries; Signavio labels
+researched in the localised SAP Signavio documentation (fallback: short guide for the
+owner to switch the Signavio UI language).
+
+**Files:** `loc/fr-fr.js`, `loc/es-es.js` (new), `ProcViewWebPart.manifest.json`,
+`linkErrors.test.ts` (all under `src/webparts/procView/`); `README.md`; `REQUIREMENTS.md`
+
+**Dependencies:** F-012a
+
+**Acceptance criteria:**
+- [x] The F-012a tests are green for all four languages — 187 tests
+- [x] Signavio labels — **changed by owner decision:** the French and Spanish UI labels
+      could not be verified (the SAP guides are machine-translated — the German one says
+      "Teilen" where the UI shows "Freigeben"; no Spanish guide exists; the owner cannot
+      switch the Signavio UI language). French uses the French SAP Signavio user guide
+      (PDF, fr-FR, 2026-01-07): "Partager → Incorporer un diagramme → onglet « Image
+      simple »"; Spanish keeps the English labels. Noted as unverified in README and
+      decision log
+- [x] Spot check: a test dev server on another port started with `--locales fr-fr` /
+      `--locales es-es` served exactly the French / Spanish strings file (the mechanism the
+      local workbench uses, verified in F-012a)
+- [x] `just check` green (isolated copy while the dev server runs)
+
+**Implemented:**
+- `loc/fr-fr.js`, `loc/es-es.js` — all 65 texts; infinitive instructions without a form of
+  address (as in German); Microsoft terms "composant WebPart" / "elemento web"; French
+  typography with no-break spaces (U+00A0) inside « » and before `:` and `%`, Spanish
+  « » without spaces and a no-break space before `%`. Prettier turns `\u00a0` escapes into
+  the literal character, so the file headers name U+00A0 explicitly.
+- `linkErrors.test.ts` — `LOCALES` and `SIMPLE_IMAGE_TAB` extended (French tab with
+  no-break spaces, Spanish tab English).
+- Manifest — `fr-FR` and `es-ES` for `title`, `description` and `group`.
+- README — "Languages" note lists all four languages, the label sources and the
+  native-speaker review before production use; REQUIREMENTS.md — decision log entry.
+
+**Decisions / deviations:** Owner chose guide labels (French) and English labels (Spanish)
+over asking for screenshots or bilingual labels. The ad-hoc pseudo-locale length check from
+the solution sketch was not run — the owner's visual check of the (longer) German texts in
+F-012a covered text length.
+
 ### F-012a — German + test scaffold for all languages
 
 _Part of F-012 — Localisation: German, English, French, Spanish. Completed 2026-09-30._

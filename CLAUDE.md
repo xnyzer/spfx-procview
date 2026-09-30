@@ -38,8 +38,9 @@ requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-012 in `PROGRESS.md`)
 display, caption with alignment toolbar), F-003 (Collaboration Hub link below the diagram or
 as corner overlay), F-004 (empty and error states per display mode, incl. blocked-image
 detection), F-011 (local testing via the SPFx Local Workbench extension; no online
-workbench) and F-012a (German texts, tests for every language file) — 177 Jest tests.
-Next: `/build-step F-012b` (French and Spanish).
+workbench) and F-012 (texts in English, German, French and Spanish; French/Spanish Signavio
+labels unverified — native-speaker review before production) — 187 Jest tests. Next:
+`/prep-step F-005` (theme, section backgrounds, accessibility).
 
 ## Project notes (learned the hard way)
 

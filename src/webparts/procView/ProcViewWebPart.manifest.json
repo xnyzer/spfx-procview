@@ -20,11 +20,23 @@
       "groupId": "1bc7927e-4a5e-4520-b540-71305c79c20a", // Planning and process
       // "group" only affects the classic picker; modern pages show SharePoint's own
       // localised name of the predefined groupId
-      "group": { "default": "Planning and process", "de-DE": "Planung und Prozess" },
-      "title": { "default": "Process diagram (ProcView)", "de-DE": "Prozessdiagramm (ProcView)" },
+      "group": {
+        "default": "Planning and process",
+        "de-DE": "Planung und Prozess",
+        "fr-FR": "Planification et processus",
+        "es-ES": "Planificación y procesos"
+      },
+      "title": {
+        "default": "Process diagram (ProcView)",
+        "de-DE": "Prozessdiagramm (ProcView)",
+        "fr-FR": "Diagramme de processus (ProcView)",
+        "es-ES": "Diagrama de procesos (ProcView)"
+      },
       "description": {
         "default": "Embeds a process diagram (SAP Signavio) with adjustable size.",
-        "de-DE": "Bindet ein Prozessdiagramm (SAP Signavio) in einstellbarer Größe ein."
+        "de-DE": "Bindet ein Prozessdiagramm (SAP Signavio) in einstellbarer Größe ein.",
+        "fr-FR": "Intègre un diagramme de processus (SAP Signavio) de taille réglable.",
+        "es-ES": "Inserta un diagrama de procesos (SAP Signavio) de tamaño ajustable."
       },
       "officeFabricIconFontName": "VisioDiagram",
       // Initial values — they must match the fallbacks in the code (ProcViewWebPart.ts,

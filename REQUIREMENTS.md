@@ -128,6 +128,7 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-30 | On/off settings use a toggle (SharePoint standard), not a checkbox — first applied to the hub link | Owner decision; matches the SharePoint property pane conventions |
 | 2026-09-30 | Languages: English, German, French, Spanish (F-012); other languages fall back to English; texts entered by editors are not translated | Owner request; editor texts are page content, translated via SharePoint's multilingual pages |
 | 2026-09-30 | Instructions name Signavio menu items as the Signavio UI shows them in each language; German texts avoid a form of address ("Sie"/"du") where possible | Owner decision during F-012 planning; editors recognise the labels they see in Signavio |
+| 2026-09-30 | French Signavio labels from the French SAP Signavio user guide (Partager → Incorporer un diagramme → « Image simple »); Spanish keeps the English labels; both unverified against the UI, native-speaker review before production | The SAP guides are machine-translated (the German one says "Teilen" where the UI shows "Freigeben"); no Spanish guide exists; the owner cannot switch the Signavio UI language — owner chose this over asking for screenshots |
 
 ### Technical decisions
 

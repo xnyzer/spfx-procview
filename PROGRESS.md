@@ -31,59 +31,12 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-004b | Empty/error states wired into the web part (display mode, load errors, Configure) | 2026-09-30 |
 | F-004 | Empty and error states (F-004a, F-004b) | 2026-09-30 |
 | F-012a | German language file; tests for every language file; `just dev <locale>` | 2026-09-30 |
+| F-012b | French and Spanish language files and toolbox texts | 2026-09-30 |
+| F-012 | Localisation: German, English, French, Spanish (F-012a, F-012b) | 2026-09-30 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-012 — Localisation: German, English, French, Spanish
-
-**Status:** PLANNED
-
-**Problem:** All texts and messages exist in English only; editors and readers on German,
-French or Spanish SharePoint sites see a foreign-language web part.
-
-**Idea:** Add language files for de-DE, fr-FR and es-ES next to en-US; SharePoint picks
-the file matching the site/user language automatically (English as fallback). Toolbox
-texts in the manifest (title, description, group) are localised as well.
-
-**Solution sketch** (updated at prep-step, 2026-09-30):
-- `loc/de-de.js`, `loc/fr-fr.js`, `loc/es-es.js`; manifest `title`/`description`/`group`
-  with `de-DE`, `fr-FR`, `es-ES` entries — `group` only affects the classic picker
-  (modern pages show SharePoint's own localised name of the predefined group), localised
-  for completeness only
-- No code change needed: every visible text already comes from `loc/` (verified);
-  `config.json` already maps `{locale}`. SharePoint Online has one UI culture per language
-  (de-DE, fr-FR, es-ES); any other culture falls back to en-US (`defaultPath`)
-- Tests for all four languages: every key present and non-empty, no extra keys,
-  placeholders `{0}`/`{1}` preserved, "Empty: …" hints match the same language's default
-  texts
-- Signavio menu labels appear as Signavio shows them in that language (owner decision);
-  German texts avoid a form of address where possible (no "Sie"/"du", owner decision)
-- Texts entered by editors (caption, alt text, link text) stay as entered — page content,
-  translated via SharePoint's multilingual pages if needed
-- French and Spanish reviewed by native speakers before production use (README note); the
-  pseudo-locale `qps-ploc` is used only ad hoc for a length check, not committed (it would
-  ship in the package; the tests already catch missing texts)
-
-**Dependencies:** F-004
-
-#### F-012b — French and Spanish
-
-**What:** French and Spanish language files and manifest entries; Signavio labels
-researched in the localised SAP Signavio documentation (fallback: short guide for the
-owner to switch the Signavio UI language).
-
-**Files:** `loc/fr-fr.js`, `loc/es-es.js` (new), `ProcViewWebPart.manifest.json` (under
-`src/webparts/procView/`); `README.md` (native-speaker review note)
-
-**Dependencies:** F-012a (done)
-
-**Acceptance criteria:**
-- [ ] The F-012a tests are green for all four languages
-- [ ] Signavio labels match the French/Spanish Signavio UI (source noted)
-- [ ] Spot check in the local workbench shows the right language
-- [ ] `just check` green (isolated copy while the dev server runs)
 
 ### F-005 — Theme, section backgrounds, accessibility
 
@@ -209,5 +162,5 @@ F-008 Microsoft Teams hosting
 F-009 Versioning, release via CI + IT deployment guide
 F-010 SPFx upgrade before Node 22 end of life
 F-011 Local testing setup + online workbench retirement (DONE)
-F-012 Localisation: German, English, French, Spanish (PLANNED)
+F-012 Localisation: German, English, French, Spanish (DONE)
 -->

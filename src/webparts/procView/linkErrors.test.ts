@@ -6,7 +6,7 @@ import type { LinkErrorCode } from '../../providers/types';
 type StringsFactory = () => Record<string, unknown>;
 
 /** Every language file in `loc/` — a new language file must be added here. */
-const LOCALES = ['en-us', 'de-de'] as const;
+const LOCALES = ['en-us', 'de-de', 'fr-fr', 'es-es'] as const;
 type Locale = (typeof LOCALES)[number];
 
 /**
@@ -39,7 +39,11 @@ const enUs = STRINGS['en-us'];
 /** The Signavio tab with the image link, as the Signavio UI names it in each language. */
 const SIMPLE_IMAGE_TAB: Record<Locale, string> = {
   'en-us': '"Simple image"',
-  'de-de': '„Einfaches Bild“'
+  'de-de': '„Einfaches Bild“',
+  // French typography: no-break spaces (U+00A0, invisible) inside the guillemets
+  'fr-fr': '« Image simple »',
+  // No Spanish Signavio documentation found — the English label is used (owner decision)
+  'es-es': '«Simple image»'
 };
 
 const ALL_CODES: LinkErrorCode[] = [
