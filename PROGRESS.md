@@ -92,6 +92,28 @@ variables, SCSS theme tokens) for all elements, and check accessibility basics.
       and a code-side fallback)
 - [ ] `just check` green (isolated copy while the dev server runs)
 
+### F-013 — Link to the GitHub repository in the property pane
+
+**Status:** BACKLOG
+
+**Problem:** Editors and IT have no pointer from the web part to its source code,
+documentation and issue tracker — useful for support and for reporting problems.
+
+**Idea:** A small info group at the end of the property pane with a link to the public
+repository (https://github.com/xnyzer/spfx-procview), opening in a new tab. F-009 later
+adds the version number to the same group.
+
+**Solution sketch:**
+- Last property pane group (e.g. "About") with the built-in `PropertyPaneLink`; URL as a
+  constant in code (not a setting, not user input)
+- Group name and link text in all four languages (`loc/`, enforced by the F-012 tests)
+- No new dependencies, endpoints or settings
+
+**To analyse (prep-step):** group name and link text; whether SharePoint renders the pane
+link with `rel="noopener"` (modern browsers imply it for new tabs)
+
+**Dependencies:** —
+
 ### F-006 — Zoom and pan (checkbox)
 
 **Status:** BACKLOG
@@ -160,7 +182,7 @@ tags and attaches it to a GitHub release; a deployment guide for IT.
 - Release recipe (e.g. `just release 1.2.0`): set version, update `CHANGELOG.md`, commit,
   tag — the tag triggers the CI release with the `.sppkg` attached
 - Version shown in the property pane (small note, e.g. "ProcView 1.2.0") for support
-  (owner decision 2026-09-30)
+  (owner decision 2026-09-30) — in the info group next to the repository link (F-013)
 - `CHANGELOG.md`; `docs/deployment.md` for IT (App Catalog upload, updating an existing
   deployment, tenant-wide availability, data-classification rule for shared links)
 - Still to analyse (prep-step): script vs. `npm version` hook; whether `dataVersion` needs
@@ -188,7 +210,7 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 ---
 
 <!-- FEATURE-INDEX
-next-feature: F-013
+next-feature: F-014
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
@@ -201,4 +223,5 @@ F-009 Versioning, release via CI + IT deployment guide
 F-010 SPFx upgrade before Node 22 end of life
 F-011 Local testing setup + online workbench retirement (DONE)
 F-012 Localisation: German, English, French, Spanish (DONE)
+F-013 Link to the GitHub repository in the property pane
 -->
