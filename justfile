@@ -14,9 +14,10 @@ setup:
     npm ci
     lefthook install
 
-# Serve the web part to the hosted workbench (set SPFX_SERVE_TENANT_DOMAIN first)
+# Serve the web part on https://localhost:4321 for the local workbench or a SharePoint page
+# with the Debug Toolbar (README "Development") — no browser, no tenant needed
 dev:
-    npx --no-install heft start --clean
+    npx --no-install heft start --clean --nobrowser
 
 # Build (TypeScript + Heft lint) and run the Jest suite
 test:

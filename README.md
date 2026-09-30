@@ -39,14 +39,47 @@ just check     # full gate: format check, lint, types, tests
 
 Built with SharePoint Framework **1.23.2** (Heft toolchain, no UI framework) on Node 22.
 
-- **Local debugging:** `just dev` serves the web part to the SharePoint hosted workbench.
-  Set your tenant first, e.g. `export SPFX_SERVE_TENANT_DOMAIN=contoso.sharepoint.com`
-  (replaces `{tenantDomain}` in `config/serve.json`). The dev server runs on
-  `https://localhost:4321`; trust its development certificate once per machine with
-  `npx heft trust-dev-cert` (remove it again with `npx heft untrust-dev-cert`). Without a
-  trusted certificate, `just dev` itself opens an admin-password prompt (macOS: a Terminal
-  window running `sudo security add-trusted-cert`) and launches the workbench URL in the
-  browser — trust the certificate deliberately first.
+**Node 22 via mise.** The recipes call `npx`, so they run on whatever Node your shell
+provides. Either activate mise in your shell (`eval "$(mise activate zsh)"` in `~/.zshrc`) or
+prefix commands with `mise exec --` (e.g. `mise exec -- just check`).
+
+This project does **not use the SharePoint online workbench** — Microsoft deprecated it with
+SPFx 1.23 and retires it on 2026-12-01. The web part is viewed locally with a VS Code
+extension, and on real SharePoint pages with the SPFx Debug Toolbar.
+
+### Testing locally (no tenant needed)
+
+One-time setup:
+
+1. Install the VS Code extension **SPFx Local Workbench**
+   (`m365pnp.pnp-spfx-local-workbench`, community/PnP, MIT).
+2. Trust the development certificate once per machine — the dev server runs on
+   `https://localhost:4321`: `mise exec -- npx heft trust-dev-cert` (asks for your admin
+   password; the self-signed certificate is valid for `localhost` only; remove it with
+   `mise exec -- npx heft untrust-dev-cert`). Without a trusted certificate, starting the
+   dev server opens that admin-password prompt on its own.
+
+Daily use: Command Palette → **"SPFx Local Workbench: Start SPFx Serve and Open
+Workbench"**. The project's `.vscode/settings.json` makes the extension serve via mise
+(Node 22). Alternatively run `just dev` and use "SPFx Local Workbench: Open Local
+Workbench". Add "Process diagram (ProcView)" to the canvas and configure it in the property
+pane.
+
+### Testing on SharePoint pages
+
+For a final check under real conditions (your tenant's themes, policies and network), test in
+a site you may edit — typically a test site provided by IT:
+
+1. Start the dev server: `just dev`.
+2. Open a modern page of that site and append
+   `?loadSPFX=true&debugManifestsFile=https://localhost:4321/temp/build/manifests.js`
+   to its URL. SharePoint asks to allow debug scripts and then shows the **Debug Toolbar**;
+   in edit mode the locally served web part is available in the toolbox.
+3. For debugging from VS Code, edit `{tenantDomain}` (and the page path) in
+   `.vscode/launch.json` once and start "SharePoint page (Debug Toolbar)".
+
+### Packaging and deployment
+
 - **Package:** `just build` creates `sharepoint/solution/spfx-procview.sppkg`.
 - **Deploy:** upload the `.sppkg` to the tenant (or site collection) App Catalog. The
   solution uses `skipFeatureDeployment`, so it can be made available to all sites at once.

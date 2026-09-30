@@ -20,53 +20,11 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-001a | Provider contract, registry and first Jest tests (test pipeline verified) | 2026-09-29 |
 | F-001b | Signavio provider: host allow-list, link validation, normalised image/hub URLs, 38 tests | 2026-09-29 |
 | F-001 | Provider interface + Signavio provider (F-001a, F-001b) | 2026-09-29 |
+| F-011 | Local testing via SPFx Local Workbench; online workbench references replaced by the Debug Toolbar | 2026-09-30 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-011 — Local testing setup + online workbench retirement
-
-**Status:** PLANNED
-
-**Problem:** The project still targets the SharePoint Framework online workbench
-(`workbench.aspx`) in `config/serve.json`, `.vscode/launch.json`, the README and the `just dev`
-comment. The online workbench is treated as **no longer available** (deprecated since SPFx
-1.23, retired 2026-12-01) — it is not an option, not even temporarily. The owner has no
-tenant, so the web part needs a local way to be viewed; testing on real pages later happens
-in a test site provided by IT.
-
-**Idea:** Make the community "SPFx Local Workbench" VS Code extension (PnP, MIT, Heft-based
-SPFx 1.22+, no tenant needed) the local way to view the web part, and replace every
-online-workbench reference with the SPFx Debug Toolbar on normal SharePoint pages
-(`?loadSPFX=true&debugManifestsFile=https://localhost:4321/temp/build/manifests.js`).
-
-**Solution sketch** (updated 2026-09-30 by `/prep-step`; size: small, no substeps):
-- `.vscode/settings.json`: `spfxLocalWorkbench.serveCommand` =
-  `mise exec -- npx heft start --clean --nobrowser` (Node 22 — the owner's shell loads
-  Node 24 via nvm, which SPFx 1.23 does not support)
-- `justfile`: `dev` serves without a browser and without a tenant (`--nobrowser`); comment
-  updated
-- `config/serve.json`: `initialPage` → a normal page (`https://{tenantDomain}/SitePages/Home.aspx`)
-  for on-page testing
-- `.vscode/launch.json`: "Hosted workbench" → "SharePoint page (Debug Toolbar)" with page URL
-  and debug parameters (`{tenantDomain}` is edited once for the IT test site)
-- README "Development": local testing (extension, one-time dev-certificate trust, start with
-  one click), on-page testing with the Debug Toolbar in an IT test site, one sentence on why
-  there is no online workbench, and the Node note (activate mise in the shell or prefix
-  `mise exec --`; the owner's `~/.zshrc` is not changed)
-- No new project dependencies (the extension lives in VS Code, not in `package.json`);
-  `.spfx-workbench/` (optional API mocks) is not needed and not added
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] No `workbench.aspx` in `config/serve.json`, `.vscode/launch.json`, `justfile`, README
-      (verified by grep)
-- [ ] `just --dry-run dev` shows `--nobrowser`
-- [ ] Workspace setting present; the owner confirms that "SPFx Local Workbench: Start SPFx
-      Serve and Open Workbench" works with one click
-- [ ] `just check` green
 
 ### F-002 — Configuration pane + diagram display with size control
 
@@ -295,5 +253,5 @@ F-007 Full-screen view (lightbox)
 F-008 Microsoft Teams hosting
 F-009 Release via CI + IT deployment guide
 F-010 SPFx upgrade before Node 22 end of life
-F-011 Local testing setup + online workbench retirement (PLANNED)
+F-011 Local testing setup + online workbench retirement (DONE)
 -->

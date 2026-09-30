@@ -10,5 +10,8 @@
     "**/lib-amd": true,
     "src/**/*.scss.ts": true
   },
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  // SPFx Local Workbench extension: serve via mise so Heft runs on the pinned Node 22,
+  // whatever Node the user's shell provides
+  "spfxLocalWorkbench.serveCommand": "mise exec -- npx heft start --clean --nobrowser"
 }
