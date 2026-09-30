@@ -37,10 +37,14 @@
      (`naturalWidth × naturalHeight`),
    - checkbox "Offer zoom" (enables feature 6 — added to the pane together with it),
    - checkbox "Show Collaboration Hub link" (enables feature 3 — added together with it),
-   - optional alternative text (accessibility; a generic label is used when empty).
+   - optional alternative text (accessibility; a generic label is used when empty),
+   - optional caption shown below the diagram, with its alignment (left / center / right,
+     default center) chosen in a compact icon toolbar — the alignment applies to the caption
+     only.
 
    The diagram renders as `<img>` (no iframe, no referrer sent to the tool). Sizing: both
-   `auto` → natural size, capped at the available column width; one value fixed (px or %)
+   `auto` → natural size, capped at the available column width (also for larger pixel
+   values — the diagram is never wider than its column); one value fixed (px or %)
    → the other follows the aspect ratio; both fixed → the diagram fits inside that box
    keeping its aspect ratio (never distorted).
 3. **Collaboration Hub link** below the diagram when "Show Collaboration Hub link" is
@@ -112,6 +116,8 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-29 | Collaboration Hub link is an on/off checkbox, always derived — **supersedes** the "overridable" entry above | Keep the pane minimal; the derived link is the right target for every model |
 | 2026-09-30 | Width also accepts percent of the column (`NN%`); height stays px or `auto` | Owner decision; percent of the column is responsive, a percentage height has no reference |
 | 2026-09-30 | The checkboxes "Show Collaboration Hub link" and "Offer zoom" are introduced with F-003/F-006, not in F-002 | No setting without its function in any intermediate state |
+| 2026-09-30 | The diagram is never wider than its column, even for larger pixel widths (no scrolling inside the web part) | Owner decision; keeps the page layout intact — scrolling was offered and rejected |
+| 2026-09-30 | Optional caption below the diagram with left/center/right alignment (default center) in a compact icon toolbar; alignment applies to the caption only | Owner request during F-002; dropdown and large icon tiles were tried and rejected as less clear |
 
 ### Technical decisions
 
@@ -124,6 +130,8 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-29 | The PNG is the only diagram source (no SVG, no mashup script) | Spike with a large diagram: PNG at natural size (sharp up to 100 % zoom); the official `signavio.js` mashup (9.5 MB React viewer) renders the very same `…/png?authkey=…` — its auth token is `{pngKey}_{jsonKey}_{svgKey}`, the SVG key is unused and `/svg` answers 403 |
 | 2026-09-29 | Host allow-list: exactly `editor.signavio.com`, `app-us`, `app-au`, `app-ca`, `app-jp`, `app-kr`, `app-sgp` (`.signavio.com`), exact match only | Verified via docs, DNS and endpoint behaviour; exact matching rejects lookalike hosts |
 | 2026-09-30 | `<img>` with `referrerpolicy="no-referrer"` | The tool does not learn which SharePoint page embeds the diagram; the image endpoint works without a referrer |
+| 2026-09-30 | Web part property values are treated as untrusted: non-string values count as empty | Page data can be malformed; the local workbench even converts URLs into objects — the web part must degrade to its placeholder, never crash |
+| 2026-09-30 | Custom property pane fields use the documented `PropertyPaneFieldType.Custom` object pattern | `PropertyPaneCustomField()` is not public API in SPFx 1.23 |
 | 2026-09-30 | Local testing via the community "SPFx Local Workbench" VS Code extension; on-page testing via the SPFx Debug Toolbar in an IT test site (F-011) | The online workbench is deprecated since SPFx 1.23 and retired on 2026-12-01; the owner has no tenant; free developer tenants are restricted to Visual Studio/partner subscribers |
 
 ## Open questions

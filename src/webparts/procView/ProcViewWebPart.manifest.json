@@ -22,7 +22,9 @@
       "title": { "default": "Process diagram (ProcView)" },
       "description": { "default": "Embeds a process diagram (SAP Signavio) with adjustable size." },
       "officeFabricIconFontName": "VisioDiagram",
-      "properties": {}
+      "properties": {
+        "captionAlign": "center"
+      }
     }
   ]
 }

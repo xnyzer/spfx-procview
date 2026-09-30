@@ -7,13 +7,14 @@ export const defaultProviders: readonly IProcessToolProvider[] = [signavioProvid
 /**
  * Turns editor input into a validated diagram link. Trims the input, rejects empty
  * input and asks each provider in turn; the first provider that claims the input
- * decides the result.
+ * decides the result. Web part properties are untrusted data — anything that is not a
+ * string counts as empty.
  */
 export function parseDiagramLink(
-  input: string | undefined,
+  input: unknown,
   providers: readonly IProcessToolProvider[] = defaultProviders
 ): LinkParseResult {
-  const trimmed = (input ?? '').trim();
+  const trimmed = typeof input === 'string' ? input.trim() : '';
   if (trimmed === '') {
     return { ok: false, error: 'empty' };
   }

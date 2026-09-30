@@ -32,9 +32,10 @@ Full context: README.md
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
 requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-011 in `PROGRESS.md`). Done: F-001
-(provider contract and Signavio link validation in `src/providers/`, 44 Jest tests, not yet
-wired into the web part) and F-011 (local testing via the SPFx Local Workbench extension; no
-online workbench). Next: `/build-step F-002` (configuration pane + diagram display, PLANNED).
+(provider contract, Signavio link validation), F-002 (configuration pane, sized diagram
+display, caption with alignment toolbar — 112 Jest tests) and F-011 (local testing via the
+SPFx Local Workbench extension; no online workbench). Next: `/prep-step F-003`
+(Collaboration Hub link).
 
 <!-- section:claude-startup -->
 Read `README.md` and `REQUIREMENTS.md` (while it exists). Then `PROGRESS.md`: its open-tasks

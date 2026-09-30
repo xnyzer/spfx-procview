@@ -24,6 +24,13 @@ describe('parseDiagramLink', () => {
     expect(parseDiagramLink('  \n\t ', providers)).toEqual({ ok: false, error: 'empty' });
   });
 
+  it('treats values that are not strings as empty (untrusted property data)', () => {
+    const nonStrings: unknown[] = [null, 42, true, {}, ['alpha:x'], { toString: () => 'alpha:x' }];
+    nonStrings.forEach((value) => {
+      expect(parseDiagramLink(value, providers)).toEqual({ ok: false, error: 'empty' });
+    });
+  });
+
   it('reports unsupported when no provider claims the input', () => {
     expect(parseDiagramLink('https://unknown.example.com/diagram.png', providers)).toEqual({
       ok: false,

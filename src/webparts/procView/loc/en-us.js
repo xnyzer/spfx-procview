@@ -2,6 +2,29 @@ define([], function () {
   return {
     PropertyPaneDescription: 'Shows a process diagram from a shared link.',
     NotConfiguredMessage: 'No process diagram is configured yet.',
+    DefaultAltText: 'Process diagram',
+
+    DiagramGroupName: 'Diagram',
+    ImageLinkLabel: 'Image link',
+    ImageLinkDescription: 'In Signavio: Share → Embed diagram → tab "Simple image" → copy the link.',
+    NaturalSizeKnown: 'Maximum size: {0} × {1} px',
+    NaturalSizeUnknown: 'Maximum size: shown once the diagram has loaded.',
+    CaptionGroupName: 'Caption',
+    CaptionLabel: 'Text',
+    CaptionDescription: 'Shown below the diagram. Leave empty for no caption.',
+    CaptionAlignLabel: 'Alignment',
+    AlignLeft: 'Align left',
+    AlignCenter: 'Center',
+    AlignRight: 'Align right',
+    SizeGroupName: 'Size',
+    WidthLabel: 'Width',
+    WidthDescription:
+      'Pixels (e.g. 800), percent of the column (e.g. 50%), or empty for automatic. Never wider than the column.',
+    HeightLabel: 'Height',
+    HeightDescription: 'Pixels (e.g. 600) or empty for automatic. The diagram keeps its proportions.',
+    AccessibilityGroupName: 'Accessibility',
+    AltTextLabel: 'Alternative text',
+    AltTextDescription: 'Describes the diagram for screen readers. Empty: "Process diagram".',
 
     LinkErrorEmpty: 'Paste the diagram\'s "Simple image" link.',
     LinkErrorUnsupported:

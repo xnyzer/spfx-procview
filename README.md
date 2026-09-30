@@ -65,6 +65,15 @@ Workbench"**. The project's `.vscode/settings.json` makes the extension serve vi
 Workbench". Add "Process diagram (ProcView)" to the canvas and configure it in the property
 pane.
 
+Known issue in SPFx Local Workbench 0.2.0: it turns every text value containing a colon —
+every URL — into a Dynamic-Data object before it reaches the web part, so a pasted image link
+shows the placeholder instead of the diagram. SharePoint itself is not affected; a fixed
+extension release (or a local patch of the extension) is needed to test links locally.
+
+`just check` and `just build` clean and rewrite the same build folders the dev server serves
+from (and `just build` writes hashed production bundles). Stop the dev server first, or
+restart it afterwards — otherwise the workbench may fail with "Failed to load …" (404).
+
 ### Testing on SharePoint pages
 
 For a final check under real conditions (your tenant's themes, policies and network), test in

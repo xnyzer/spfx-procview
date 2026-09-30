@@ -22,66 +22,12 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-001 | Provider interface + Signavio provider (F-001a, F-001b) | 2026-09-29 |
 | F-011 | Local testing via SPFx Local Workbench; online workbench references replaced by the Debug Toolbar | 2026-09-30 |
 | F-002a | Sizing (px / % of column / auto) and error-message mapping, pure and tested | 2026-09-30 |
+| F-002b | Configuration pane, diagram display, caption with alignment toolbar | 2026-09-30 |
+| F-002 | Configuration pane + diagram display with size control (F-002a, F-002b) | 2026-09-30 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-002 — Configuration pane + diagram display with size control
-
-**Status:** PLANNED
-
-**Problem:** SharePoint's iframe embed gives no control over the diagram size — the core pain
-point of the project.
-
-**Idea:** A small configuration pane — image link; width (px, % of the column, or `auto`);
-height (px or `auto`); read-only info with the image's maximum (natural) size; optional alt
-text — and an `<img>` rendering of the provider's image URL. The checkboxes "Show
-Collaboration Hub link" and "Offer zoom" arrive with F-003 and F-006 (no switch without
-its function).
-
-**Solution sketch** (updated 2026-09-30 by `/prep-step`):
-- Width/height are text fields: empty or `auto` → automatic; a whole number → px; width
-  also accepts `NN%` (1–100, of the column). Height has no `%` — the column has no fixed
-  height, so a percentage would resolve to `auto`. Upper bound 10 000 px against typos
-- Sizing: both `auto` → natural size capped at column width; one fixed → aspect ratio;
-  both fixed → fit inside the box (`object-fit: contain`), never distorted
-- Pure, tested modules for sizing, error-code → `loc/` key mapping and DOM building; jsdom
-  (the rig's Jest environment) tests the DOM without SharePoint; the web part class only
-  wires them together
-- `<img>` with `referrerpolicy="no-referrer"` (Signavio does not learn the SharePoint page
-  URL; the image loads without a referrer — every curl check had none), `loading="lazy"`,
-  `decoding="async"`
-- Link validation via `onGetErrorMessage` with deferred validation; every `LinkErrorCode`
-  has a message in `loc/` (`embedCode`/`notImageLink` point to the "Simple image" tab);
-  full empty/error states stay F-004 — F-002 shows the existing placeholder
-- Natural size read on the image `load` event and shown via `PropertyPaneLabel`; pane
-  refreshed with `propertyPane.refresh()` when open
-- DOM built with DOM properties only (CODING-STANDARDS §13); `dataVersion` stays 1.0
-  (nothing released yet)
-- Visual check: recommended in the local workbench (F-011) — not an acceptance criterion
-
-**Dependencies:** F-001 (done); F-011 recommended first for the visual check
-
-#### F-002b — Configuration pane and diagram display
-
-**What:** Property pane (image link with deferred validation and messages, width, height,
-alt text, natural-size label), `<img>` rendering via a pure DOM builder, strings in
-`loc/`, styles from the theme.
-
-**Files:** `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`, `loc/en-us.js`,
-`loc/mystrings.d.ts`, `renderDiagram.ts`, `renderDiagram.test.ts`
-(all under `src/webparts/procView/`)
-
-**Dependencies:** F-002a
-
-**Acceptance criteria:**
-- [ ] jsdom test: valid link → `<img>` with the rebuilt URL, `alt` (or default text),
-      `referrerpolicy="no-referrer"`, `loading="lazy"` and the sizing styles; invalid link
-      → placeholder, no `<img>`
-- [ ] Web part class builds no markup strings (`innerHTML` not used)
-- [ ] `just check` and `just build` green
-- [ ] Recommended, not required: visual check in the local workbench (F-011)
 
 ### F-003 — Collaboration Hub link (checkbox)
 
@@ -97,6 +43,7 @@ always derived from the model id, no manual override.
 **Solution sketch:**
 - Link text from `loc/`; opens in a new tab with `rel="noopener noreferrer"`, styled as a
   theme link
+- Placed below the caption (F-002 renders `<figure>` with an optional `<figcaption>`)
 - Target format per the open question in REQUIREMENTS (`/p/portal#/model/<id>` for now)
 
 **Dependencies:** F-001, F-002
@@ -227,7 +174,7 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 <!-- FEATURE-INDEX
 next-feature: F-012
 F-001 Provider interface + Signavio provider (DONE)
-F-002 Configuration pane + diagram display with size control (PLANNED)
+F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (checkbox)
 F-004 Empty and error states
 F-005 Theme, section backgrounds, accessibility

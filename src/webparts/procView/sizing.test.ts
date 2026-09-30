@@ -27,6 +27,12 @@ describe('parseDimension — accepted input', () => {
   });
 });
 
+describe('parseDimension — untrusted property data', () => {
+  it.each([[null], [800], [true], [{}], [['800']]])('reads the non-string %p as automatic', (input) => {
+    expect(parseDimension(input, true)).toEqual({ ok: true, dimension: auto });
+  });
+});
+
 describe('parseDimension — rejected input', () => {
   it.each([['0'], ['-5'], ['12.5'], ['12,5'], ['12px'], ['abc'], ['1e3'], ['50 %%'], ['%50']])(
     'rejects %p as invalid',

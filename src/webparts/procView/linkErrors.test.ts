@@ -74,3 +74,54 @@ describe('loc/en-us.js', () => {
     });
   });
 });
+
+/** Every key of `IProcViewWebPartStrings` — the type makes this list complete. */
+const ALL_STRING_KEYS: Record<keyof IProcViewWebPartStrings, true> = {
+  PropertyPaneDescription: true,
+  NotConfiguredMessage: true,
+  DefaultAltText: true,
+  DiagramGroupName: true,
+  ImageLinkLabel: true,
+  ImageLinkDescription: true,
+  NaturalSizeKnown: true,
+  NaturalSizeUnknown: true,
+  CaptionGroupName: true,
+  CaptionLabel: true,
+  CaptionDescription: true,
+  CaptionAlignLabel: true,
+  AlignLeft: true,
+  AlignCenter: true,
+  AlignRight: true,
+  SizeGroupName: true,
+  WidthLabel: true,
+  WidthDescription: true,
+  HeightLabel: true,
+  HeightDescription: true,
+  AccessibilityGroupName: true,
+  AltTextLabel: true,
+  AltTextDescription: true,
+  LinkErrorEmpty: true,
+  LinkErrorUnsupported: true,
+  LinkErrorNotUrl: true,
+  LinkErrorNotHttps: true,
+  LinkErrorUnknownHost: true,
+  LinkErrorEmbedCode: true,
+  LinkErrorNotImageLink: true,
+  LinkErrorMissingAuthKey: true,
+  LinkErrorInvalidModelId: true,
+  LinkErrorInvalidAuthKey: true,
+  DimensionErrorInvalidWidth: true,
+  DimensionErrorInvalidHeight: true,
+  DimensionErrorTooLarge: true,
+  DimensionErrorPercentOutOfRange: true,
+  DimensionErrorPercentHeight: true
+};
+
+describe('loc/en-us.js completeness', () => {
+  it('has a non-empty text for every key declared in mystrings.d.ts', () => {
+    (Object.keys(ALL_STRING_KEYS) as (keyof IProcViewWebPartStrings)[]).forEach((key) => {
+      expect(typeof enUs[key]).toBe('string');
+      expect((enUs[key] as string).trim()).not.toBe('');
+    });
+  });
+});

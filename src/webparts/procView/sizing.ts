@@ -22,9 +22,10 @@ const PERCENT = /^(\d+)\s*%$/;
  * Parses a width/height setting. Empty or `auto` → automatic; a whole number → pixels
  * (1–MAX_PX); `NN%` → percent of the column (1–100), accepted only where `allowPercent`
  * is set — a percentage height has no reference, the column has no fixed height.
+ * Anything that is not a string (untrusted property data) counts as automatic.
  */
-export function parseDimension(input: string | undefined, allowPercent: boolean): DimensionResult {
-  const value = (input ?? '').trim();
+export function parseDimension(input: unknown, allowPercent: boolean): DimensionResult {
+  const value = typeof input === 'string' ? input.trim() : '';
   if (value === '' || value.toLowerCase() === 'auto') {
     return { ok: true, dimension: AUTO };
   }
