@@ -186,3 +186,12 @@ that kind of sharing.
 ## License
 
 Apache-2.0 — see [LICENSE](LICENSE).
+
+## Disclaimer
+
+ProcView (spfx-procview) is an independent open-source project. It is not affiliated with,
+endorsed by, sponsored by, or connected to SAP SE, SAP Signavio, Microsoft, or any of their
+affiliates. SAP, SAP Signavio and Signavio are trademarks or registered trademarks of SAP SE
+or its affiliates; Microsoft, SharePoint and Microsoft Teams are trademarks of the Microsoft
+group of companies. All trademarks are the property of their respective owners and are used
+only for nominative identification of the supported process tool and platform.
