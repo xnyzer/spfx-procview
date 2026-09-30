@@ -40,7 +40,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-005 — Theme, section backgrounds, accessibility
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** The web part must look native on any site theme and section background and be
 usable with keyboard and screen readers.
@@ -48,11 +48,49 @@ usable with keyboard and screen readers.
 **Idea:** Complete the theme handling started in the scaffold (`onThemeChanged` → CSS
 variables, SCSS theme tokens) for all elements, and check accessibility basics.
 
-**Solution sketch:**
-- Semantic colors for text, links, placeholders; no hard-coded colors
-- Keyboard focus styles, alt text required, contrast check on dark/colored sections
+**Solution sketch** (updated at prep-step, 2026-09-30; size: small, no substeps):
+- **Bug found:** `onThemeChanged` maps only `bodyText`, `bodySubtext`, `link`,
+  `linkHovered`; every other colour is a static `[theme:…]` token, resolved from the *page*
+  theme. On a strong section background the message box shows the section's white text on
+  the page's light grey (unreadable), the focus outline (`themePrimary`) vanishes, the
+  "Configure" button and the hub overlay keep the page's white background
+- New pure `theme.ts`: the section's `semanticColors` (and `palette.themePrimary` where
+  needed) → CSS custom properties (body background/text/subtext, link, link hovered, focus
+  border, error text, standout background for the message box, divider, button background/
+  text/border/hovered); missing slots are left out so the fallback applies
+- SCSS: every element on the page uses `var(--x, '[theme:…]')` — one declaration with the
+  token as fallback (the current two-declaration pattern drops the colour when a variable
+  is missing); the property pane's alignment toolbar keeps static tokens (the pane is not
+  inside a section)
+- Accessibility is largely in place (alt text with default, `figure`/`figcaption`, radio
+  group with arrow keys, new-tab hint, visible focus, forced colours, reduced motion);
+  alt text stays optional with the generic default (decision 2026-09-29, not "required")
+- Docs: README "Accessibility and themes"; decision log entry
+- First build step: check whether the local workbench's theme picker reaches
+  `onThemeChanged` at all (owner saw no change when switching the theme colour — with a
+  diagram shown almost nothing is theme-dependent, or the workbench does not propagate the
+  theme); if it does not, the visual theme check moves to the IT test site
+- Real section backgrounds exist only in SharePoint → confirm in the IT test site
+
+**Files:** `theme.ts`, `theme.test.ts` (new), `ProcViewWebPart.ts`,
+`ProcViewWebPart.module.scss` (all under `src/webparts/procView/`); `README.md`;
+`REQUIREMENTS.md`
 
 **Dependencies:** F-002, F-003, F-004
+
+**Acceptance criteria:**
+- [ ] No element on the page takes a colour that ignores the section (SCSS review; static
+      tokens only in the property pane)
+- [ ] Tests: for a strong-section theme, message box text and background come from the
+      same section; missing slots fall back
+- [ ] Whether the local workbench propagates theme changes is verified and documented
+- [ ] Diagram, message, "Configure", hub link below, overlay link and focus outline are
+      readable/visible in a light and a dark theme (local workbench if it propagates themes,
+      otherwise noted for the IT test site)
+- [ ] Keyboard walk-through: everything reachable with Tab, focus always visible
+- [ ] Token fallback inside `var()` verified in the built CSS (otherwise two declarations
+      and a code-side fallback)
+- [ ] `just check` green (isolated copy while the dev server runs)
 
 ### F-006 — Zoom and pan (checkbox)
 
@@ -155,7 +193,7 @@ F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
 F-004 Empty and error states (DONE)
-F-005 Theme, section backgrounds, accessibility
+F-005 Theme, section backgrounds, accessibility (PLANNED)
 F-006 Zoom and pan (checkbox)
 F-007 Full-screen view (lightbox)
 F-008 Microsoft Teams hosting
