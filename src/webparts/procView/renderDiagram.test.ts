@@ -75,6 +75,13 @@ describe('renderDiagram — valid link', () => {
     expect(image?.style.getPropertyValue('object-fit')).toBe('contain');
   });
 
+  it('reports a failed image load', () => {
+    const onImageError = jest.fn();
+    const failed = renderDiagram(document, view({ onImageError })).querySelector('img') as HTMLImageElement;
+    failed.dispatchEvent(new Event('error'));
+    expect(onImageError).toHaveBeenCalledTimes(1);
+  });
+
   it('reports the natural size once the image has loaded', () => {
     const onImageLoad = jest.fn();
     const loaded = renderDiagram(document, view({ onImageLoad })).querySelector('img') as HTMLImageElement;

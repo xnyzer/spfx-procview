@@ -1,4 +1,4 @@
-import { Version } from '@microsoft/sp-core-library';
+import { DisplayMode, Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
   type IPropertyPaneCustomFieldProps,
@@ -17,8 +17,13 @@ import * as strings from 'ProcViewWebPartStrings';
 import { parseDiagramLink } from '../../providers/registry';
 import { LINK_ERROR_KEYS } from './linkErrors';
 import { renderAlignmentButtons } from './alignmentField';
+import { outcomeFor, resolveMessage, resolveState } from './messages';
+import type { ILoadError } from './messages';
 import { parseHubLinkPosition, parseTextAlign, renderDiagram } from './renderDiagram';
-import type { TextAlign } from './renderDiagram';
+import type { IHubLinkView, TextAlign } from './renderDiagram';
+import { renderMessage } from './renderMessage';
+import { trackImageViolations } from './violationTracker';
+import type { IViolationTracker } from './violationTracker';
 import { diagramStyles, dimensionErrorKey, parseDimension } from './sizing';
 import type { Dimension, DimensionField } from './sizing';
 
@@ -60,10 +65,68 @@ const AUTO: Dimension = { kind: 'auto' };
 export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebPartProps> {
   /** Natural size of the image last loaded — shown as "maximum size" in the pane. */
   private _naturalSize: INaturalSize | undefined;
+  /** Last failed image load; only counts for the image URL it happened with. */
+  private _loadError: ILoadError | undefined;
+  /** Security-policy violations for images — tells "blocked" from other load errors. */
+  private _violations: IViolationTracker | undefined;
+
+  protected onInit(): Promise<void> {
+    this._violations = trackImageViolations(document, () => this._onViolation());
+    return super.onInit();
+  }
+
+  protected onDispose(): void {
+    this._violations?.dispose();
+    this._violations = undefined;
+    super.onDispose();
+  }
 
   public render(): void {
     const result = parseDiagramLink(this.properties.imageLink);
     const link = result.ok ? result.link : undefined;
+    const outcome = outcomeFor(resolveState(result, this._loadError), this.displayMode === DisplayMode.Edit);
+
+    if (outcome.kind === 'nothing') {
+      this.domElement.replaceChildren();
+      return;
+    }
+
+    const hubLink: IHubLinkView | undefined =
+      this.properties.showHubLink === true && link?.hubUrl
+        ? {
+            url: link.hubUrl,
+            text: this._text(this.properties.hubLinkText) || strings.HubLinkDefaultText,
+            position: parseHubLinkPosition(this.properties.hubLinkPosition),
+            align: this._align('hubLinkAlign'),
+            newTabHint: strings.NewTabHint
+          }
+        : undefined;
+
+    if (outcome.kind === 'message') {
+      this.domElement.replaceChildren(
+        renderMessage(document, {
+          texts: resolveMessage(outcome.message, strings),
+          configureLabel: strings.ConfigureButton,
+          onConfigure: () => this.context.propertyPane.open(),
+          // In a message the hub link always sits below it
+          hubLink: hubLink ? { ...hubLink, position: 'below' } : undefined,
+          classNames: {
+            root: styles.procView,
+            message: styles.message,
+            info: styles.messageInfo,
+            error: styles.messageError,
+            title: styles.messageTitle,
+            body: styles.messageBody,
+            details: styles.messageDetails,
+            configure: styles.configureButton,
+            hubLink: styles.hubLink,
+            hubAnchor: styles.hubAnchor,
+            srOnly: styles.srOnly
+          }
+        })
+      );
+      return;
+    }
 
     const view = renderDiagram(document, {
       link,
@@ -71,16 +134,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       altText: this._text(this.properties.altText) || strings.DefaultAltText,
       caption: this._text(this.properties.caption),
       captionAlign: this._align('captionAlign'),
-      hubLink:
-        this.properties.showHubLink === true && link?.hubUrl
-          ? {
-              url: link.hubUrl,
-              text: this._text(this.properties.hubLinkText) || strings.HubLinkDefaultText,
-              position: parseHubLinkPosition(this.properties.hubLinkPosition),
-              align: this._align('hubLinkAlign'),
-              newTabHint: strings.NewTabHint
-            }
-          : undefined,
+      hubLink,
       placeholderText: strings.NotConfiguredMessage,
       classNames: {
         root: styles.procView,
@@ -94,9 +148,15 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
         hubOverlay: styles.hubOverlay,
         srOnly: styles.srOnly
       },
-      onImageLoad: link ? (width, height) => this._onImageLoad(link.imageUrl, width, height) : undefined
+      onImageLoad: link ? (width, height) => this._onImageLoad(link.imageUrl, width, height) : undefined,
+      onImageError: link ? () => this._onImageError(link.imageUrl) : undefined
     });
     this.domElement.replaceChildren(view);
+  }
+
+  protected onDisplayModeChanged(): void {
+    // Editors and readers see different messages (F-004 state table)
+    this.render();
   }
 
   protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
@@ -308,6 +368,20 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       return strings.NaturalSizeKnown.replace('{0}', String(size.width)).replace('{1}', String(size.height));
     }
     return strings.NaturalSizeUnknown;
+  }
+
+  private _onImageError(imageUrl: string): void {
+    this._loadError = { imageUrl, cause: this._violations?.isBlocked(imageUrl) ? 'blocked' : 'failed' };
+    this.render();
+  }
+
+  /** A policy violation may be reported after the image's error event — upgrade the cause. */
+  private _onViolation(): void {
+    const error = this._loadError;
+    if (error && error.cause === 'failed' && this._violations?.isBlocked(error.imageUrl)) {
+      this._loadError = { ...error, cause: 'blocked' };
+      this.render();
+    }
   }
 
   private _onImageLoad(imageUrl: string, width: number, height: number): void {

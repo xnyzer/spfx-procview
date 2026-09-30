@@ -55,6 +55,16 @@ describe('trackImageViolations', () => {
     tracker.dispose();
   });
 
+  it('calls back after recording an image violation, not for other directives', () => {
+    const onViolation = jest.fn();
+    const tracker = trackImageViolations(document, onViolation);
+    document.dispatchEvent(violation(IMAGE_URL, 'script-src'));
+    expect(onViolation).not.toHaveBeenCalled();
+    document.dispatchEvent(violation(IMAGE_URL, 'img-src'));
+    expect(onViolation).toHaveBeenCalledTimes(1);
+    tracker.dispose();
+  });
+
   it('stops listening after dispose', () => {
     const tracker = trackImageViolations(document);
     tracker.dispose();

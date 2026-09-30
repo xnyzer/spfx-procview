@@ -34,8 +34,9 @@ Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaff
 requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-011 in `PROGRESS.md`). Done: F-001
 (provider contract, Signavio link validation), F-002 (configuration pane, sized diagram
 display, caption with alignment toolbar), F-003 (Collaboration Hub link below the diagram or
-as corner overlay) and F-011 (local testing via the SPFx Local Workbench extension; no
-online workbench) — 135 Jest tests. Next: `/prep-step F-004` (empty and error states).
+as corner overlay), F-004 (empty and error states per display mode, incl. blocked-image
+detection) and F-011 (local testing via the SPFx Local Workbench extension; no online
+workbench) — 169 Jest tests. Next: `/prep-step F-012` (localisation DE/EN/FR/ES).
 
 <!-- section:claude-startup -->
 Read `README.md` and `REQUIREMENTS.md` (while it exists). Then `PROGRESS.md`: its open-tasks

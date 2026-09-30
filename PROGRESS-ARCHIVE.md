@@ -8,6 +8,83 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-004 — Empty and error states
+
+_Completed 2026-09-30 via F-004a and F-004b._
+
+**Problem:** A freshly added or misconfigured web part must not show a broken image.
+
+**Idea:** Placeholder with editor guidance when no link is configured (where to find the
+"Simple image" link in Signavio); readable error message (plus hub link if enabled) when
+the image fails to load — including the case that the domain is blocked (owner request,
+2026-09-30: the SharePoint embed web part needed the domain approved by IT first).
+
+**Solution sketch** (updated 2026-09-30 by `/prep-step`; size: medium):
+
+| State | Edit mode (editors) | Read mode (readers) |
+|-------|---------------------|---------------------|
+| No link | Guidance (Signavio → Share → Embed diagram → tab "Simple image" → copy the link) and a **"Configure"** button that opens the property pane | **Nothing** — the web part stays empty (owner decision) |
+| Invalid link | The specific link error (e.g. embed code) in the web part body | Short: "The diagram is currently unavailable." |
+| Image fails to load | Likely causes: sharing revoked in Signavio, link incorrect, **network / firewall / proxy blocks the Signavio domain** (ask IT to allow it) | Short: "The diagram could not be loaded." + hub link if enabled |
+| Blocked by a security policy | Specific message naming the domain, pointing to the SharePoint administrator | Same as "fails to load" |
+
+- The browser does not tell an `<img>` why loading failed (no status code) — hence the list
+  of likely causes
+- **Blocked detection:** listen for `securitypolicyviolation` (`img-src`/`default-src`) and
+  remember violations for the image URL; when the image then fails, the cause is "blocked".
+  The listener is removed in `onDispose`. Background (verified 2026-09-30): SharePoint
+  Online's CSP is enforced for scripts only, and "HTML Field Security" applies to iframes —
+  neither blocks the `<img>` today, so this path is a safeguard
+- Error state is kept per image URL — changing the link clears an old error
+- Pure, tested modules (state → message model with `loc/` keys, DOM builder, violation
+  tracker); the web part only wires them; text via `textContent` only
+- `propertyPane.open()` is a no-op in the local workbench (works in SharePoint)
+
+**Dependencies:** F-002
+
+### F-004b — Wiring in the web part
+
+_Part of F-004 — Empty and error states. Completed 2026-09-30._
+
+**What:** Display mode handling (`displayMode`, `onDisplayModeChanged`), image `error`
+event and violation tracker wired to the error state, "Configure" opens the property pane,
+cleanup in `onDispose`.
+
+**Files:** `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`, `renderDiagram.ts`
+(+ test: `onImageError`), `violationTracker.ts` (+ test: `onViolation` callback) — all under
+`src/webparts/procView/`
+
+**Dependencies:** F-004a
+
+**Acceptance criteria:**
+- [x] `just check` and `just build` green — 169 tests, `.sppkg` 23.8 KB (isolated copy)
+- [x] Owner, in the local workbench: the owner closed the step after checking the states;
+      reported: the "Configure" button does not open the pane — verified as a workbench
+      limitation (its `propertyPane.open()` is a no-op stub); **to be confirmed in an IT test
+      site on SharePoint**
+- [x] The "blocked" message cannot be triggered locally — covered by tests only, incl. a
+      violation that arrives after the image error
+
+**Implemented:**
+- `render()` — `resolveState` + `outcomeFor(…, displayMode === Edit)`: `nothing` → empty
+  element; `message` → `renderMessage` with "Configure" (`propertyPane.open()`) and, for
+  readers on load errors, the hub link below (if enabled); `diagram` → `renderDiagram` with
+  `onImageError`.
+- `_loadError` per image URL; `_onImageError` decides `failed`/`blocked` via the tracker;
+  `_onViolation` upgrades `failed` → `blocked` when the (asynchronous) violation arrives
+  later.
+- `onInit` starts `trackImageViolations(document, …)`, `onDispose` disposes it;
+  `onDisplayModeChanged` re-renders.
+- Styles — `.message` box (theme background, left border: theme primary for guidance, error
+  text colour for errors), title, body, list, Fluent-style `.configureButton` with focus
+  ring; forced-colors border.
+
+**Decisions / deviations:**
+- `trackImageViolations` got an optional `onViolation` callback (not in the plan) — CSP
+  violations are reported asynchronously and may arrive after the image's `error` event.
+- The diagram placeholder in `renderDiagram` (`NotConfiguredMessage`) is no longer reached
+  from the web part (messages cover all non-diagram states) but kept as a defensive path.
+
 ### F-004a — States and messages (pure, tested)
 
 _Part of F-004 — Empty and error states. Completed 2026-09-30._

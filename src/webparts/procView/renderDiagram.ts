@@ -54,6 +54,8 @@ export interface IDiagramView {
   };
   /** Called with the image's natural size once it has loaded. */
   onImageLoad?: (naturalWidth: number, naturalHeight: number) => void;
+  /** Called when the image cannot be loaded. */
+  onImageError?: () => void;
 }
 
 /**
@@ -93,7 +95,11 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
   if (onImageLoad) {
     image.addEventListener('load', () => onImageLoad(image.naturalWidth, image.naturalHeight));
   }
-  // Set last, so the load listener is in place before the request starts
+  const onImageError = view.onImageError;
+  if (onImageError) {
+    image.addEventListener('error', () => onImageError());
+  }
+  // Set last, so the listeners are in place before the request starts
   image.src = view.link.imageUrl;
   frame.appendChild(image);
   if (view.hubLink?.position === 'overlay') {

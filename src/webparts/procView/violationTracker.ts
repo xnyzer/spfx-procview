@@ -30,21 +30,26 @@ function matches(imageUrl: string, blocked: string): boolean {
   return imageUrl === blocked || imageUrl.indexOf(blocked.replace(/\/$/, '') + '/') === 0;
 }
 
-export function trackImageViolations(target: EventTarget): IViolationTracker {
+/**
+ * @param onViolation Called after an image violation was recorded — violations are
+ *   reported asynchronously and may arrive after the image's `error` event.
+ */
+export function trackImageViolations(target: EventTarget, onViolation?: () => void): IViolationTracker {
   const blockedUris: string[] = [];
 
-  const onViolation = (event: Event): void => {
+  const listener = (event: Event): void => {
     const fields = event as unknown as IViolationFields;
     const directive = String(fields.effectiveDirective ?? fields.violatedDirective ?? '');
     const isImageDirective = IMAGE_DIRECTIVES.some((name) => directive === name || directive.indexOf(`${name} `) === 0);
     if (isImageDirective && typeof fields.blockedURI === 'string') {
       blockedUris.push(fields.blockedURI);
+      onViolation?.();
     }
   };
 
-  target.addEventListener('securitypolicyviolation', onViolation);
+  target.addEventListener('securitypolicyviolation', listener);
   return {
     isBlocked: (imageUrl: string) => blockedUris.some((blocked) => matches(imageUrl, blocked)),
-    dispose: () => target.removeEventListener('securitypolicyviolation', onViolation)
+    dispose: () => target.removeEventListener('securitypolicyviolation', listener)
   };
 }

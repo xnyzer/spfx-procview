@@ -28,62 +28,12 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-003b | Hub link as overlay in the bottom-right corner; image frame; manifest defaults | 2026-09-30 |
 | F-003 | Collaboration Hub link (F-003a, F-003b) | 2026-09-30 |
 | F-004a | Empty/error states: state table, messages, policy-violation tracker (pure, tested) | 2026-09-30 |
+| F-004b | Empty/error states wired into the web part (display mode, load errors, Configure) | 2026-09-30 |
+| F-004 | Empty and error states (F-004a, F-004b) | 2026-09-30 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-004 — Empty and error states
-
-**Status:** PLANNED
-
-**Problem:** A freshly added or misconfigured web part must not show a broken image.
-
-**Idea:** Placeholder with editor guidance when no link is configured (where to find the
-"Simple image" link in Signavio); readable error message (plus hub link if enabled) when
-the image fails to load — including the case that the domain is blocked (owner request,
-2026-09-30: the SharePoint embed web part needed the domain approved by IT first).
-
-**Solution sketch** (updated 2026-09-30 by `/prep-step`; size: medium):
-
-| State | Edit mode (editors) | Read mode (readers) |
-|-------|---------------------|---------------------|
-| No link | Guidance (Signavio → Share → Embed diagram → tab "Simple image" → copy the link) and a **"Configure"** button that opens the property pane | **Nothing** — the web part stays empty (owner decision) |
-| Invalid link | The specific link error (e.g. embed code) in the web part body | Short: "The diagram is currently unavailable." |
-| Image fails to load | Likely causes: sharing revoked in Signavio, link incorrect, **network / firewall / proxy blocks the Signavio domain** (ask IT to allow it) | Short: "The diagram could not be loaded." + hub link if enabled |
-| Blocked by a security policy | Specific message naming the domain, pointing to the SharePoint administrator | Same as "fails to load" |
-
-- The browser does not tell an `<img>` why loading failed (no status code) — hence the list
-  of likely causes
-- **Blocked detection:** listen for `securitypolicyviolation` (`img-src`/`default-src`) and
-  remember violations for the image URL; when the image then fails, the cause is "blocked".
-  The listener is removed in `onDispose`. Background (verified 2026-09-30): SharePoint
-  Online's CSP is enforced for scripts only, and "HTML Field Security" applies to iframes —
-  neither blocks the `<img>` today, so this path is a safeguard
-- Error state is kept per image URL — changing the link clears an old error
-- Pure, tested modules (state → message model with `loc/` keys, DOM builder, violation
-  tracker); the web part only wires them; text via `textContent` only
-- `propertyPane.open()` is a no-op in the local workbench (works in SharePoint)
-
-**Dependencies:** F-002
-
-#### F-004b — Wiring in the web part
-
-**What:** Display mode handling (`displayMode`, `onDisplayModeChanged`), image `error`
-event and violation tracker wired to the error state, "Configure" opens the property pane,
-cleanup in `onDispose`, strings in `loc/`.
-
-**Files:** `ProcViewWebPart.ts`, `renderDiagram.ts` (error callback), `ProcViewWebPart.module.scss`,
-`loc/en-us.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts`
-
-**Dependencies:** F-004a
-
-**Acceptance criteria:**
-- [ ] `just check` and `just build` green
-- [ ] Owner, in the local workbench (restart the dev server — new texts): no link in edit
-      and read mode; embed code pasted; a link with a slightly changed `authkey` (valid
-      format, Signavio answers 403 → "fails to load"); messages readable in the theme
-- [ ] The "blocked" message cannot be triggered locally — covered by tests only
 
 ### F-012 — Localisation: German, English, French, Spanish
 
@@ -224,7 +174,7 @@ next-feature: F-013
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
-F-004 Empty and error states (PLANNED)
+F-004 Empty and error states (DONE)
 F-005 Theme, section backgrounds, accessibility
 F-006 Zoom and pan (checkbox)
 F-007 Full-screen view (lightbox)
