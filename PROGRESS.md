@@ -34,7 +34,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-004 — Empty and error states
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** A freshly added or misconfigured web part must not show a broken image.
 
@@ -43,21 +43,89 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 the image fails to load — including the case that the domain is blocked (owner request,
 2026-09-30: the SharePoint embed web part needed the domain approved by IT first).
 
-**Solution sketch:**
-- SPFx placeholder pattern (Fluent UI Core classes) in edit mode
-- `<img>` `error` handler → error state; strings in `loc/`
-- The browser does not tell an `<img>` why loading failed (no status code), so the generic
-  message lists the likely causes: read-only sharing revoked in Signavio, link incorrect,
-  **network / firewall / proxy blocks the Signavio domain** (ask IT to allow it)
-- Readers see a short message; editors (edit mode) see the detailed causes
-- **Blocked by a security policy:** listen for `securitypolicyviolation` with an `img-src`
-  directive whose `blockedURI` matches the image → specific message naming the domain and
-  pointing to the SharePoint administrator. Background (verified 2026-09-30): SharePoint
-  Online's CSP is enforced for scripts only, and "HTML Field Security" (allowed iframe
-  domains, needed by the Embed web part) applies to iframes — neither blocks this web
-  part's `<img>` today, so this path is a safeguard for future or custom policies
+**Solution sketch** (updated 2026-09-30 by `/prep-step`; size: medium):
+
+| State | Edit mode (editors) | Read mode (readers) |
+|-------|---------------------|---------------------|
+| No link | Guidance (Signavio → Share → Embed diagram → tab "Simple image" → copy the link) and a **"Configure"** button that opens the property pane | **Nothing** — the web part stays empty (owner decision) |
+| Invalid link | The specific link error (e.g. embed code) in the web part body | Short: "The diagram is currently unavailable." |
+| Image fails to load | Likely causes: sharing revoked in Signavio, link incorrect, **network / firewall / proxy blocks the Signavio domain** (ask IT to allow it) | Short: "The diagram could not be loaded." + hub link if enabled |
+| Blocked by a security policy | Specific message naming the domain, pointing to the SharePoint administrator | Same as "fails to load" |
+
+- The browser does not tell an `<img>` why loading failed (no status code) — hence the list
+  of likely causes
+- **Blocked detection:** listen for `securitypolicyviolation` (`img-src`/`default-src`) and
+  remember violations for the image URL; when the image then fails, the cause is "blocked".
+  The listener is removed in `onDispose`. Background (verified 2026-09-30): SharePoint
+  Online's CSP is enforced for scripts only, and "HTML Field Security" applies to iframes —
+  neither blocks the `<img>` today, so this path is a safeguard
+- Error state is kept per image URL — changing the link clears an old error
+- Pure, tested modules (state → message model with `loc/` keys, DOM builder, violation
+  tracker); the web part only wires them; text via `textContent` only
+- `propertyPane.open()` is a no-op in the local workbench (works in SharePoint)
 
 **Dependencies:** F-002
+
+#### F-004a — States and messages (pure, tested)
+
+**What:** State resolution (no link / invalid link / load failed / blocked) × edit/read
+mode → message model with `loc/` keys; DOM builder for messages (text, list of causes,
+optional "Configure" button, optional hub link); violation tracker for
+`securitypolicyviolation` events.
+
+**Files:** `src/webparts/procView/messages.ts`, `messages.test.ts`, `renderMessage.ts`,
+`renderMessage.test.ts`, `violationTracker.ts`, `violationTracker.test.ts` (names may be
+consolidated during the build)
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] Tests for every cell of the state table (incl. read mode "no link" → nothing)
+- [ ] Violation tracker: a simulated `securitypolicyviolation` (jsdom) for the image URL
+      is recognised; other URLs/directives are ignored; listener removable
+- [ ] Texts never interpreted as markup; every message key exists in `loc/`
+- [ ] `just check` green (isolated copy while the dev server runs)
+
+#### F-004b — Wiring in the web part
+
+**What:** Display mode handling (`displayMode`, `onDisplayModeChanged`), image `error`
+event and violation tracker wired to the error state, "Configure" opens the property pane,
+cleanup in `onDispose`, strings in `loc/`.
+
+**Files:** `ProcViewWebPart.ts`, `renderDiagram.ts` (error callback), `ProcViewWebPart.module.scss`,
+`loc/en-us.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts`
+
+**Dependencies:** F-004a
+
+**Acceptance criteria:**
+- [ ] `just check` and `just build` green
+- [ ] Owner, in the local workbench (restart the dev server — new texts): no link in edit
+      and read mode; embed code pasted; a link with a slightly changed `authkey` (valid
+      format, Signavio answers 403 → "fails to load"); messages readable in the theme
+- [ ] The "blocked" message cannot be triggered locally — covered by tests only
+
+### F-012 — Localisation: German, English, French, Spanish
+
+**Status:** BACKLOG
+
+**Problem:** All texts and messages exist in English only; editors and readers on German,
+French or Spanish SharePoint sites see a foreign-language web part.
+
+**Idea:** Add language files for de-DE, fr-FR and es-ES next to en-US; SharePoint picks
+the file matching the site/user language automatically (English as fallback). Toolbox
+texts in the manifest (title, description, group) are localised as well.
+
+**Solution sketch:**
+- `loc/de-de.js`, `loc/fr-fr.js`, `loc/es-es.js`; manifest `title`/`description`/`group`
+  with `de-DE`, `fr-FR`, `es-ES` entries
+- Extend the `loc/` completeness test to all four languages — no text may be missing
+- Texts entered by editors (caption, alt text, link text) stay as entered — page content,
+  translated via SharePoint's multilingual pages if needed
+- French and Spanish reviewed by native speakers before production use; the local
+  workbench's pseudo-locale helps spot untranslated texts
+- After F-004, so its new messages are translated in the same pass
+
+**Dependencies:** F-004
 
 ### F-005 — Theme, section backgrounds, accessibility
 
@@ -124,28 +192,32 @@ high-contrast themes, and fix host-specific issues.
 
 **Dependencies:** F-002, F-005
 
-### F-009 — Release via CI + IT deployment guide
+### F-009 — Versioning, release via CI + IT deployment guide
 
 **Status:** BACKLOG
 
-**Problem:** IT needs a reproducible, versioned `.sppkg` and clear deployment steps.
+**Problem:** IT needs a reproducible, versioned `.sppkg` and clear deployment steps. The
+App Catalog only offers an update when the solution version increases — today it is fixed
+(SemVer `1.0.0` plus a build part `0`) and would have to be changed by hand in two places.
 
-**Idea:** A GitHub Actions workflow builds the package on version tags and attaches it to a
-GitHub release; a deployment guide explains App Catalog upload, tenant-wide availability
-and the data-classification rule for shared links.
+**Idea:** One version number as the single source of truth, a release recipe that sets it
+and tags the release, and a GitHub Actions workflow that builds the package on version
+tags and attaches it to a GitHub release; a deployment guide for IT.
 
 **Solution sketch:**
-- Release workflow reusing `just build`; version sync between `package.json` and
-  `package-solution.json`
-- `docs/deployment.md` for IT
+- Version only in `package.json` (SemVer, e.g. `1.2.0`); `package-solution.json`
+  (solution + feature: the SemVer plus a trailing build part `0`) derived by a script and
+  checked in CI
+- Release recipe (e.g. `just release 1.2.0`): set version, update `CHANGELOG.md`, commit,
+  tag — the tag triggers the CI release with the `.sppkg` attached
+- Version shown in the property pane (small note, e.g. "ProcView 1.2.0") for support
+  (owner decision 2026-09-30)
+- `CHANGELOG.md`; `docs/deployment.md` for IT (App Catalog upload, updating an existing
+  deployment, tenant-wide availability, data-classification rule for shared links)
+- Still to analyse (prep-step): script vs. `npm version` hook; whether `dataVersion` needs
+  bumps for property migrations
 
 **Dependencies:** F-002 (a usable web part)
-
----
-
-## Feature ideas (backlog)
-
-_New ideas are intaked via `/add-feature` and get the next F-number._
 
 ### F-010 — SPFx upgrade before Node 22 end of life
 
@@ -167,16 +239,17 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 ---
 
 <!-- FEATURE-INDEX
-next-feature: F-012
+next-feature: F-013
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
-F-004 Empty and error states
+F-004 Empty and error states (PLANNED)
 F-005 Theme, section backgrounds, accessibility
 F-006 Zoom and pan (checkbox)
 F-007 Full-screen view (lightbox)
 F-008 Microsoft Teams hosting
-F-009 Release via CI + IT deployment guide
+F-009 Versioning, release via CI + IT deployment guide
 F-010 SPFx upgrade before Node 22 end of life
 F-011 Local testing setup + online workbench retirement (DONE)
+F-012 Localisation: German, English, French, Spanish
 -->
