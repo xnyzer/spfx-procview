@@ -41,8 +41,8 @@ detection), F-011 (local testing via the SPFx Local Workbench extension; no onli
 workbench), F-012 (texts in English, German, French and Spanish; French/Spanish Signavio
 labels unverified — native-speaker review before production), F-005 (every page colour
 follows the section's theme, `theme.ts`), F-013 (repository link in the property pane) and
-F-014 (own Teams app icons, `just icons`) — 198 Jest tests. Next: `/prep-step F-006`
-(zoom and pan).
+F-014 (own Teams app icons, `just icons`); F-006a (zoom maths and controls, not wired yet)
+— 228 Jest tests. Next: `/build-step F-006b` (wire zoom with the "Offer zoom" toggle).
 
 ## Project notes (learned the hard way)
 

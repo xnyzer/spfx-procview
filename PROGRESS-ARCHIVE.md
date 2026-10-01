@@ -8,6 +8,48 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-006a — Zoom logic and controls (not wired yet)
+
+_Part of F-006 — Zoom and pan. Completed 2026-10-01._
+
+**What:** Pure zoom/pan maths and the zoom view (viewport, controls, gestures), tested in
+isolation; not yet part of the web part.
+
+**Files:** `zoom.ts`, `zoom.test.ts`, `zoomView.ts`, `zoomView.test.ts` (new, under
+`src/webparts/procView/`)
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] `zoom.ts`: fit scale from natural and painted size, zoom about a focal point, pan
+      limits (image never leaves the viewport), zoom range 1× … natural size, re-clamp on
+      viewport resize, step levels for buttons/keys — covered by tests (`zoom.test.ts`, 16)
+- [x] `zoomView.ts`: buttons −, +, reset (inline SVG, labelled, disabled at the limits);
+      drag/one-finger pan while zoomed; two-finger pinch; Ctrl/Cmd + wheel; keyboard (+, −,
+      0, arrow keys) on the focusable viewport — covered by jsdom tests (`zoomView.test.ts`,
+      14)
+- [x] `just check` green — 228 tests (isolated copy while the dev server runs)
+
+**Implemented:**
+- `zoom.ts` — state `{ scale, x, y }` for `transform: translate() scale()` with
+  `transform-origin: 0 0`; the painted content is the natural size fitted into the image box
+  (handles `object-fit: contain` letterboxing); `maxScale` (natural size), `canZoom`
+  (≥ 5 % headroom), `clamp` (centred when smaller than the viewport, no empty margin when
+  larger; no negative zero), `zoomTo`/`zoomBy` about a focal point, `pan`, `pinch` (distance
+  ratio around the start midpoint, then follows the midpoint), `toTransform`.
+- `zoomView.ts` — `attachZoom(doc, { viewport, image, labels, classNames, measure? })`:
+  controls (−, +, fit; inline SVG, `aria-label` + `title`, disabled at the limits, hidden
+  when nothing to zoom); Ctrl/Cmd + wheel about the pointer (line deltas converted); pointer
+  events for drag (only while zoomed), two-finger pinch and continuing with the remaining
+  finger; presses on buttons/links are not gestures; keys +, =, −, 0 and arrows (arrows
+  only while zoomed, browser shortcuts with Ctrl/Cmd/Alt left alone); viewport focusable
+  with `role="group"` and a label only while zoomable; re-clamp on image load and on
+  `ResizeObserver` (fallback: window resize); `dispose()` restores everything.
+
+**Decisions / deviations:** `touch-action` is set by the stylesheet through the `zoomable`
+(`pan-x pan-y`) and `zoomed` (`none`) classes instead of inline — jsdom does not support the
+property, and the stylesheet is its natural place; the SCSS follows in F-006b.
+
 ### F-014 — Own Teams app icons instead of the generator placeholders
 
 _Completed 2026-10-01._
