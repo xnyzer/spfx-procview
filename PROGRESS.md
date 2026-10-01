@@ -43,21 +43,73 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-006 — Zoom and pan (checkbox)
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** Large process diagrams are hard to read at page width.
 
-**Idea:** Add the checkbox "Offer zoom" to the configuration pane (introduced here, together
-with its function); when checked: zoom in/out/reset controls and drag/touch panning inside
-the web part frame, styled from the page theme.
+**Idea:** Add the setting "Offer zoom" to the configuration pane (introduced here, together
+with its function); when on: zoom in/out/reset controls and drag/touch panning inside the
+web part frame, styled from the page theme.
 
-**Solution sketch:**
-- CSS transform on the image inside a clipped container; pointer events for panning
-- Fluent UI Core icon font from `@microsoft/sp-office-ui-fabric-core` (no new dependency)
-- Maximum zoom = natural image size (the PNG renders at natural diagram size — sharp up to
-  100 %)
+**Solution sketch** (updated at prep-step, 2026-10-01; size: large, two substeps):
+- CSS transform on the image inside a clipped viewport; pointer events for mouse, touch and
+  pen; maximum zoom = natural image size (the PNG is sharp up to 100 %)
+- **Toggle, not checkbox** ("Offer zoom", default off — on/off settings are toggles)
+- **Own inline SVG icons, not the Fluent icon font** — the font is loaded by SharePoint
+  pages and missing in the local workbench (and possibly Teams); the alignment toolbar and
+  the hub link already use own SVGs
+- Controls hidden when there is nothing to zoom (diagram already shown at or above its
+  natural size)
+- With a fixed height the painted image can be smaller than its box (`object-fit:
+  contain`) — pan limits follow the painted image, not the box; a column resize (e.g.
+  rotating a tablet) re-clamps the zoom so the image never leaves the frame
+- Owner decisions (2026-10-01): mouse wheel zooms only with Ctrl/Cmd (plain wheel scrolls
+  the page); two-finger pinch zoom on touch, one finger pans while zoomed (page scrolling
+  is blocked only while zoomed in); controls top right on the image, subtle and always
+  visible (the hub overlay stays bottom right)
 
 **Dependencies:** F-002, F-005
+
+#### F-006a — Zoom logic and controls (not wired yet)
+
+**What:** Pure zoom/pan maths and the zoom view (viewport, controls, gestures), tested in
+isolation; not yet part of the web part.
+
+**Files:** `zoom.ts`, `zoom.test.ts`, `zoomView.ts`, `zoomView.test.ts` (new, under
+`src/webparts/procView/`)
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] `zoom.ts`: fit scale from natural and painted size, zoom about a focal point, pan
+      limits (image never leaves the viewport), zoom range 1× … natural size, re-clamp on
+      viewport resize, step levels for buttons/keys — covered by tests
+- [ ] `zoomView.ts`: buttons −, +, reset (inline SVG, labelled, disabled at the limits);
+      drag/one-finger pan while zoomed; two-finger pinch; Ctrl/Cmd + wheel; keyboard (+, −,
+      0, arrow keys) on the focusable viewport — covered by jsdom tests
+- [ ] `just check` green (isolated copy while the dev server runs)
+
+#### F-006b — Wiring with the "Offer zoom" toggle
+
+**What:** Toggle "Offer zoom" in the "Size" group (default off, manifest initial value),
+zoom view wired into the diagram, texts in four languages, colours from the section theme
+(F-005 pattern), forced colours, no animation with reduced motion, docs.
+
+**Files:** `renderDiagram.ts`, `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`,
+`ProcViewWebPart.manifest.json`, `loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts`,
+tests (under `src/webparts/procView/`); `README.md`; `REQUIREMENTS.md`
+
+**Dependencies:** F-006a
+
+**Acceptance criteria:**
+- [ ] With the toggle off the web part behaves exactly as before (existing tests green)
+- [ ] With the toggle on: controls top right, hub overlay unaffected, controls hidden when
+      there is nothing to zoom
+- [ ] Texts in all four languages; theme colours on coloured sections; keyboard focus
+      visible
+- [ ] Owner tries it in the local workbench with a large diagram (zoom, pan, pinch where
+      available, reset)
+- [ ] `just check` green (isolated copy while the dev server runs)
 
 ### F-007 — Full-screen view (lightbox)
 
@@ -143,7 +195,7 @@ F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
 F-004 Empty and error states (DONE)
 F-005 Theme, section backgrounds, accessibility (DONE)
-F-006 Zoom and pan (checkbox)
+F-006 Zoom and pan (checkbox) (PLANNED)
 F-007 Full-screen view (lightbox)
 F-008 Microsoft Teams hosting
 F-009 Versioning, release via CI + IT deployment guide
