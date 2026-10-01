@@ -42,27 +42,46 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-014 — Own Teams app icons instead of the generator placeholders
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** `teams/` holds the placeholder icons the SPFx generator created (a generic
 "apps" glyph). They are Microsoft assets under the SPFx license terms, not a permissive
 licence, and are not recognisable as this web part.
 
-**Idea:** A simple own icon (e.g. a small process diagram: boxes and arrows), with the SVG
-as source in the repository and the two PNGs Teams requires generated from it: 192 × 192
-full colour and 32 × 32 white outline on transparent background.
+**Idea:** A simple own icon (a small process flow), generated reproducibly, replacing the
+two PNGs Teams requires.
 
-**Solution sketch:**
-- Replace `teams/<web part id>_color.png` and `_outline.png` (same file names)
-- SVG source in the repository; the PNGs are derived from it
-- No new runtime dependency; the old files stay in the git history (accepted by the owner)
+**Solution sketch** (updated at prep-step, 2026-10-01; size: small, no substeps):
+- Teams requirements (Microsoft Learn, verified): colour icon 192 × 192, perfect square,
+  full bleed, flat background, no rounded corners or border (Teams adds both), motif
+  within the central 120 × 120 safe area (balanced in 96 × 96), contrast ≥ 4.5:1;
+  outline icon 32 × 32, white on transparent; file names unchanged
+  (`<web part id>_color.png`, `_outline.png`) so SPFx packages them
+- **No SVG-to-PNG conversion:** this machine has no converter and no Chrome. Instead a
+  dependency-free Node script (`scripts/teams-icons.mjs`) defines the shapes once and
+  writes both PNGs (built-in `zlib`, anti-aliasing by supersampling), optionally an SVG
+  preview from the same shapes; it asserts that the outline icon is white/transparent
+  only; recipe `just icons`
+- Motif (owner-approved): left-to-right flow circle (start) → rounded rectangle (task) →
+  diamond (decision), connected by lines; colour icon white on petrol blue (about
+  `#0E5A73` — neither Signavio orange nor Microsoft blue), outline icon the same motif in
+  white lines
+- The SharePoint toolbox icon stays the Fluent font icon "VisioDiagram" (referenced by
+  name, not redistributed)
+- The old files stay in the git history (accepted by the owner)
 
-**To analyse (prep-step):** how to render SVG → PNG without a converter on this machine
-(small dependency-free Python rasteriser for the simple shapes, or headless Chrome);
-colour and motif; whether the same icon should replace the toolbox icon (today the Fluent
-icon "VisioDiagram")
+**Files:** `scripts/teams-icons.mjs` (new), `teams/<web part id>_color.png`,
+`teams/<web part id>_outline.png`, `justfile`, `README.md`, `REQUIREMENTS.md`
 
 **Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] Sizes and rules met: 192 × 192 square, no rounded corners, motif within the central
+      120 × 120; 32 × 32 white/transparent only (script assertion + file analysis)
+- [ ] Owner reviews and approves both icons (shown as images)
+- [ ] A package build (`just build`, isolated copy) contains the new icons
+- [ ] `just check` green (isolated copy while the dev server runs); if the SPFx ESLint
+      profile does not fit the script, `scripts/` is excluded with a reason
 
 ### F-006 — Zoom and pan (checkbox)
 
@@ -174,5 +193,5 @@ F-010 SPFx upgrade before Node 22 end of life
 F-011 Local testing setup + online workbench retirement (DONE)
 F-012 Localisation: German, English, French, Spanish (DONE)
 F-013 Link to the GitHub repository in the property pane (DONE)
-F-014 Own Teams app icons instead of the generator placeholders
+F-014 Own Teams app icons instead of the generator placeholders (PLANNED)
 -->
