@@ -8,6 +8,84 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-016b — Settings mapping and injection tests
+
+_Part of F-016 — Audit before the first release. Completed 2026-10-01._
+
+**What:** Move the mapping from web part properties to the page, full-screen and message
+views into a pure `settings.ts`; tests that feed hostile values into all fields at once and
+check the resulting DOM; fix the injection findings from F-016a.
+
+**Audit findings:** M1 (file over 500 lines), M2a (`render()` and
+`getPropertyPaneConfiguration()` over 50 lines), M12 (missing negative tests), L1 (theme
+values reach CSS unvalidated), L2 (provider URLs not re-checked), L3b (inherited-key lookup in
+the alignment field), L4 (bidi/zero-width editor texts), L6a (unreachable placeholder path,
+`NotConfiguredMessage` in the diagram view), L7a (unnamed validation delays), L8a (duplicate
+placeholder formatting)
+
+**Files:** new `settings.ts`, `settings.test.ts`, `propertyPane.ts`, `injection.test.ts`;
+changed `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`, `messages.ts`, `renderDiagram.ts`,
+`alignmentField.ts`, `theme.ts`, `src/providers/registry.ts`, `loc/*.js`,
+`loc/mystrings.d.ts` and the tests `messages`, `renderDiagram`, `alignmentField`, `theme`,
+`teamsTheme`, `background`, `sizing`, `linkErrors`, `registry`, `signavio`; docs `CLAUDE.md`,
+`REQUIREMENTS.md`
+
+**Dependencies:** F-016a
+
+**Acceptance criteria:**
+- [x] All fields at once with HTML, `javascript:` links, quotes, CSS breakouts, Unicode tricks
+      (RTL override, zero-width and null characters) and wrong types (objects, numbers,
+      arrays): page, full screen, messages and the custom pane fields (alignment, colour)
+      contain only the expected elements, no `on…` attributes, image and links only on
+      allow-listed Signavio hosts, inline styles only from an allow-list, the background SVG
+      only `svg` and `rect` — `injection.test.ts`, 21 hostile values × all 14 settings (129
+      tests); a mutation run (caption via `innerHTML`) made 7 of them fail
+- [x] Theme values are accepted only as colours; links from a provider only as `https:`;
+      texts made only of invisible characters count as empty — `theme.test.ts`,
+      `registry.test.ts`, `settings.test.ts`
+- [x] `ProcViewWebPart.ts` below 500 lines, no function over 50 lines — 268 lines, longest
+      method 23 lines (`propertyPane.ts` 286 lines, longest function 32); the web part
+      behaves and looks as before (owner's visual check in the workbench)
+- [x] `just check` green (isolated copy while the dev server runs) — 547 tests (was 271);
+      `just build` green as well
+
+**Implemented:**
+- `settings.ts` — the stored settings as `UntrustedProps` (any type in any field):
+  `readText` (non-strings empty; control characters and direction embeddings/overrides/
+  isolates removed; invisible-only text empty), `isOn` / `isOnByDefault` for toggles,
+  `readDimension`, `readAlign`, `readBackground`, and `readSettings`, which returns the diagram
+  view fields plus the zoom/full-screen flags. `IProcViewWebPartProps` moved here.
+- `propertyPane.ts` — the whole pane (groups, validation, the custom-field helper in the
+  documented `PropertyPaneFieldType.Custom` pattern, `CONDITIONAL_FIELD_PROPERTIES`); the web
+  part passes properties, instance id and the natural-size text.
+- `ProcViewWebPart.ts` — lifecycle, rendering and image events in sections; `render()`
+  switches over the outcome; class-name maps and zoom labels are module constants; full screen
+  takes alt text and background from the same settings as the page.
+- `messages.ts` — the `ok` state and the `diagram` outcome carry the validated link, so the
+  diagram view always has one (placeholder branch, `placeholderText`, `.placeholder` and the
+  string `NotConfiguredMessage` in all four languages removed); `format` exported and used for
+  the natural-size text.
+- Hardening: `theme.ts` accepts only colour syntax (hex, `rgb()`/`hsl()`, keywords);
+  `registry.ts` rejects a provider link that is not `https:` throughout as `unsupported`;
+  `alignmentField.ts` maps keys with a `switch` (no inherited-key hits).
+- Tests: `settings.test.ts`; `injection.test.ts` (page, page with zoom and hub link, full
+  screen, messages, load-error message, pane fields; style and attribute allow-lists, the
+  background SVG parsed); negative cases for Signavio links (script schemes in any spelling,
+  protocol-relative, zero-width/direction characters, homoglyph and IP hosts, backslash
+  userinfo, fragment auth key, host normalisation), sizes, colours, theme values, Teams theme,
+  alignment keys and provider output.
+
+**Decisions / deviations:**
+- `propertyPane.ts` was not in the planned file list: `ProcViewWebPart.ts` would have stayed
+  at 493 lines, and the lifecycle guards of F-016c would have pushed it over 500 again.
+- The very-long-input test checks only the rejection (100 000 characters): jsdom's URL parser
+  took ~1.4 s for 2 million characters, a time limit would be flaky in CI.
+- Some escapes such as `\u200b` had landed as raw characters while files were written (not
+  by Prettier, which keeps escapes); they were turned back into escapes and the lesson went
+  into the CLAUDE.md project notes.
+- Technical decision recorded in the REQUIREMENTS decision log (settings module, text, theme
+  and provider-link rules).
+
 ### F-016a — Audit run and triage
 
 _Part of F-016 — Audit before the first release. Completed 2026-10-01._

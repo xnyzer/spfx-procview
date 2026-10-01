@@ -45,6 +45,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-015 | Diagram background setting (on, white, colour picker) — exactly behind the PNG, page and full screen | 2026-10-01 |
 | F-008 | Teams: follows the Teams theme (dark, high contrast); personal-app host removed | 2026-10-01 |
 | F-016a | Audit before the first release: 0 critical / 0 high / 13 medium / 24 low, triaged into F-016b, F-016c and the new F-017 | 2026-10-01 |
+| F-016b | Settings read in `settings.ts`, property pane in `propertyPane.ts`; injection tests over all fields; theme, provider-link and text hardening | 2026-10-01 |
 
 ---
 
@@ -87,39 +88,6 @@ F-numbers.
   dependencies (L17) and the stale image events (M4) are confirmed findings
 
 **Dependencies:** F-015, F-008 (all features built)
-
-#### F-016b — Settings mapping and injection tests
-
-**What:** Move the mapping from web part properties to the page, full-screen and message
-views into a pure `settings.ts`; tests that feed hostile values into all fields at once and
-check the resulting DOM; fix the injection findings from F-016a.
-
-**Audit findings:** M1 (file over 500 lines), M2a (`render()` and
-`getPropertyPaneConfiguration()` over 50 lines), M12 (missing negative tests), L1 (theme
-values reach CSS unvalidated), L2 (provider URLs not re-checked), L3b (inherited-key lookup in
-the alignment field), L4 (bidi/zero-width editor texts), L6a (unreachable placeholder path,
-`NotConfiguredMessage` in the diagram view), L7a (unnamed validation delays), L8a (duplicate
-placeholder formatting)
-
-**Files:** `settings.ts` (new), `settings.test.ts` (new), `injection.test.ts` (new),
-`ProcViewWebPart.ts`, `theme.ts`, `registry.ts`, `alignmentField.ts`, `renderDiagram.ts`,
-`messages.ts` and their tests; `loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts` if a
-string goes away
-
-**Dependencies:** F-016a
-
-**Acceptance criteria:**
-- [ ] All fields at once with HTML, `javascript:` links, quotes, CSS breakouts, Unicode tricks
-      (RTL override, zero-width and null characters) and wrong types (objects, numbers,
-      arrays): page, full screen, messages and the custom pane fields (alignment, colour)
-      contain only the expected elements, no `on…` attributes, image and links only on
-      allow-listed Signavio hosts, inline styles only from an allow-list, the background SVG
-      only `svg` and `rect` (jsdom accepts invalid CSS — assert on parsed and stored values)
-- [ ] Theme values are accepted only as colours; links from a provider only as `https:`;
-      texts made only of invisible characters count as empty
-- [ ] `ProcViewWebPart.ts` below 500 lines, no function over 50 lines; the web part behaves
-      and looks as before (visual check in the workbench)
-- [ ] `just check` green (isolated copy while the dev server runs)
 
 #### F-016c — Remaining findings and licence check
 

@@ -36,6 +36,18 @@ function press(button: HTMLButtonElement, key: string): void {
   button.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
 }
 
+describe('renderAlignmentButtons — unexpected keys', () => {
+  it.each([['toString'], ['constructor'], ['__proto__'], ['hasOwnProperty'], ['Enter'], ['a']])(
+    'ignores the key %p without an error',
+    (key) => {
+      const { buttons, onChange } = setup('center');
+      expect(() => press(buttons[1], key)).not.toThrow();
+      expect(onChange).not.toHaveBeenCalled();
+      expect(checked(buttons)).toEqual(['false', 'true', 'false']);
+    }
+  );
+});
+
 describe('renderAlignmentButtons — structure', () => {
   it('renders a labelled radio group with three icon buttons', () => {
     const { root, buttons } = setup();

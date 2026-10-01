@@ -1,13 +1,11 @@
-import { MESSAGE_KEYS, outcomeFor, resolveMessage, resolveState } from './messages';
+import { MESSAGE_KEYS, format, outcomeFor, resolveMessage, resolveState } from './messages';
 import type { DiagramState, ILoadError, IMessageModel, Outcome } from './messages';
-import type { LinkParseResult } from '../../providers/types';
+import type { IDiagramLink, LinkParseResult } from '../../providers/types';
 
 // Placeholder link — real model ids and keys never enter the repository.
 const IMAGE_URL = `https://editor.signavio.com/p/model/0123456789abcdef0123456789abcdef/png?inline&authkey=${'ab12'.repeat(16)}`;
-const OK: LinkParseResult = {
-  ok: true,
-  link: { providerId: 'signavio', modelId: '0123456789abcdef0123456789abcdef', imageUrl: IMAGE_URL }
-};
+const LINK: IDiagramLink = { providerId: 'signavio', modelId: '0123456789abcdef0123456789abcdef', imageUrl: IMAGE_URL };
+const OK: LinkParseResult = { ok: true, link: LINK };
 
 function messageOf(outcome: Outcome): IMessageModel {
   if (outcome.kind !== 'message') {
@@ -26,7 +24,7 @@ describe('resolveState', () => {
   });
 
   it('is ok for a valid link without a load error', () => {
-    expect(resolveState(OK, undefined)).toEqual({ kind: 'ok' });
+    expect(resolveState(OK, undefined)).toEqual({ kind: 'ok', link: LINK });
   });
 
   it('reports load failures and blocks for the same image URL', () => {
@@ -39,7 +37,7 @@ describe('resolveState', () => {
 
   it('ignores a load error that belongs to a previous link', () => {
     const stale: ILoadError = { imageUrl: 'https://app-us.signavio.com/p/model/x/png', cause: 'failed' };
-    expect(resolveState(OK, stale)).toEqual({ kind: 'ok' });
+    expect(resolveState(OK, stale)).toEqual({ kind: 'ok', link: LINK });
   });
 
   it('lets link errors win over a stored load error', () => {
@@ -52,8 +50,8 @@ describe('resolveState', () => {
 
 describe('outcomeFor — the state table', () => {
   it('renders the diagram when everything is fine, in both modes', () => {
-    expect(outcomeFor({ kind: 'ok' }, true)).toEqual({ kind: 'diagram' });
-    expect(outcomeFor({ kind: 'ok' }, false)).toEqual({ kind: 'diagram' });
+    expect(outcomeFor({ kind: 'ok', link: LINK }, true)).toEqual({ kind: 'diagram', link: LINK });
+    expect(outcomeFor({ kind: 'ok', link: LINK }, false)).toEqual({ kind: 'diagram', link: LINK });
   });
 
   it('no link — editors: guidance and Configure', () => {
@@ -150,6 +148,18 @@ describe('resolveMessage', () => {
       showConfigure: false,
       showHubLink: false
     });
+  });
+});
+
+describe('format', () => {
+  it('replaces every occurrence of each placeholder', () => {
+    expect(format('{0} × {1} ({0})', ['720', '457'])).toBe('720 × 457 (720)');
+  });
+
+  it('inserts values literally — replacement patterns and markup stay text', () => {
+    expect(format('Host: {0}', ["$&$`$'<img src=x onerror=alert(1)>"])).toBe(
+      "Host: $&$`$'<img src=x onerror=alert(1)>"
+    );
   });
 });
 

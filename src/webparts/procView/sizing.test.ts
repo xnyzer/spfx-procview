@@ -28,8 +28,34 @@ describe('parseDimension — accepted input', () => {
 });
 
 describe('parseDimension — untrusted property data', () => {
-  it.each([[null], [800], [true], [{}], [['800']]])('reads the non-string %p as automatic', (input) => {
+  it.each([
+    [null],
+    [800],
+    [NaN],
+    [true],
+    [{}],
+    [['800']],
+    [{ toString: (): string => '800' }],
+    [{ valueOf: (): number => 800 }]
+  ])('reads the non-string %p as automatic', (input) => {
     expect(parseDimension(input, true)).toEqual({ ok: true, dimension: auto });
+  });
+
+  it.each([
+    ['800;background:url(https://example.com/x)'],
+    ['800px;color:red'],
+    ['50%;background:red'],
+    ['800}'],
+    ['calc(100% + 1px)'],
+    ['expression(alert(1))'],
+    ['８００'],
+    ['٨٠٠'],
+    ['800\u200b'],
+    ['\u202e008'],
+    ['800\n900'],
+    ['9'.repeat(400)]
+  ])('rejects the hostile value %p', (input) => {
+    expect(parseDimension(input, true).ok).toBe(false);
   });
 });
 

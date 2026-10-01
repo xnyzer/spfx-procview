@@ -1,30 +1,21 @@
 import { DisplayMode, Version } from '@microsoft/sp-core-library';
-import {
-  type IPropertyPaneConfiguration,
-  type IPropertyPaneCustomFieldProps,
-  type IPropertyPaneField,
-  PropertyPaneChoiceGroup,
-  PropertyPaneFieldType,
-  PropertyPaneLabel,
-  PropertyPaneTextField,
-  PropertyPaneToggle
-} from '@microsoft/sp-property-pane';
+import type { IPropertyPaneConfiguration } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import type { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 import styles from './ProcViewWebPart.module.scss';
 import * as strings from 'ProcViewWebPartStrings';
 import { parseDiagramLink } from '../../providers/registry';
-import { LINK_ERROR_KEYS } from './linkErrors';
-import { renderAboutField } from './aboutField';
-import { parseBackgroundColor } from './background';
-import { renderColorField } from './colorField';
-import { renderAlignmentButtons } from './alignmentField';
-import { outcomeFor, resolveMessage, resolveState } from './messages';
-import type { ILoadError } from './messages';
-import { parseHubLinkPosition, parseTextAlign, renderDiagram } from './renderDiagram';
-import type { IHubLinkView, TextAlign } from './renderDiagram';
+import type { IDiagramLink } from '../../providers/types';
+import { format, outcomeFor, resolveMessage, resolveState } from './messages';
+import type { ILoadError, IMessageModel } from './messages';
+import { CONDITIONAL_FIELD_PROPERTIES, propertyPaneConfiguration } from './propertyPane';
+import { renderDiagram } from './renderDiagram';
+import type { IDiagramView } from './renderDiagram';
 import { renderMessage } from './renderMessage';
+import type { IMessageView } from './renderMessage';
+import { readSettings } from './settings';
+import type { IProcViewWebPartProps, ISettings } from './settings';
 import { applyVariables, themeVariables } from './theme';
 import { followTeamsTheme, teamsThemeVariables } from './teamsTheme';
 import type { TeamsTheme } from './teamsTheme';
@@ -33,51 +24,51 @@ import type { IViolationTracker } from './violationTracker';
 import type { IZoomClassNames, IZoomController, IZoomLabels } from './zoomView';
 import { openLightbox } from './lightbox';
 import type { ILightbox } from './lightbox';
-import { diagramStyles, dimensionErrorKey, parseDimension } from './sizing';
-import type { Dimension, DimensionField } from './sizing';
 
-export interface IProcViewWebPartProps {
-  /** The tool's image link, e.g. the Signavio "Simple image" link. */
-  imageLink?: string;
-  /** px, `NN%` of the column, or empty/`auto`. */
-  width?: string;
-  /** px or empty/`auto`. */
-  height?: string;
-  altText?: string;
-  /** Visible caption below the diagram; empty → none. */
-  caption?: string;
-  /** `left`, `center` (default) or `right`. */
-  captionAlign?: string;
-  /** Show the link to the tool's interactive view (Collaboration Hub). */
-  showHubLink?: boolean;
-  /** Link text; empty → default text. */
-  hubLinkText?: string;
-  /** `left`, `center` or `right` (default). */
-  hubLinkAlign?: string;
-  /** `below` (default) the diagram or `overlay` in its bottom-right corner. */
-  hubLinkPosition?: string;
-  /** Zoom and pan controls on the diagram (default off). */
-  offerZoom?: boolean;
-  /** Full-screen button on the diagram (default on — a missing value counts as on). */
-  offerFullScreen?: boolean;
-  /** Colour behind the transparent PNG (default on — a missing value counts as on). */
-  showBackground?: boolean;
-  /** `#rrggbb`; anything else counts as white. */
-  backgroundColor?: string;
+const DIAGRAM_CLASS_NAMES: IDiagramView['classNames'] = {
+  root: styles.procView,
+  figure: styles.figure,
+  frame: styles.frame,
+  controlBar: styles.controlBar,
+  image: styles.image,
+  caption: styles.caption,
+  hubLink: styles.hubLink,
+  hubAnchor: styles.hubAnchor,
+  hubOverlay: styles.hubOverlay,
+  srOnly: styles.srOnly
+};
+
+const MESSAGE_CLASS_NAMES: IMessageView['classNames'] = {
+  root: styles.procView,
+  message: styles.message,
+  info: styles.messageInfo,
+  error: styles.messageError,
+  title: styles.messageTitle,
+  body: styles.messageBody,
+  details: styles.messageDetails,
+  configure: styles.configureButton,
+  hubLink: styles.hubLink,
+  hubAnchor: styles.hubAnchor,
+  srOnly: styles.srOnly
+};
+
+const ZOOM_LABELS: IZoomLabels = {
+  zoomIn: strings.ZoomIn,
+  zoomOut: strings.ZoomOut,
+  reset: strings.ZoomReset,
+  viewport: strings.ZoomViewportLabel
+};
+
+/** Zoom classes; `controls` places the zoom buttons (on the page or in full screen). */
+function zoomClassNames(controls: string): IZoomClassNames {
+  return { zoomable: styles.zoomable, zoomed: styles.zoomed, controls, button: styles.zoomButton };
 }
-
-type AlignProperty = 'captionAlign' | 'hubLinkAlign';
-
-/** Default alignment per setting: the caption is centred, the hub link sits on the right. */
-const ALIGN_DEFAULTS: Record<AlignProperty, TextAlign> = { captionAlign: 'center', hubLinkAlign: 'right' };
 
 interface INaturalSize {
   imageUrl: string;
   width: number;
   height: number;
 }
-
-const AUTO: Dimension = { kind: 'auto' };
 
 export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebPartProps> {
   /** Natural size of the image last loaded — shown as "maximum size" in the pane. */
@@ -94,6 +85,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   private _siteTheme: IReadonlyTheme | undefined;
   /** Teams theme when hosted in Teams; `default` elsewhere. */
   private _teamsTheme: TeamsTheme = 'default';
+
+  // --- Lifecycle --------------------------------------------------------------------------
 
   protected onInit(): Promise<void> {
     this._violations = trackImageViolations(document, () => this._onViolation());
@@ -118,101 +111,6 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     super.onDispose();
   }
 
-  public render(): void {
-    // Every render builds a new diagram; the old zoom's listeners and observer must go
-    this._disposeZoom();
-    const result = parseDiagramLink(this.properties.imageLink);
-    const link = result.ok ? result.link : undefined;
-    const outcome = outcomeFor(resolveState(result, this._loadError), this.displayMode === DisplayMode.Edit);
-
-    if (outcome.kind === 'nothing') {
-      this.domElement.replaceChildren();
-      return;
-    }
-
-    const hubLink: IHubLinkView | undefined =
-      this.properties.showHubLink === true && link?.hubUrl
-        ? {
-            url: link.hubUrl,
-            text: this._text(this.properties.hubLinkText) || strings.HubLinkDefaultText,
-            position: parseHubLinkPosition(this.properties.hubLinkPosition),
-            align: this._align('hubLinkAlign'),
-            newTabHint: strings.NewTabHint
-          }
-        : undefined;
-
-    if (outcome.kind === 'message') {
-      this.domElement.replaceChildren(
-        renderMessage(document, {
-          texts: resolveMessage(outcome.message, strings),
-          configureLabel: strings.ConfigureButton,
-          onConfigure: () => this.context.propertyPane.open(),
-          // In a message the hub link always sits below it
-          hubLink: hubLink ? { ...hubLink, position: 'below' } : undefined,
-          classNames: {
-            root: styles.procView,
-            message: styles.message,
-            info: styles.messageInfo,
-            error: styles.messageError,
-            title: styles.messageTitle,
-            body: styles.messageBody,
-            details: styles.messageDetails,
-            configure: styles.configureButton,
-            hubLink: styles.hubLink,
-            hubAnchor: styles.hubAnchor,
-            srOnly: styles.srOnly
-          }
-        })
-      );
-      return;
-    }
-
-    const view = renderDiagram(document, {
-      link,
-      style: diagramStyles(this._dimension('width'), this._dimension('height')),
-      altText: this._text(this.properties.altText) || strings.DefaultAltText,
-      caption: this._text(this.properties.caption),
-      captionAlign: this._align('captionAlign'),
-      hubLink,
-      zoom:
-        this.properties.offerZoom === true
-          ? {
-              labels: this._zoomLabels(),
-              classNames: this._zoomClassNames(styles.zoomControls),
-              onAttach: (controller) => (this._zoom = controller)
-            }
-          : undefined,
-      // Default on: only an explicit `false` switches full screen off (also for web parts saved
-      // before the setting existed)
-      fullScreen:
-        this.properties.offerFullScreen !== false && link
-          ? {
-              label: strings.FullScreen,
-              className: styles.zoomButton,
-              onOpen: (button) => this._openFullScreen(link.imageUrl, button)
-            }
-          : undefined,
-      background: this._background(),
-      placeholderText: strings.NotConfiguredMessage,
-      classNames: {
-        root: styles.procView,
-        figure: styles.figure,
-        frame: styles.frame,
-        controlBar: styles.controlBar,
-        image: styles.image,
-        caption: styles.caption,
-        placeholder: styles.placeholder,
-        hubLink: styles.hubLink,
-        hubAnchor: styles.hubAnchor,
-        hubOverlay: styles.hubOverlay,
-        srOnly: styles.srOnly
-      },
-      onImageLoad: link ? (width, height) => this._onImageLoad(link.imageUrl, width, height) : undefined,
-      onImageError: link ? () => this._onImageError(link.imageUrl) : undefined
-    });
-    this.domElement.replaceChildren(view);
-  }
-
   protected onDisplayModeChanged(): void {
     // Editors and readers see different messages (F-004 state table)
     this.render();
@@ -235,280 +133,77 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     return Version.parse('1.0');
   }
 
-  protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
-    return {
-      pages: [
-        {
-          header: {
-            description: strings.PropertyPaneDescription
-          },
-          groups: [
-            {
-              groupName: strings.DiagramGroupName,
-              groupFields: [
-                PropertyPaneTextField('imageLink', {
-                  label: strings.ImageLinkLabel,
-                  description: strings.ImageLinkDescription,
-                  placeholder: 'https://',
-                  onGetErrorMessage: (value: string) => this._validateLink(value),
-                  deferredValidationTime: 500
-                }),
-                // Read-only info — the target is a label id, not a stored property
-                PropertyPaneLabel('naturalSizeInfo', {
-                  text: this._naturalSizeText()
-                })
-              ]
-            },
-            {
-              groupName: strings.CaptionGroupName,
-              groupFields: [
-                PropertyPaneTextField('caption', {
-                  label: strings.CaptionLabel,
-                  description: strings.CaptionDescription
-                }),
-                this._alignField('captionAlign', strings.CaptionAlignLabel)
-              ]
-            },
-            {
-              groupName: strings.HubLinkGroupName,
-              groupFields: this._hubLinkFields()
-            },
-            {
-              groupName: strings.SizeGroupName,
-              groupFields: [
-                PropertyPaneTextField('width', {
-                  label: strings.WidthLabel,
-                  description: strings.WidthDescription,
-                  placeholder: 'auto',
-                  onGetErrorMessage: (value: string) => this._validateDimension(value, 'width'),
-                  deferredValidationTime: 300
-                }),
-                PropertyPaneTextField('height', {
-                  label: strings.HeightLabel,
-                  description: strings.HeightDescription,
-                  placeholder: 'auto',
-                  onGetErrorMessage: (value: string) => this._validateDimension(value, 'height'),
-                  deferredValidationTime: 300
-                })
-              ]
-            },
-            {
-              // Own group: a toggle right below a text field's description sits too close to it
-              groupName: strings.ViewingGroupName,
-              groupFields: [
-                PropertyPaneToggle('offerZoom', {
-                  label: strings.OfferZoomLabel,
-                  onText: strings.ToggleOn,
-                  offText: strings.ToggleOff
-                }),
-                PropertyPaneToggle('offerFullScreen', {
-                  label: strings.OfferFullScreenLabel,
-                  onText: strings.ToggleOn,
-                  offText: strings.ToggleOff,
-                  // Shows the default for web parts saved before the setting existed
-                  checked: this.properties.offerFullScreen !== false
-                }),
-                ...this._backgroundFields()
-              ]
-            },
-            {
-              groupName: strings.AccessibilityGroupName,
-              groupFields: [
-                PropertyPaneTextField('altText', {
-                  label: strings.AltTextLabel,
-                  description: strings.AltTextDescription
-                })
-              ]
-            },
-            {
-              groupName: strings.AboutGroupName,
-              groupFields: [this._aboutField()]
-            }
-          ]
-        }
-      ]
-    };
-  }
+  // --- Rendering --------------------------------------------------------------------------
 
-  /** Hub link settings — text and position appear only while the link is switched on; the
-   * alignment only for the position below the diagram (the overlay is always bottom right). */
-  private _hubLinkFields(): IPropertyPaneField<unknown>[] {
-    const fields: IPropertyPaneField<unknown>[] = [
-      PropertyPaneToggle('showHubLink', {
-        label: strings.ShowHubLinkLabel,
-        onText: strings.ToggleOn,
-        offText: strings.ToggleOff
-      })
-    ];
-    const position = parseHubLinkPosition(this.properties.hubLinkPosition);
-    if (this.properties.showHubLink === true) {
-      fields.push(
-        PropertyPaneTextField('hubLinkText', {
-          label: strings.HubLinkTextLabel,
-          description: strings.HubLinkTextDescription,
-          placeholder: strings.HubLinkDefaultText
-        }),
-        PropertyPaneChoiceGroup('hubLinkPosition', {
-          label: strings.HubLinkPositionLabel,
-          options: [
-            { key: 'below', text: strings.PositionBelow, checked: position === 'below' },
-            { key: 'overlay', text: strings.PositionOverlay, checked: position === 'overlay' }
-          ]
-        })
-      );
-      if (position === 'below') {
-        fields.push(this._alignField('hubLinkAlign', strings.HubLinkAlignLabel));
-      }
-    }
-    return fields;
-  }
-
-  /** Alignment of a text setting, falling back to its default for unknown values. */
-  private _align(property: AlignProperty): TextAlign {
-    return parseTextAlign(this.properties[property], ALIGN_DEFAULTS[property]);
-  }
-
-  /** Custom property pane field with the alignment toolbar (documented SPFx custom-field pattern). */
-  private _alignField(property: AlignProperty, labelText: string): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
-    return {
-      type: PropertyPaneFieldType.Custom,
-      targetProperty: property,
-      properties: {
-        key: `${property}Field`,
-        onRender: (
-          element: HTMLElement,
-          _context?: unknown,
-          changeCallback?: (targetProperty?: string, newValue?: unknown) => void
-        ) =>
-          element.replaceChildren(
-            renderAlignmentButtons(document, {
-              labelText,
-              options: [
-                { key: 'left', text: strings.AlignLeft },
-                { key: 'center', text: strings.AlignCenter },
-                { key: 'right', text: strings.AlignRight }
-              ],
-              selected: this._align(property),
-              idPrefix: `${this.instanceId}-${property}`,
-              classNames: {
-                root: styles.alignField,
-                label: styles.alignLabel,
-                group: styles.alignGroup,
-                button: styles.alignButton,
-                selected: styles.alignSelected
-              },
-              onChange: (key) => changeCallback?.(property, key)
-            })
-          ),
-        onDispose: (element: HTMLElement) => element.replaceChildren()
-      }
-    };
-  }
-
-  /** Info field with the repository link — read-only, the target is a field id, not a stored property. */
-  private _aboutField(): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
-    return {
-      type: PropertyPaneFieldType.Custom,
-      targetProperty: 'aboutInfo',
-      properties: {
-        key: 'aboutInfoField',
-        onRender: (element: HTMLElement) =>
-          element.replaceChildren(
-            renderAboutField(document, {
-              linkText: strings.RepositoryLinkText,
-              newTabHint: strings.NewTabHint,
-              classNames: { root: styles.aboutField, hubAnchor: styles.hubAnchor, srOnly: styles.srOnly }
-            })
-          ),
-        onDispose: (element: HTMLElement) => element.replaceChildren()
-      }
-    };
-  }
-
-  /** Background toggle and, only while it is on, the colour (default on and white). */
-  private _backgroundFields(): IPropertyPaneField<unknown>[] {
-    const on = this.properties.showBackground !== false;
-    const fields: IPropertyPaneField<unknown>[] = [
-      PropertyPaneToggle('showBackground', {
-        label: strings.ShowBackgroundLabel,
-        onText: strings.ToggleOn,
-        offText: strings.ToggleOff,
-        // Shows the default for web parts saved before the setting existed
-        checked: on
-      })
-    ];
-    if (on) {
-      fields.push(this._colorField());
-    }
-    return fields;
-  }
-
-  /** Custom property pane field with the browser's colour picker (colorField.ts). */
-  private _colorField(): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
-    return {
-      type: PropertyPaneFieldType.Custom,
-      targetProperty: 'backgroundColor',
-      properties: {
-        key: 'backgroundColorField',
-        onRender: (
-          element: HTMLElement,
-          _context?: unknown,
-          changeCallback?: (targetProperty?: string, newValue?: unknown) => void
-        ) =>
-          element.replaceChildren(
-            renderColorField(document, {
-              labelText: strings.BackgroundColorLabel,
-              value: parseBackgroundColor(this.properties.backgroundColor),
-              idPrefix: `${this.instanceId}-backgroundColor`,
-              classNames: { root: styles.colorField, label: styles.colorLabel, input: styles.colorInput },
-              onChange: (value) => changeCallback?.('backgroundColor', value)
-            })
-          ),
-        onDispose: (element: HTMLElement) => element.replaceChildren()
-      }
-    };
-  }
-
-  /** Validated colour behind the PNG, or `undefined` when switched off (default on and white). */
-  private _background(): string | undefined {
-    return this.properties.showBackground !== false ? parseBackgroundColor(this.properties.backgroundColor) : undefined;
-  }
-
-  /** Re-evaluates the pane when a setting with conditional fields is switched. */
-  protected onPropertyPaneFieldChanged(propertyPath: string): void {
-    if (propertyPath === 'showHubLink' || propertyPath === 'hubLinkPosition' || propertyPath === 'showBackground') {
-      this.context.propertyPane.refresh();
+  public render(): void {
+    // Every render builds a new diagram; the old zoom's listeners and observer must go
+    this._disposeZoom();
+    const result = parseDiagramLink(this.properties.imageLink);
+    const settings = readSettings(this.properties, result.ok ? result.link : undefined, strings);
+    const outcome = outcomeFor(resolveState(result, this._loadError), this.displayMode === DisplayMode.Edit);
+    switch (outcome.kind) {
+      case 'nothing':
+        this.domElement.replaceChildren();
+        return;
+      case 'message':
+        this.domElement.replaceChildren(this._messageView(outcome.message, settings));
+        return;
+      case 'diagram':
+        this.domElement.replaceChildren(this._diagramView(outcome.link, settings));
+        return;
     }
   }
 
-  private _zoomLabels(): IZoomLabels {
-    return {
-      zoomIn: strings.ZoomIn,
-      zoomOut: strings.ZoomOut,
-      reset: strings.ZoomReset,
-      viewport: strings.ZoomViewportLabel
-    };
+  /** Empty or error state; a hub link always sits below the message (renderMessage.ts). */
+  private _messageView(message: IMessageModel, settings: ISettings): HTMLElement {
+    return renderMessage(document, {
+      texts: resolveMessage(message, strings),
+      configureLabel: strings.ConfigureButton,
+      onConfigure: () => this.context.propertyPane.open(),
+      hubLink: settings.diagram.hubLink,
+      classNames: MESSAGE_CLASS_NAMES
+    });
   }
 
-  private _zoomClassNames(controls: string): IZoomClassNames {
-    return { zoomable: styles.zoomable, zoomed: styles.zoomed, controls, button: styles.zoomButton };
+  private _diagramView(link: IDiagramLink, settings: ISettings): HTMLElement {
+    return renderDiagram(document, {
+      ...settings.diagram,
+      link,
+      zoom: settings.offerZoom
+        ? {
+            labels: ZOOM_LABELS,
+            classNames: zoomClassNames(styles.zoomControls),
+            onAttach: (controller) => (this._zoom = controller)
+          }
+        : undefined,
+      fullScreen: settings.offerFullScreen
+        ? {
+            label: strings.FullScreen,
+            className: styles.zoomButton,
+            onOpen: (button) => this._openFullScreen(link, settings, button)
+          }
+        : undefined,
+      classNames: DIAGRAM_CLASS_NAMES,
+      onImageLoad: (width, height) => this._onImageLoad(link.imageUrl, width, height),
+      onImageError: () => this._onImageError(link.imageUrl)
+    });
   }
 
   /** Full-screen view of the diagram: only the image, zoom and a close button (lightbox.ts). */
-  private _openFullScreen(imageUrl: string, opener: HTMLElement): void {
+  private _openFullScreen(link: IDiagramLink, settings: ISettings, opener: HTMLElement): void {
     this._lightbox?.close();
     this._lightbox = openLightbox(document, {
-      imageUrl,
-      altText: this._text(this.properties.altText) || strings.DefaultAltText,
+      imageUrl: link.imageUrl,
+      altText: settings.diagram.altText,
       opener,
-      background: this._background(),
-      labels: { close: strings.CloseFullScreen, zoom: this._zoomLabels() },
+      background: settings.diagram.background,
+      labels: { close: strings.CloseFullScreen, zoom: ZOOM_LABELS },
       classNames: {
         dialog: styles.lightbox,
         frame: styles.lightboxFrame,
         image: styles.lightboxImage,
         close: styles.lightboxClose,
-        zoom: this._zoomClassNames(styles.lightboxZoomControls)
+        zoom: zoomClassNames(styles.lightboxZoomControls)
       }
     });
   }
@@ -518,39 +213,33 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     this._zoom = undefined;
   }
 
-  /** Trimmed text of a property — web part properties are untrusted, non-strings count as empty. */
-  private _text(value: unknown): string {
-    return typeof value === 'string' ? value.trim() : '';
+  // --- Property pane ----------------------------------------------------------------------
+
+  protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
+    return propertyPaneConfiguration({
+      properties: this.properties,
+      instanceId: this.instanceId,
+      naturalSizeText: this._naturalSizeText()
+    });
   }
 
-  /** Parsed width/height; invalid values fall back to automatic (the pane shows the error). */
-  private _dimension(field: DimensionField): Dimension {
-    const result = parseDimension(this.properties[field], field === 'width');
-    return result.ok ? result.dimension : AUTO;
-  }
-
-  private _validateLink(value: string): string {
-    const result = parseDiagramLink(value);
-    // An empty link is not an error — the web part simply shows its placeholder
-    if (result.ok || result.error === 'empty') {
-      return '';
+  /** Re-evaluates the pane when a setting with conditional fields is switched. */
+  protected onPropertyPaneFieldChanged(propertyPath: string): void {
+    if (CONDITIONAL_FIELD_PROPERTIES.indexOf(propertyPath) >= 0) {
+      this.context.propertyPane.refresh();
     }
-    return strings[LINK_ERROR_KEYS[result.error]];
-  }
-
-  private _validateDimension(value: string, field: DimensionField): string {
-    const result = parseDimension(value, field === 'width');
-    return result.ok ? '' : strings[dimensionErrorKey(result.error, field)];
   }
 
   private _naturalSizeText(): string {
     const result = parseDiagramLink(this.properties.imageLink);
     const size = this._naturalSize;
     if (result.ok && size && size.imageUrl === result.link.imageUrl) {
-      return strings.NaturalSizeKnown.replace('{0}', String(size.width)).replace('{1}', String(size.height));
+      return format(strings.NaturalSizeKnown, [String(size.width), String(size.height)]);
     }
     return strings.NaturalSizeUnknown;
   }
+
+  // --- Image events -----------------------------------------------------------------------
 
   private _onImageError(imageUrl: string): void {
     this._loadError = { imageUrl, cause: this._violations?.isBlocked(imageUrl) ? 'blocked' : 'failed' };

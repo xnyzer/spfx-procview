@@ -5,7 +5,6 @@
 define([], function () {
   return {
     PropertyPaneDescription: 'Affiche un diagramme de processus à partir d’un lien partagé.',
-    NotConfiguredMessage: 'Aucun diagramme de processus n’est encore configuré.',
     DefaultAltText: 'Diagramme de processus',
 
     DiagramGroupName: 'Diagramme',

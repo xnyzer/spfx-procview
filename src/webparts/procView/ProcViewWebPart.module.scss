@@ -233,12 +233,6 @@
   }
 }
 
-.placeholder {
-  margin: 0;
-  padding: 1em;
-  color: var(--bodySubtext, '[theme:bodySubtext, default: #605e5c]');
-}
-
 // Caption alignment toolbar in the property pane (custom field, see alignmentField.ts). The pane
 // is not inside a section, so static page-theme tokens are right here
 .alignField {

@@ -76,6 +76,40 @@ describe('themeVariables', () => {
     expect(themeVariables(undefined)).toEqual({});
     expect(themeVariables({} as IReadonlyTheme)).toEqual({});
   });
+
+  it.each([
+    ['#fff'],
+    ['#ffff'],
+    ['#0078d4'],
+    ['#0078d4cc'],
+    ['rgba(0, 0, 0, 0.4)'],
+    ['rgb(0 120 212 / 50%)'],
+    ['hsl(206, 100%, 42%)'],
+    ['transparent'],
+    [' #0078d4 ']
+  ])('accepts the colour %p', (value) => {
+    const theme = { semanticColors: { bodyBackground: value } } as unknown as IReadonlyTheme;
+    expect(themeVariables(theme)).toEqual({ '--bodyBackground': value.trim() });
+  });
+
+  it.each([
+    ['url(https://example.com/track.png)'],
+    ['image-set("https://example.com/x.png" 1x)'],
+    ['red;background:url(https://example.com/a)'],
+    ['#fff}body{display:none'],
+    ['#fff /* x */'],
+    ['expression(alert(1))'],
+    ['var(--evil)'],
+    ['rgb(0,0,0) url(https://example.com/x)'],
+    ['linear-gradient(red, blue)'],
+    ['\\75 rl(x)']
+  ])('drops the hostile value %p — no request, no breakout', (value) => {
+    const theme = {
+      palette: { themePrimary: value },
+      semanticColors: { bodyBackground: value, bodyStandoutBackground: value }
+    } as unknown as IReadonlyTheme;
+    expect(themeVariables(theme)).toEqual({});
+  });
 });
 
 describe('applyThemeVariables', () => {

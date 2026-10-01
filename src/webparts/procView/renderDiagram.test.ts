@@ -19,7 +19,6 @@ function view(overrides: Partial<IDiagramView> = {}): IDiagramView {
     altText: 'Order process',
     caption: '',
     captionAlign: 'center',
-    placeholderText: 'No process diagram is configured yet.',
     classNames: {
       root: 'root',
       figure: 'figure',
@@ -27,7 +26,6 @@ function view(overrides: Partial<IDiagramView> = {}): IDiagramView {
       controlBar: 'controlBar',
       image: 'image',
       caption: 'caption',
-      placeholder: 'placeholder',
       hubLink: 'hubLink',
       hubAnchor: 'hubAnchor',
       hubOverlay: 'hubOverlay',
@@ -94,21 +92,7 @@ describe('renderDiagram — valid link', () => {
   });
 });
 
-describe('renderDiagram — no valid link', () => {
-  it('renders the placeholder text and no image', () => {
-    const root = renderDiagram(document, view({ link: undefined }));
-    expect(root.querySelector('img')).toBeNull();
-    const placeholder = root.querySelector('p');
-    expect(placeholder?.className).toBe('placeholder');
-    expect(placeholder?.textContent).toBe('No process diagram is configured yet.');
-  });
-
-  it('never interprets texts as markup', () => {
-    const root = renderDiagram(document, view({ link: undefined, placeholderText: '<img src=x onerror=alert(1)>' }));
-    expect(root.querySelector('img')).toBeNull();
-    expect(root.querySelector('p')?.textContent).toBe('<img src=x onerror=alert(1)>');
-  });
-
+describe('renderDiagram — alt text', () => {
   it('keeps markup in the alt text as plain text', () => {
     const image = renderDiagram(document, view({ altText: '"><script>x</script>' })).querySelector('img');
     expect(image?.alt).toBe('"><script>x</script>');
@@ -146,11 +130,6 @@ describe('renderDiagram — caption', () => {
     expect(root.querySelector('figcaption')?.textContent).toBe('<b onclick=x>bold</b>');
     expect(root.querySelector('b')).toBeNull();
   });
-
-  it('shows no caption without a valid link (placeholder only)', () => {
-    const root = renderDiagram(document, view({ link: undefined, caption: 'Order-to-cash' }));
-    expect(root.querySelector('figcaption')).toBeNull();
-  });
 });
 
 describe('parseTextAlign', () => {
@@ -160,7 +139,21 @@ describe('parseTextAlign', () => {
     expect(parseTextAlign('right', 'center')).toBe('right');
   });
 
-  it.each([[undefined], [''], ['justify'], ['LEFT'], [42], [{}]])('falls back for %p', (value) => {
+  it.each([
+    [undefined],
+    [null],
+    [''],
+    ['justify'],
+    ['LEFT'],
+    [' left'],
+    ['left;color:red'],
+    ['__proto__'],
+    ['constructor'],
+    [42],
+    [{}],
+    [['left']],
+    [{ toString: (): string => 'left' }]
+  ])('falls back for %p', (value) => {
     expect(parseTextAlign(value, 'center')).toBe('center');
     expect(parseTextAlign(value, 'right')).toBe('right');
   });
@@ -215,11 +208,6 @@ describe('renderDiagram — Collaboration Hub link', () => {
     expect(root.querySelector('a')?.firstChild?.textContent).toBe('<img src=x onerror=alert(1)>');
     expect(root.querySelectorAll('img')).toHaveLength(1);
   });
-
-  it('renders no link without a valid diagram (placeholder only)', () => {
-    const root = renderDiagram(document, view({ link: undefined, hubLink: HUB }));
-    expect(root.querySelector('a')).toBeNull();
-  });
 });
 
 describe('renderDiagram — hub link as overlay', () => {
@@ -256,10 +244,6 @@ describe('renderDiagram — hub link as overlay', () => {
   it('ignores the alignment (the overlay is always bottom right)', () => {
     const anchor = renderDiagram(document, view({ hubLink: OVERLAY })).querySelector('a') as HTMLAnchorElement;
     expect(anchor.style.getPropertyValue('text-align')).toBe('');
-  });
-
-  it('renders no overlay without a valid diagram', () => {
-    expect(renderDiagram(document, view({ link: undefined, hubLink: OVERLAY })).querySelector('a')).toBeNull();
   });
 });
 
@@ -312,12 +296,6 @@ describe('renderDiagram — zoom', () => {
     expect(frame?.querySelector('a.hubOverlay')).not.toBeNull();
     expect(frame?.querySelector('.zoomControls')).not.toBeNull();
   });
-
-  it('adds no zoom without a valid diagram', () => {
-    const attached: IZoomController[] = [];
-    renderDiagram(document, view({ link: undefined, zoom: zoomOption((controller) => attached.push(controller)) }));
-    expect(attached).toHaveLength(0);
-  });
 });
 
 describe('renderDiagram — full screen and control bar', () => {
@@ -360,11 +338,6 @@ describe('renderDiagram — full screen and control bar', () => {
     button.click();
     expect(opened).toEqual([button]);
   });
-
-  it('adds no full-screen button without a valid diagram', () => {
-    const root = renderDiagram(document, view({ link: undefined, fullScreen: fullScreenOption(() => undefined) }));
-    expect(root.querySelector('button')).toBeNull();
-  });
 });
 
 describe('renderDiagram — background behind the diagram', () => {
@@ -398,7 +371,19 @@ describe('parseHubLinkPosition', () => {
     expect(parseHubLinkPosition('below')).toBe('below');
   });
 
-  it.each([[undefined], [''], ['corner'], ['OVERLAY'], [1], [{}]])('falls back to below for %p', (value) => {
+  it.each([
+    [undefined],
+    [null],
+    [''],
+    ['corner'],
+    ['OVERLAY'],
+    ['overlay '],
+    ['__proto__'],
+    [1],
+    [{}],
+    [['overlay']],
+    [{ toString: (): string => 'overlay' }]
+  ])('falls back to below for %p', (value) => {
     expect(parseHubLinkPosition(value)).toBe('below');
   });
 });

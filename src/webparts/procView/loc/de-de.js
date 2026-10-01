@@ -3,7 +3,6 @@
 define([], function () {
   return {
     PropertyPaneDescription: 'Zeigt ein Prozessdiagramm aus einem freigegebenen Link an.',
-    NotConfiguredMessage: 'Es ist noch kein Prozessdiagramm eingerichtet.',
     DefaultAltText: 'Prozessdiagramm',
 
     DiagramGroupName: 'Diagramm',

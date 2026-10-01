@@ -19,6 +19,18 @@ describe('parseTeamsTheme', () => {
     expect(parseTeamsTheme('contrast')).toBe('contrast');
     ['default', '', 'DARK', undefined, 42].forEach((value) => expect(parseTeamsTheme(value)).toBe('default'));
   });
+
+  it.each([
+    [null],
+    [' dark'],
+    ['dark '],
+    ['__proto__'],
+    ['constructor'],
+    [['dark']],
+    [{ toString: (): string => 'dark' }]
+  ])('treats the unexpected value %p as default', (value) => {
+    expect(parseTeamsTheme(value)).toBe('default');
+  });
 });
 
 describe('teamsThemeVariables', () => {

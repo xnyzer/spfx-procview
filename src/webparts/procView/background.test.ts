@@ -12,6 +12,19 @@ describe('parseBackgroundColor', () => {
       (value) => expect(parseBackgroundColor(value)).toBe(DEFAULT_BACKGROUND)
     );
   });
+
+  it.each([
+    ['#123456}'],
+    ['#123456/*'],
+    ['\\23 123456'],
+    ['＃１２３４５６'],
+    ['#123456\u200b'],
+    ['#123456\n#654321'],
+    [['#123456']],
+    [{ toString: (): string => '#123456' }]
+  ])('rejects the hostile value %p', (value) => {
+    expect(parseBackgroundColor(value)).toBe(DEFAULT_BACKGROUND);
+  });
 });
 
 describe('backgroundStyles', () => {

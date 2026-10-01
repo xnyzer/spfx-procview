@@ -99,7 +99,6 @@ describe('loc/en-us.js', () => {
 /** Every key of `IProcViewWebPartStrings` — the type makes this list complete. */
 const ALL_STRING_KEYS: Record<keyof IProcViewWebPartStrings, true> = {
   PropertyPaneDescription: true,
-  NotConfiguredMessage: true,
   DefaultAltText: true,
   DiagramGroupName: true,
   ImageLinkLabel: true,

@@ -1,4 +1,4 @@
-import type { LinkErrorCode, LinkParseResult } from '../../providers/types';
+import type { IDiagramLink, LinkErrorCode, LinkParseResult } from '../../providers/types';
 import { LINK_ERROR_KEYS } from './linkErrors';
 
 type StringKey = keyof IProcViewWebPartStrings;
@@ -11,7 +11,7 @@ export interface ILoadError {
 }
 
 export type DiagramState =
-  | { kind: 'ok' }
+  | { kind: 'ok'; link: IDiagramLink }
   | { kind: 'noLink' }
   | { kind: 'invalidLink'; error: LinkErrorCode }
   | { kind: 'loadFailed' }
@@ -31,8 +31,9 @@ export interface IMessageModel {
   showHubLink: boolean;
 }
 
-/** Render the diagram, render nothing, or render a message. */
-export type Outcome = { kind: 'diagram' } | { kind: 'nothing' } | { kind: 'message'; message: IMessageModel };
+/** Render the diagram (only ever with a valid link), render nothing, or render a message. */
+export type Outcome =
+  { kind: 'diagram'; link: IDiagramLink } | { kind: 'nothing' } | { kind: 'message'; message: IMessageModel };
 
 /**
  * Combines the parsed link and the last load error into one state. A load error only
@@ -47,7 +48,7 @@ export function resolveState(result: LinkParseResult, loadError: ILoadError | un
       ? { kind: 'blocked', host: hostOf(result.link.imageUrl) }
       : { kind: 'loadFailed' };
   }
-  return { kind: 'ok' };
+  return { kind: 'ok', link: result.link };
 }
 
 function hostOf(url: string): string {
@@ -69,7 +70,7 @@ const READER_LOAD_FAILED = message({ bodyKey: 'MessageLoadFailedReader', showHub
 export function outcomeFor(state: DiagramState, editMode: boolean): Outcome {
   switch (state.kind) {
     case 'ok':
-      return { kind: 'diagram' };
+      return { kind: 'diagram', link: state.link };
     case 'noLink':
       return editMode
         ? {
@@ -121,7 +122,8 @@ export interface IMessageTexts {
   showHubLink: boolean;
 }
 
-function format(text: string, params: string[]): string {
+/** Replaces every `{0}`, `{1}` … in a `loc/` text by the matching value (literally, no patterns). */
+export function format(text: string, params: string[]): string {
   return params.reduce((result, value, index) => result.split(`{${index}}`).join(value), text);
 }
 

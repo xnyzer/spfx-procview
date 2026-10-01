@@ -25,7 +25,7 @@ describe('parseDiagramLink', () => {
   });
 
   it('treats values that are not strings as empty (untrusted property data)', () => {
-    const nonStrings: unknown[] = [null, 42, true, {}, ['alpha:x'], { toString: () => 'alpha:x' }];
+    const nonStrings: unknown[] = [null, 42, true, {}, ['alpha:x'], { toString: (): string => 'alpha:x' }];
     nonStrings.forEach((value) => {
       expect(parseDiagramLink(value, providers)).toEqual({ ok: false, error: 'empty' });
     });
@@ -63,5 +63,35 @@ describe('parseDiagramLink', () => {
   it('asks providers in order and stops at the first claim', () => {
     const second = stubProvider('second', 'alpha:', failResult);
     expect(parseDiagramLink('alpha:x', [providers[0], second])).toBe(okResult);
+  });
+});
+
+describe('parseDiagramLink — provider output is checked (fail closed)', () => {
+  // Assembled so the linter's no-script-url rule does not flag the hostile test input
+  const scriptUrl = ['java', 'script:alert(1)'].join('');
+
+  function claimWith(imageUrl: string, hubUrl?: string): LinkParseResult {
+    const provider = stubProvider('faulty', 'x:', {
+      ok: true,
+      link: { providerId: 'faulty', modelId: 'm1', imageUrl, hubUrl }
+    });
+    return parseDiagramLink('x:anything', [provider]);
+  }
+
+  it.each([
+    ['a script URL as image', scriptUrl, undefined],
+    ['a data URI as image', 'data:image/svg+xml,<svg onload=alert(1)>', undefined],
+    ['an http image URL', 'http://alpha.example.com/m1.png', undefined],
+    ['a relative image URL', '/m1.png', undefined],
+    ['a protocol-relative image URL', '//alpha.example.com/m1.png', undefined],
+    ['a script URL as hub link', 'https://alpha.example.com/m1.png', scriptUrl],
+    ['an http hub link', 'https://alpha.example.com/m1.png', 'http://alpha.example.com/hub']
+  ])('rejects %s as unsupported', (_label, imageUrl, hubUrl) => {
+    expect(claimWith(imageUrl, hubUrl)).toEqual({ ok: false, error: 'unsupported' });
+  });
+
+  it('accepts https image and hub URLs', () => {
+    const result = claimWith('https://alpha.example.com/m1.png', 'https://alpha.example.com/hub#/m1');
+    expect(result.ok).toBe(true);
   });
 });

@@ -35,17 +35,19 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 ## Status & where to start
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
-requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-016 in `PROGRESS.md`). All planned
-features are done (271 Jest tests): Signavio link validation and provider contract (F-001),
+requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-017 in `PROGRESS.md`). All planned
+features are done (547 Jest tests): Signavio link validation and provider contract (F-001),
 configuration pane, sizing and caption (F-002), Collaboration Hub link (F-003), empty and
 error states (F-004), section theme colours (F-005), zoom and pan — "Offer zoom", default off
 (F-006), full-screen view — "Offer full screen", default on (F-007), Teams tab following the
 Teams theme, no personal app (F-008), local testing via the SPFx Local Workbench extension
 (F-011), texts in EN/DE/FR/ES — FR/ES Signavio labels unverified (F-012), repository link in
 the pane (F-013), own Teams app icons via `just icons` (F-014), background behind the
-diagram — default on and white (F-015). Next: `/prep-step F-016` (audit before the first
-release), then F-009 (versioning, CI release, IT guide, release 1.0.0); F-010 waits for an
-SPFx release that supports a Node version newer than 22.
+diagram — default on and white (F-015). The audit before the first release (F-016) is under
+way: audit and triage (F-016a) and the settings module with injection tests (F-016b) are
+done. Next: F-016c (lifecycle, licence check and notices, small fixes), then F-017 (zoom and
+full-screen fixes from the audit), then F-009 (versioning, CI release, IT guide, release
+1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
 
 ## Project notes (learned the hard way)
 
@@ -66,8 +68,14 @@ SPFx release that supports a Node version newer than 22.
 - **Defaults** of settings live as initial values in the web part manifest and must match
   the code fallbacks — the property pane selects what is stored. A setting that defaults to
   **on** needs three places: the manifest value, a code fallback that treats a missing value
-  as on (`!== false`, for web parts saved before the setting existed) and `checked:` on the
-  `PropertyPaneToggle`, so the pane shows it on.
+  as on (`isOnByDefault` in `settings.ts`, for web parts saved before the setting existed) and
+  `checked:` on the `PropertyPaneToggle` (`propertyPane.ts`), so the pane shows it on.
+- **Settings are untrusted:** every property is read in `settings.ts` (types, defaults, invisible
+  characters); the renderers only get checked values. A new setting goes there, with hostile
+  cases in `injection.test.ts`.
+- **Invisible characters in source:** write them as `\u` escapes. A raw U+200B/U+202E/U+00A0
+  can slip in when a file is written; check changed files for raw format characters
+  (e.g. with `perl -CSD`) — Prettier keeps escapes as they are.
 - **Workbench theme line:** the SPFx Local Workbench writes
   `"spfxLocalWorkbench.theme.current"` into `.vscode/settings.json` on every theme switch —
   revert that line, never commit it.

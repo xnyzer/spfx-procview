@@ -1,6 +1,5 @@
 declare interface IProcViewWebPartStrings {
   PropertyPaneDescription: string;
-  NotConfiguredMessage: string;
   DefaultAltText: string;
 
   DiagramGroupName: string;

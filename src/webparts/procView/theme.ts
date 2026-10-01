@@ -36,23 +36,35 @@ export const SEMANTIC_SLOTS: readonly SemanticSlot[] = [
 export const ACCENT_VARIABLE = '--themePrimary';
 
 /**
+ * Colour syntax a theme value may use: hex, `rgb()`/`rgba()`/`hsl()`/`hsla()` with plain numbers,
+ * or a keyword such as `transparent`. The variables feed `background:` declarations, which also
+ * accept images — anything else (`url(…)`, `image-set(…)`, `;`) is dropped, so a theme value can
+ * never make the browser load something.
+ */
+const THEME_COLOR = /^(?:#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|(?:rgb|hsl)a?\([0-9.,%\s/+-]*\)|[a-z]+)$/i;
+
+function isThemeColor(value: unknown): value is string {
+  return typeof value === 'string' && THEME_COLOR.test(value.trim());
+}
+
+/**
  * CSS custom properties for the theme SharePoint passes to the web part — on a coloured
  * section this is the section's variant, not the page theme, so every colour must come from
- * here. Missing or empty colours are left out: the stylesheet then falls back to its static
- * theme token.
+ * here. Missing values and values that are not a colour are left out: the stylesheet then
+ * falls back to its static theme token.
  */
 export function themeVariables(theme: IReadonlyTheme | undefined): Record<string, string> {
   const variables: Record<string, string> = {};
   const semanticColors = theme?.semanticColors;
   SEMANTIC_SLOTS.forEach((slot) => {
     const value = semanticColors?.[slot];
-    if (typeof value === 'string' && value !== '') {
-      variables[`--${slot}`] = value;
+    if (isThemeColor(value)) {
+      variables[`--${slot}`] = value.trim();
     }
   });
   const accent = theme?.palette?.themePrimary;
-  if (typeof accent === 'string' && accent !== '') {
-    variables[ACCENT_VARIABLE] = accent;
+  if (isThemeColor(accent)) {
+    variables[ACCENT_VARIABLE] = accent.trim();
   }
   return variables;
 }

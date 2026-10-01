@@ -47,6 +47,28 @@ function alignIcon(doc: Document, align: TextAlign): SVGElement {
 }
 
 /**
+ * Button the arrow keys, Home and End move the selection to (wrapping around); `undefined` for
+ * any other key. A `switch`, not an object lookup — key names such as `toString` must not hit
+ * inherited object members.
+ */
+function keyTarget(key: string, index: number, last: number): number | undefined {
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      return index === last ? 0 : index + 1;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      return index === 0 ? last : index - 1;
+    case 'Home':
+      return 0;
+    case 'End':
+      return last;
+    default:
+      return undefined;
+  }
+}
+
+/**
  * Compact icon toolbar for a text alignment, built as an accessible radio group:
  * one tab stop (the selected button), arrow keys/Home/End move the selection, the
  * buttons carry `aria-checked`. It keeps its own state, because a property pane host may
@@ -108,18 +130,10 @@ export function renderAlignmentButtons(doc: Document, props: IAlignmentButtonsPr
   buttons.forEach((button, index) => {
     button.addEventListener('click', () => select(index, false));
     button.addEventListener('keydown', (event: KeyboardEvent) => {
-      const last = buttons.length - 1;
-      const target: Record<string, number> = {
-        ArrowRight: index === last ? 0 : index + 1,
-        ArrowDown: index === last ? 0 : index + 1,
-        ArrowLeft: index === 0 ? last : index - 1,
-        ArrowUp: index === 0 ? last : index - 1,
-        Home: 0,
-        End: last
-      };
-      if (event.key in target) {
+      const target = keyTarget(event.key, index, buttons.length - 1);
+      if (target !== undefined) {
         event.preventDefault();
-        select(target[event.key], true);
+        select(target, true);
       }
     });
   });

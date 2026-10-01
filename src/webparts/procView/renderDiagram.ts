@@ -48,8 +48,8 @@ export interface IDiagramFullScreen {
 
 /** Everything the diagram view needs — assembled by the web part, rendered here. */
 export interface IDiagramView {
-  /** Validated link; `undefined` shows the placeholder instead of an image. */
-  link: IDiagramLink | undefined;
+  /** Validated link — without one the web part shows a message instead (messages.ts). */
+  link: IDiagramLink;
   style: IDiagramStyles;
   altText: string;
   /** Visible caption below the image; empty → none. */
@@ -63,7 +63,6 @@ export interface IDiagramView {
   fullScreen?: IDiagramFullScreen;
   /** Colour exactly behind the PNG (`#rrggbb`, validated); `undefined` → transparent. */
   background?: string;
-  placeholderText: string;
   classNames: {
     root: string;
     figure: string;
@@ -72,7 +71,6 @@ export interface IDiagramView {
     controlBar: string;
     image: string;
     caption: string;
-    placeholder: string;
     hubLink: string;
     hubAnchor: string;
     hubOverlay: string;
@@ -91,14 +89,6 @@ export interface IDiagramView {
 export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
   const root = doc.createElement('section');
   root.className = view.classNames.root;
-
-  if (!view.link) {
-    const placeholder = doc.createElement('p');
-    placeholder.className = view.classNames.placeholder;
-    placeholder.textContent = view.placeholderText;
-    root.appendChild(placeholder);
-    return root;
-  }
 
   const figure = doc.createElement('figure');
   figure.className = view.classNames.figure;
