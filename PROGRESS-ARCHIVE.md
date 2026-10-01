@@ -8,6 +8,72 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-014 — Own Teams app icons instead of the generator placeholders
+
+_Completed 2026-10-01._
+
+**Problem:** `teams/` holds the placeholder icons the SPFx generator created (a generic
+"apps" glyph). They are Microsoft assets under the SPFx license terms, not a permissive
+licence, and are not recognisable as this web part.
+
+**Idea:** A simple own icon (a small process flow), generated reproducibly, replacing the
+two PNGs Teams requires.
+
+**Solution sketch** (updated at prep-step, 2026-10-01; size: small, no substeps):
+- Teams requirements (Microsoft Learn, verified): colour icon 192 × 192, perfect square,
+  full bleed, flat background, no rounded corners or border (Teams adds both), motif
+  within the central 120 × 120 safe area (balanced in 96 × 96), contrast ≥ 4.5:1;
+  outline icon 32 × 32, white on transparent; file names unchanged
+  (`<web part id>_color.png`, `_outline.png`) so SPFx packages them
+- **No SVG-to-PNG conversion:** this machine has no converter and no Chrome. Instead a
+  dependency-free Node script (`scripts/teams-icons.mjs`) defines the shapes once and
+  writes both PNGs (built-in `zlib`, anti-aliasing by supersampling), optionally an SVG
+  preview from the same shapes; it asserts that the outline icon is white/transparent
+  only; recipe `just icons`
+- Motif (owner-approved): left-to-right flow circle (start) → rounded rectangle (task) →
+  diamond (decision), connected by lines; colour icon white on petrol blue (about
+  `#0E5A73` — neither Signavio orange nor Microsoft blue), outline icon the same motif in
+  white lines
+- The SharePoint toolbox icon stays the Fluent font icon "VisioDiagram" (referenced by
+  name, not redistributed)
+- The old files stay in the git history (accepted by the owner)
+
+**Files:** `scripts/teams-icons.mjs` (new), `teams/<web part id>_color.png`,
+`teams/<web part id>_outline.png`, `justfile`, `README.md`, `REQUIREMENTS.md`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] Sizes and rules met: 192 × 192 square, fully opaque corners (no rounding), contrast
+      7.7:1; 32 × 32 white/transparent only (script assertion + file analysis). **Deviation
+      (owner decision):** the motif is 150 × 44 px, wider than the 120 × 120 safe area meant
+      for square logos — the flat band stays clear of the rounded corners and keeps more than
+      15 px margin even under a circular mask
+- [x] Owner reviews and approves both icons (three iterations, see below)
+- [x] A package build (`just build`, isolated copy) contains the new icons — byte-identical
+      in `ClientSideAssets/` of the `.sppkg`
+- [x] `just check` green — 198 tests, icons up to date (isolated copy); ESLint and
+      Prettier accept the script, no exclusion needed
+
+**Implemented:**
+- `scripts/teams-icons.mjs` — motif defined once as signed-distance shapes (circle, rounded
+  box, diamond as rotated square, connecting segments), rasterised with 8 × 8 supersampling,
+  encoded by a minimal PNG writer (`zlib.deflateSync`, `zlib.crc32`); colour icon at
+  5.1 px/unit with 4.5 px lines, outline icon at 0.98 px/unit with 2 px lines (stroke given
+  in pixels, so each icon gets its own line width); web part id read from the manifest;
+  asserts white-only outline; `--check` compares the files with a fresh rendering.
+- `teams/<web part id>_color.png`, `_outline.png` — replaced (names unchanged).
+- `justfile` — recipe `icons`; `check` runs `node scripts/teams-icons.mjs --check`, so CI
+  fails when the script and the files drift apart (small addition to the plan).
+- README "Packaging and deployment" — Teams app icons; REQUIREMENTS.md — decision log entry
+  incl. the safe-area deviation.
+
+**Decisions / deviations:** Three iterations with the owner: (1) the planned flow at
+108 × 34 px with 7.5 px lines — too thick and too small; (2) a square flowchart (task box,
+decision, two branches) — rejected, it read as an org chart; (3) the original flow, larger
+(150 × 44 px), longer connectors and 4.5 px lines — approved. No SVG preview file was added
+(not needed; the script is the single source).
+
 ### F-013 — Link to the GitHub repository in the property pane
 
 _Completed 2026-09-30._

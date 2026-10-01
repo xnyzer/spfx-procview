@@ -38,7 +38,12 @@ check:
     npx --no-install prettier --check --log-level warn {{prettier_globs}}
     just lint
     just test
+    node scripts/teams-icons.mjs --check
 
 # Production build: tests + solution package (sharepoint/solution/spfx-procview.sppkg)
 build:
     npm run build
+
+# Regenerate the Microsoft Teams app icons in teams/ from scripts/teams-icons.mjs
+icons:
+    node scripts/teams-icons.mjs
