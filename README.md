@@ -6,15 +6,19 @@ SharePoint's built-in embed web part only renders iframes, which leaves no way t
 how large an embedded SAP Signavio diagram appears on the page. `spfx-procview` is a
 SharePoint Framework web part that takes the **"Simple image" link** of a shared Signavio
 diagram and displays it directly — no iframe — at a configurable size, with an optional
-caption and an optional link to the Signavio Collaboration Hub. It is built to be deployed
-tenant-wide by IT and designed so that further process tools can be supported later.
+caption, an optional link to the Signavio Collaboration Hub, optional zoom and a full-screen
+view; it follows the page and section theme, works as a Microsoft Teams tab and speaks
+English, German, French and Spanish. It is built to be deployed tenant-wide by IT and
+designed so that further process tools can be supported later.
 
 ## Status
 
-In development: the core features (display and sizing, caption, Collaboration Hub link,
-empty and error states, texts in English, German, French and Spanish) are implemented;
-there is **no release yet** — versioning and the release pipeline follow (F-009). See
-`PROGRESS.md` for the roadmap.
+In development: all planned features are implemented — display and sizing, caption,
+Collaboration Hub link, empty and error states, texts in English, German, French and
+Spanish, theme colours per section, zoom and pan, full-screen view, a background behind the
+diagram, and Microsoft Teams tabs. There is **no release yet**: an audit (F-016) and the
+first release 1.0.0 with versioning, CI release and an IT deployment guide (F-009) follow.
+See `PROGRESS.md` for the roadmap.
 
 ## Using the web part (for page editors)
 

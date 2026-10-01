@@ -19,7 +19,7 @@
         "default": "Embeds SAP Signavio process diagrams in SharePoint pages with adjustable size."
       },
       "longDescription": {
-        "default": "SharePoint Framework web part that displays a shared SAP Signavio process diagram (Simple image link) directly on the page, without an iframe, at a configurable size, with an optional link to the Signavio Collaboration Hub."
+        "default": "SharePoint Framework web part that displays a shared SAP Signavio process diagram (Simple image link) directly on the page, without an iframe, at a configurable size, with an optional caption, a link to the Signavio Collaboration Hub, zoom and a full-screen view. Follows the page and section theme, works as a Microsoft Teams tab, texts in English, German, French and Spanish."
       },
       "screenshotPaths": [],
       "videoUrl": "",

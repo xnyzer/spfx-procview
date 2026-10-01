@@ -24,7 +24,9 @@ web part takes the **"Simple image" link** of a shared Signavio diagram (the emb
 rejected with a hint), renders the image directly (no iframe, no referrer) with a
 configurable size, an optional caption and an optional link to the Signavio Collaboration
 Hub (below the diagram or as corner overlay), and shows clear empty/error states per
-display mode. Target users: SharePoint site owners and editors; the solution package is
+display mode. Optional zoom and pan, a full-screen view and a colour behind the transparent
+PNG; colours follow the section theme (and the Teams theme in a Teams tab); texts in
+EN/DE/FR/ES. Target users: SharePoint site owners and editors; the solution package is
 deployed tenant-wide by IT. Signavio is the only supported tool for now — a provider
 interface (`src/providers/`) keeps the door open for further process tools. Stack: SPFx
 1.23.2 (no-framework template, Heft toolchain, npm), Node 22 via mise; see
@@ -33,18 +35,17 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 ## Status & where to start
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
-requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-015 in `PROGRESS.md`). Done: F-001
-(provider contract, Signavio link validation), F-002 (configuration pane, sized diagram
-display, caption with alignment toolbar), F-003 (Collaboration Hub link below the diagram or
-as corner overlay), F-004 (empty and error states per display mode, incl. blocked-image
-detection), F-011 (local testing via the SPFx Local Workbench extension; no online
-workbench), F-012 (texts in English, German, French and Spanish; French/Spanish Signavio
-labels unverified — native-speaker review before production), F-005 (every page colour
-follows the section's theme, `theme.ts`), F-013 (repository link in the property pane) and
-F-014 (own Teams app icons, `just icons`), F-006 (zoom and pan, toggle "Offer zoom") and
-F-007 (full-screen view, toggle "Offer full screen", default on), F-015 (background behind
-the diagram, default on and white) and F-008 (Teams tab following the Teams theme; no personal
-app) — 271 Jest tests. Next: `/prep-step F-009` (versioning, release via CI, IT guide).
+requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-016 in `PROGRESS.md`). All planned
+features are done (271 Jest tests): Signavio link validation and provider contract (F-001),
+configuration pane, sizing and caption (F-002), Collaboration Hub link (F-003), empty and
+error states (F-004), section theme colours (F-005), zoom and pan — "Offer zoom", default off
+(F-006), full-screen view — "Offer full screen", default on (F-007), Teams tab following the
+Teams theme, no personal app (F-008), local testing via the SPFx Local Workbench extension
+(F-011), texts in EN/DE/FR/ES — FR/ES Signavio labels unverified (F-012), repository link in
+the pane (F-013), own Teams app icons via `just icons` (F-014), background behind the
+diagram — default on and white (F-015). Next: `/prep-step F-016` (audit before the first
+release), then F-009 (versioning, CI release, IT guide, release 1.0.0); F-010 waits for an
+SPFx release that supports a Node version newer than 22.
 
 ## Project notes (learned the hard way)
 
@@ -63,7 +64,13 @@ app) — 271 Jest tests. Next: `/prep-step F-009` (versioning, release via CI, I
   language locally with `just dev de-de`. The dev server must be restarted after `loc/` or
   manifest changes.
 - **Defaults** of settings live as initial values in the web part manifest and must match
-  the code fallbacks — the property pane selects what is stored.
+  the code fallbacks — the property pane selects what is stored. A setting that defaults to
+  **on** needs three places: the manifest value, a code fallback that treats a missing value
+  as on (`!== false`, for web parts saved before the setting existed) and `checked:` on the
+  `PropertyPaneToggle`, so the pane shows it on.
+- **Workbench theme line:** the SPFx Local Workbench writes
+  `"spfxLocalWorkbench.theme.current"` into `.vscode/settings.json` on every theme switch —
+  revert that line, never commit it.
 - **Real Signavio links never enter the repository** (model ids/authkeys; they are kept only
   locally under `private/`, gitignored, and blocked by the privacy-lint blocklist). Tests use
   placeholders — low-entropy keys (e.g. `'ab12'.repeat(16)`) so gitleaks stays quiet;
