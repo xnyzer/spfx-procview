@@ -44,6 +44,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-007 | Full-screen view (F-007a, F-007b) | 2026-10-01 |
 | F-015 | Diagram background setting (on, white, colour picker) — exactly behind the PNG, page and full screen | 2026-10-01 |
 | F-008 | Teams: follows the Teams theme (dark, high contrast); personal-app host removed | 2026-10-01 |
+| F-016a | Audit before the first release: 0 critical / 0 high / 13 medium / 24 low, triaged into F-016b, F-016c and the new F-017 | 2026-10-01 |
 
 ---
 
@@ -63,8 +64,9 @@ F-numbers.
 **Solution sketch** (updated at prep-step, 2026-10-01; size: medium, three substeps):
 - **Audit run:** the owner starts `/coding-kit:audit-code` without an argument (the skill
   cannot be invoked by Claude); it documents only and overwrites the gitignored
-  `AUDIT-RESULTS.md` — the 2026-09-29 results exist nowhere else and are copied to `private/`
-  first. Checks run in an isolated copy while the dev server runs.
+  `AUDIT-RESULTS.md` — the 2026-09-29 results exist nowhere else and are kept locally
+  first. Checks run in an isolated copy while the dev server runs. Done in F-016a — the
+  findings with their triage are in `PROGRESS-ARCHIVE.md` (F-016a).
 - **Correctness:** review against CODING-STANDARDS and the requirements, edge cases (invalid
   sizes, broken links, images that fail, fast toggling, listener cleanup)
 - **Licences:** what actually ships in the built package (expected: own code plus `tslib`
@@ -81,33 +83,10 @@ F-numbers.
   or script. Owner decision: the mapping from web part properties to the views moves out of
   `ProcViewWebPart.ts` (untested, needs SharePoint; 579 lines, above the 500-line hard limit
   of CODING-STANDARDS §2) into a pure `settings.ts`, so the tests take the web part's own path
-- **Seen while planning** (to be assessed in the audit): the Teams theme handler is not
-  unregistered on dispose and its `.catch(() => undefined)` swallows errors without a reason
-  (§7); `@microsoft/sp-lodash-subset` and `@microsoft/sp-office-ui-fabric-core` are declared
-  dependencies but never imported; a stale image's error event after a link change triggers an
-  extra render (resets the zoom) — to be confirmed
+- **Seen while planning** — assessed in F-016a: the Teams handler (L5), the unused
+  dependencies (L17) and the stale image events (M4) are confirmed findings
 
 **Dependencies:** F-015, F-008 (all features built)
-
-#### F-016a — Audit run and triage
-
-**What:** Back up the previous results, run the full audit with the three focal points (built
-package contents, licence inventory, every place where input reaches DOM, CSS or URLs), then
-triage every finding with the owner: fix in F-016b/F-016c, own F-number, or accepted with a
-reason.
-
-**Files:** `AUDIT-RESULTS.md` (local, gitignored), `private/` (backup of the 2026-09-29
-results), `PROGRESS.md` (F-016c scope, new F-numbers)
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] The 2026-09-29 results are kept in `private/` before the new run
-- [ ] `AUDIT-RESULTS.md` covers the whole audit plus the three focal points, including the
-      `.sppkg` bundle contents and the `npm query` licence inventory
-- [ ] Every finding is triaged with the owner; F-016c lists the ones to fix, new F-numbers
-      are in the backlog
-- [ ] No code changed in this substep
 
 #### F-016b — Settings mapping and injection tests
 
@@ -115,8 +94,17 @@ results), `PROGRESS.md` (F-016c scope, new F-numbers)
 views into a pure `settings.ts`; tests that feed hostile values into all fields at once and
 check the resulting DOM; fix the injection findings from F-016a.
 
+**Audit findings:** M1 (file over 500 lines), M2a (`render()` and
+`getPropertyPaneConfiguration()` over 50 lines), M12 (missing negative tests), L1 (theme
+values reach CSS unvalidated), L2 (provider URLs not re-checked), L3b (inherited-key lookup in
+the alignment field), L4 (bidi/zero-width editor texts), L6a (unreachable placeholder path,
+`NotConfiguredMessage` in the diagram view), L7a (unnamed validation delays), L8a (duplicate
+placeholder formatting)
+
 **Files:** `settings.ts` (new), `settings.test.ts` (new), `injection.test.ts` (new),
-`ProcViewWebPart.ts`; renderer files only where F-016a found a gap
+`ProcViewWebPart.ts`, `theme.ts`, `registry.ts`, `alignmentField.ts`, `renderDiagram.ts`,
+`messages.ts` and their tests; `loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts` if a
+string goes away
 
 **Dependencies:** F-016a
 
@@ -126,9 +114,11 @@ check the resulting DOM; fix the injection findings from F-016a.
       arrays): page, full screen, messages and the custom pane fields (alignment, colour)
       contain only the expected elements, no `on…` attributes, image and links only on
       allow-listed Signavio hosts, inline styles only from an allow-list, the background SVG
-      only `svg` and `rect`
-- [ ] `ProcViewWebPart.ts` below 500 lines; the web part behaves and looks as before
-      (visual check in the workbench)
+      only `svg` and `rect` (jsdom accepts invalid CSS — assert on parsed and stored values)
+- [ ] Theme values are accepted only as colours; links from a provider only as `https:`;
+      texts made only of invisible characters count as empty
+- [ ] `ProcViewWebPart.ts` below 500 lines, no function over 50 lines; the web part behaves
+      and looks as before (visual check in the workbench)
 - [ ] `just check` green (isolated copy while the dev server runs)
 
 #### F-016c — Remaining findings and licence check
@@ -137,17 +127,75 @@ check the resulting DOM; fix the injection findings from F-016a.
 `npm query` in `just check` that fails on GPL/AGPL and accepts the ADR-0001 exceptions (SPFx
 licence terms, the permissive option of dual-licensed packages).
 
-**Files:** `scripts/licence-check.mjs` (new), `justfile`; further files from the F-016a
-triage
+**Audit findings:**
+- Lifecycle: M4 (late events of replaced images re-render), M5 (no guard after
+  `onDispose`), L5 (Teams handler: swallowed callback errors without a log, race with
+  `getContext`), L21 (check whether each render fetches the PNG again)
+- Licences: M13 (`THIRD-PARTY-NOTICES.md` for `tslib` and `@microsoft/load-themed-styles`),
+  L22 (`@microsoft/microsoft-graph-client` has no licence field — explicit exception)
+- Manifest and dependencies: L15 (remove the `SharePointFullPage` host, fix the fallback
+  comment), L17 (remove `sp-lodash-subset`, `sp-office-ui-fabric-core`, the `eject-webpack`
+  script; exact versions)
+- Docs: L18 (REQUIREMENTS features 2/7/8, CODING-STANDARDS §13 and a convention override for
+  the own SVG icons, README Teams theme)
+- Small code fixes: M2d (`renderAlignmentButtons` over 50 lines), M3 (parameters in
+  `scripts/teams-icons.mjs`), L6d (test-only `applyThemeVariables`, `MESSAGE_KEYS`), L8b
+  (`MAX_PX` as placeholder in the loc files), L9b (`hostOf` fallback), L10 (exhaustive
+  switches in `sizing.ts`), L16 (weak tests), L19a (external-link helper in its own module),
+  L19c (doc comments and names outside zoom/full screen), L23 (`renderMessage` 51 lines)
+- Tooling: L20 (CodeQL permissions, format/lint `scripts/`, lefthook order, Renovate rule for
+  `tslib`)
+
+**Files:** `scripts/licence-check.mjs` (new), `THIRD-PARTY-NOTICES.md` (new), `justfile`,
+`ProcViewWebPart.ts`, `ProcViewWebPart.manifest.json`, `teamsTheme.ts`, `theme.ts`,
+`messages.ts`, `sizing.ts`, `alignmentField.ts`, `renderMessage.ts`, `aboutField.ts`,
+`loc/*.js`, tests, `package.json`, `scripts/teams-icons.mjs`, `lefthook.yml`, `renovate.json`,
+`.github/workflows/codeql.yml`, `REQUIREMENTS.md`, `CODING-STANDARDS.md`,
+`.claude/convention-overrides.md`, `README.md`
 
 **Dependencies:** F-016b
 
 **Acceptance criteria:**
 - [ ] `just check` fails on a GPL/AGPL-only package and passes on the current tree (SPDX `OR`
       expressions pass when one option is permissive)
+- [ ] Image events of replaced images and every callback after `onDispose` are ignored
+      (tests)
+- [ ] `THIRD-PARTY-NOTICES.md` lists every third-party package in the bundle with its notice
 - [ ] Every finding from F-016a has a status with evidence (fixed / own F-number / accepted
       with reason), recorded in `AUDIT-RESULTS.md`
 - [ ] `just check` and `just build` green (isolated copy while the dev server runs)
+
+### F-017 — Zoom and full-screen fixes from the audit
+
+**Status:** BACKLOG
+
+**Problem:** The audit (F-016a) found that zoom and full screen misbehave in edge cases and
+for keyboard users, and that their code breaks the length and parameter limits: a double-click
+on the full-screen button opens and immediately closes it, zoom buttons drop the keyboard focus
+when they disable themselves, focus rings in full screen fail the 3:1 contrast, and with the
+background setting off the transparent diagram is unreadable on the dark full-screen layer.
+
+**Idea:** One pass over `zoom.ts`, `zoomView.ts`, `lightbox.ts` and the zoom/full-screen parts
+of `renderDiagram.ts` and the stylesheet: fix the behaviour, then split the long functions.
+
+**Solution sketch:**
+- Full screen always shows a colour behind the PNG — the configured one, otherwise white; the
+  background setting then only affects the page (owner decision 2026-10-01) (M9)
+- Ignore backdrop clicks that belong to the opening click (double-click, held Enter) (M6)
+- Keep the focus when a zoom button becomes unavailable (`aria-disabled` or move the focus)
+  (M7); focus rings that stay visible on the dark layer in every theme (M8)
+- Pointer handling: primary mouse button only, end on `buttons === 0`, `lostpointercapture`
+  (M10); no native image drag while zoomable (M11)
+- Split `attachZoom` (211 lines), `openLightbox` and `renderDiagram`; options objects instead
+  of 4–6 parameters (M2b–c, M2d `renderDiagram`, M3)
+- Small items: inherited-key lookup (L3a), unused `update`/`reset` and the untested
+  `showModal` fallback (L6b–c), one shared icon helper and constants (L7b–c), pointer capture
+  without try/catch (L9a), wheel page mode (L11), NaN guards (L12), full-screen error state,
+  closed-lightbox reference, viewport units, `touch-action` and layout reads (L13), scrim
+  colours as a documented exception and a `color-mix` fallback (L14), comments and names in
+  these files (L19b–c)
+
+**Dependencies:** F-016c
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
@@ -176,7 +224,8 @@ tags and attaches it to a GitHub release; a deployment guide for IT.
   GitHub release with the `.sppkg`, a SHA-256 checksum and the CHANGELOG section as notes
 - Owner decisions (2026-10-01): first release **1.0.0**; cutting it is the last step of F-009b
 
-**Dependencies:** F-002, F-016 (audit before the first release)
+**Dependencies:** F-002, F-016 (audit before the first release), F-017 (zoom and full-screen
+fixes from the audit)
 
 #### F-009a — One version, version display, release recipe (local)
 
@@ -206,11 +255,12 @@ property pane.
 
 **Acceptance criteria:**
 - [ ] Workflow: runs on `v*` tags only, fails if the tag does not match the version, builds
-      and publishes a GitHub release with `.sppkg`, `.sha256` and the CHANGELOG notes; actions
-      pinned by SHA, minimal permissions (`contents: write` only for the release job)
+      and publishes a GitHub release with `.sppkg`, `.sha256`, `THIRD-PARTY-NOTICES.md` (F-016c)
+      and the CHANGELOG notes; actions pinned by SHA, minimal permissions (`contents: write`
+      only for the release job)
 - [ ] `docs/deployment.md`: App Catalog upload and tenant-wide deployment, updating, Teams
       sync, removal, the "shared links are effectively public" rule, Signavio domains for
-      firewall/proxy, where to see the version, checksum verification
+      firewall/proxy, where to see the version, checksum verification, third-party notices
 - [ ] First release: `just release 1.0.0`, owner approves the push of commit and tag, the
       workflow publishes release `v1.0.0` with the package
 - [ ] `just check` green
@@ -230,12 +280,14 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
   and Renovate Node rule move together
 - Re-evaluate `npm audit` against ADR-0001; drop the `qs` override if no longer needed
 
-**Dependencies:** a stable SPFx release on a newer Node LTS (1.24 was in beta on 2026-09-29)
+**Dependencies:** a stable SPFx release on a newer Node LTS (1.24 was in beta on 2026-09-29;
+the Microsoft roadmap update of 2026-09-30 targets 1.24 GA for October 2026 with Node 24 and
+Node 26 support — audit F-016a, L24)
 
 ---
 
 <!-- FEATURE-INDEX
-next-feature: F-017
+next-feature: F-018
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
@@ -252,4 +304,5 @@ F-013 Link to the GitHub repository in the property pane (DONE)
 F-014 Own Teams app icons instead of the generator placeholders (DONE)
 F-015 Diagram background (setting) (DONE)
 F-016 Audit before the first release (PLANNED)
+F-017 Zoom and full-screen fixes from the audit
 -->

@@ -8,6 +8,103 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-016a — Audit run and triage
+
+_Part of F-016 — Audit before the first release. Completed 2026-10-01._
+
+**What:** Back up the previous results, run the full audit with the three focal points (built
+package contents, licence inventory, every place where input reaches DOM, CSS or URLs), then
+triage every finding with the owner: fix in F-016b/F-016c, own F-number, or accepted with a
+reason.
+
+**Files:** `AUDIT-RESULTS.md` (local, gitignored — overwritten by every audit run),
+`PROGRESS.md`, `PROGRESS-ARCHIVE.md`, `REQUIREMENTS.md` (decision log)
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] The 2026-09-29 results are kept locally before the new run — copied unchanged
+      (`cmp` identical), outside the repository
+- [x] `AUDIT-RESULTS.md` covers the whole audit plus the three focal points, including the
+      `.sppkg` bundle contents and the `npm query` licence inventory
+- [x] Every finding is triaged with the owner; F-016c lists the ones to fix, new F-numbers
+      are in the backlog — all 37 IDs checked by script against the triage table
+- [x] No code changed in this substep — only `PROGRESS.md`, `PROGRESS-ARCHIVE.md` and
+      `REQUIREMENTS.md`
+
+**Implemented:**
+- The owner ran `/coding-kit:audit-code` (Claude cannot invoke it). Checks in an isolated
+  copy while the owner's dev server kept running: `just check` (271 tests) and `just build`
+  green; `npm audit` (7 moderate, all the accepted dev-only `uuid` advisory of ADR-0001;
+  production 0); `npm outdated` (only SPFx-dictated toolchain and `tslib`); `gitleaks git`
+  (41 commits) and `gitleaks dir` on the tracked tree clean; `privacy-lint --all` clean.
+- Three read-only review agents (zoom and full screen; input sinks with scratch Node/jsdom
+  runs against the compiled modules; remaining code against CODING-STANDARDS); every medium
+  finding was re-checked against the code.
+- **Bundle:** the `.sppkg` was built and unpacked. Externals are only `sp-core-library`,
+  `sp-property-pane`, `sp-webpart-base` and the strings module. Bundled third-party code:
+  `tslib` 2.3.1 (0BSD, header extracted) and `@microsoft/load-themed-styles` 1.10.292 (MIT,
+  via `sp-css-loader`, **no notice**) — the planning assumption "own code plus tslib" was
+  incomplete.
+- **Licence inventory** (`npm query '*'`, 1151 unique packages): no GPL/AGPL-only package;
+  the dual-licensed `jszip` and `node-forge` are the ADR-0001 exceptions;
+  `@microsoft/microsoft-graph-client@1.7.2-spfx` has no licence field.
+- **Injection:** every web part property traced from source to sink — no path to active HTML,
+  CSS, script or a foreign URL (40 hostile link variants rejected or canonicalised; no
+  `innerHTML`-type sink anywhere).
+- **Versions:** SPFx 1.23.2 is still `latest` (`next` 1.24.0-beta.5); Microsoft's roadmap
+  update of 2026-09-30 targets 1.24 GA for October 2026 with Node 24 and Node 26 support.
+
+**Findings** (0 critical, 0 high, 13 medium, 24 low) **and triage:**
+
+| ID | Finding | Target |
+|----|---------|--------|
+| M1 | `ProcViewWebPart.ts` 579 lines, above the 500 hard limit (§2) | F-016b |
+| M2 | Functions over 50 lines (§3): a `render()` and `getPropertyPaneConfiguration()` 94; b `attachZoom()` 211; c `openLightbox()` 96; d `renderDiagram()` 93, `renderAlignmentButtons()` 75 | a F-016b; b, c, d `renderDiagram` F-017; d alignment F-016c |
+| M3 | More than 3 parameters (§3): `zoom.ts` (`pinch` 6, `clampAxis` 5, `zoomTo`/`zoomBy`/`pan` 4), `scripts/teams-icons.mjs` (5, 6) | zoom F-017; script F-016c |
+| M4 | Late `load`/`error` events of replaced images re-render, overwrite the error state and natural size, reset the zoom | F-016c |
+| M5 | No guard after `onDispose` — image events and Teams callbacks still render | F-016c |
+| M6 | Double-click or held Enter on the full-screen button opens and immediately closes it | F-017 |
+| M7 | Zoom buttons disable themselves while focused — keyboard focus lost | F-017 |
+| M8 | Focus rings in full screen ~2.3:1 on the dark layer; Close ring invisible in dark themes | F-017 |
+| M9 | Background setting off → transparent PNG unreadable in full screen | F-017 (owner decision: always a colour in full screen) |
+| M10 | Any mouse button pans; no `lostpointercapture` (stale pointer suspected) | F-017 |
+| M11 | Native image drag may interrupt panning (suspected) | F-017 |
+| M12 | Missing negative tests on security boundaries; no web part wiring test | F-016b |
+| M13 | MIT notice missing for the bundled `@microsoft/load-themed-styles` | F-016c (`THIRD-PARTY-NOTICES.md`) |
+| L1 | SharePoint theme values reach CSS custom properties used in `background:` unvalidated | F-016b |
+| L2 | Renderers trust provider URLs (future providers) | F-016b |
+| L3 | Inherited-key lookups on `event.key`: a `zoomView.ts`, b `alignmentField.ts` | a F-017; b F-016b |
+| L4 | Bidi and zero-width characters in editor texts | F-016b |
+| L5 | Teams theme handler: single slot, swallowed callback errors without a log, race with `getContext` | F-016c |
+| L6 | Dead code: a placeholder path in the diagram view; b zoom `update`/`reset`; c `showModal` fallback; d test-only `applyThemeVariables`, `MESSAGE_KEYS` | a F-016b; b, c F-017; d F-016c |
+| L7 | Magic values: a validation delays; b zoom epsilon; c SCSS/icon literals | a F-016b; b, c F-017 |
+| L8 | Duplication: a natural-size placeholder formatting; b `MAX_PX` in the loc files | a F-016b; b F-016c |
+| L9 | Error swallowing: a pointer capture try/catch; b `hostOf` fallback would print the authkey (unreachable) | a F-017; b F-016c |
+| L10 | Non-exhaustive switches in `sizing.ts` (§6) | F-016c |
+| L11 | Wheel `deltaMode` page treated as pixels; inverted doc comment | F-017 |
+| L12 | NaN passes the zoom guards | F-017 |
+| L13 | Full screen/zoom robustness: no error state, closed-lightbox reference, viewport units, `touch-action`, layout reads | F-017 |
+| L14 | Hard-coded scrim/shadow colours undocumented; `color-mix` without fallback | F-017 |
+| L15 | `SharePointFullPage` host undocumented and untested; manifest comment drift | F-016c (owner decision: remove the host) |
+| L16 | Weak tests (host list length only, `violatedDirective` fallback, message link `target`, Teams race) | F-016c; rename of `linkErrors.test.ts` accepted as not needed |
+| L17 | Unused `sp-lodash-subset`, `sp-office-ui-fabric-core`; `eject-webpack` script; tilde ranges | F-016c |
+| L18 | Doc drift: REQUIREMENTS features 2/7/8, CODING-STANDARDS §13 (Fluent icons, `escape`), README Teams light theme | F-016c |
+| L19 | Docs and names: a external-link helper named `hubAnchor`; b wrong comments; c missing doc comments, names | a F-016c; b F-017; c split by file |
+| L20 | Tooling: CodeQL permissions, `scripts/` not formatted/linted, lefthook order, Renovate rule for `tslib` | F-016c |
+| L21 | Each render may fetch the PNG again (`no-store`) — verify in the browser | F-016c |
+| L22 | `@microsoft/microsoft-graph-client` without a licence field | F-016c (licence check exception) |
+| L23 | `renderMessage()` 51 lines | F-016c |
+| L24 | SPFx 1.24 GA with Node 24/26 targeted for October 2026 | F-010 note |
+
+**Decisions / deviations:**
+- Owner decisions (REQUIREMENTS decision log, 2026-10-01): full screen always shows a colour
+  behind the PNG (configured, otherwise white); the `SharePointFullPage` host is removed; the
+  bundled third-party notices go into `THIRD-PARTY-NOTICES.md` (repository and release asset,
+  F-009b); zoom and full-screen findings become their own task F-017, before F-009.
+- The full findings with lines, scenarios and recommendations live in the local
+  `AUDIT-RESULTS.md`; this table is the durable record in the repository.
+
 ### F-008 — Microsoft Teams hosting
 
 _Completed 2026-10-01._
