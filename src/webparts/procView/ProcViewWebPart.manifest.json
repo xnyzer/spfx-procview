@@ -45,7 +45,8 @@
         "captionAlign": "center",
         "showHubLink": false,
         "hubLinkPosition": "below",
-        "hubLinkAlign": "right"
+        "hubLinkAlign": "right",
+        "offerZoom": false
       }
     }
   ]

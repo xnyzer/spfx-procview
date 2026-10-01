@@ -41,8 +41,8 @@ detection), F-011 (local testing via the SPFx Local Workbench extension; no onli
 workbench), F-012 (texts in English, German, French and Spanish; French/Spanish Signavio
 labels unverified — native-speaker review before production), F-005 (every page colour
 follows the section's theme, `theme.ts`), F-013 (repository link in the property pane) and
-F-014 (own Teams app icons, `just icons`); F-006a (zoom maths and controls, not wired yet)
-— 228 Jest tests. Next: `/build-step F-006b` (wire zoom with the "Offer zoom" toggle).
+F-014 (own Teams app icons, `just icons`) and F-006 (zoom and pan, toggle "Offer zoom") —
+233 Jest tests. Next: `/prep-step F-007` (full-screen view).
 
 ## Project notes (learned the hard way)
 
@@ -68,7 +68,8 @@ F-014 (own Teams app icons, `just icons`); F-006a (zoom maths and controls, not 
   attacker hosts in examples only `example.com`.
 - **Local workbench limits** (SPFx Local Workbench 0.2.0): `propertyPane.open/refresh` are
   no-ops, text values containing `:` arrive as objects (known bug, see README), no live
-  reload — confirm those behaviours in a SharePoint test site.
+  reload — confirm those behaviours in a SharePoint test site, plus two-finger pinch zoom
+  (needs a touch device).
 
 <!-- section:claude-startup -->
 Read `README.md` and `REQUIREMENTS.md` (while it exists). Then `PROGRESS.md`: its open-tasks

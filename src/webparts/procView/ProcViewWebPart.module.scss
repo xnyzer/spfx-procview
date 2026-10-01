@@ -60,6 +60,83 @@
   font-size: 0.875em;
 }
 
+// Zoom ("Offer zoom", zoomView.ts): the frame clips the zoomed image. touch-action decides who
+// gets touch gestures: while zoomable, swipes still scroll the page and pinch reaches the
+// diagram; while zoomed, every gesture goes to the diagram
+.zoomable {
+  overflow: hidden;
+  touch-action: pan-x pan-y;
+
+  &:focus-visible {
+    outline: 2px solid var(--focusBorder, '[theme:focusBorder, default: #605e5c]');
+    outline-offset: 2px;
+  }
+}
+
+.zoomed {
+  touch-action: none;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// Controls top right on the image — subtle like the hub overlay, always visible
+.zoomControls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.zoomButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--bodyBackground, '[theme:bodyBackground, default: #ffffff]') 80%, transparent);
+  color: var(--bodyText, '[theme:bodyText, default: #323130]');
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: var(--bodyBackground, '[theme:bodyBackground, default: #ffffff]');
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--focusBorder, '[theme:focusBorder, default: #605e5c]');
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  // Windows high contrast: system colours and a visible border
+  @media (forced-colors: active) {
+    background: ButtonFace;
+    color: ButtonText;
+    border: 1px solid ButtonText;
+
+    &:disabled {
+      color: GrayText;
+      border-color: GrayText;
+    }
+  }
+}
+
 .hubAnchor {
   display: inline-flex;
   align-items: center;

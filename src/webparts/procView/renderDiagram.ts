@@ -1,5 +1,7 @@
 import type { IDiagramLink } from '../../providers/types';
 import type { CssDeclarations, IDiagramStyles } from './sizing';
+import { attachZoom } from './zoomView';
+import type { IZoomClassNames, IZoomController, IZoomLabels } from './zoomView';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -28,6 +30,13 @@ export interface IHubLinkView {
   newTabHint: string;
 }
 
+/** Zoom and pan on the image ("Offer zoom"); the caller owns the controller and disposes it. */
+export interface IDiagramZoom {
+  labels: IZoomLabels;
+  classNames: IZoomClassNames;
+  onAttach: (controller: IZoomController) => void;
+}
+
 /** Everything the diagram view needs — assembled by the web part, rendered here. */
 export interface IDiagramView {
   /** Validated link; `undefined` shows the placeholder instead of an image. */
@@ -39,6 +48,8 @@ export interface IDiagramView {
   captionAlign: TextAlign;
   /** Hub link (below the caption or as overlay on the image); `undefined` → none. */
   hubLink?: IHubLinkView;
+  /** Zoom and pan on the image; `undefined` → off. */
+  zoom?: IDiagramZoom;
   placeholderText: string;
   classNames: {
     root: string;
@@ -108,6 +119,13 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
     frame.appendChild(overlay);
   }
   figure.appendChild(frame);
+  if (view.zoom) {
+    // The frame clips the zoomed image and hosts the controls (top right, the overlay stays
+    // bottom right)
+    view.zoom.onAttach(
+      attachZoom(doc, { viewport: frame, image, labels: view.zoom.labels, classNames: view.zoom.classNames })
+    );
+  }
 
   if (view.caption !== '') {
     const caption = doc.createElement('figcaption');

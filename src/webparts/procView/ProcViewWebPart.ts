@@ -26,6 +26,7 @@ import { renderMessage } from './renderMessage';
 import { applyThemeVariables } from './theme';
 import { trackImageViolations } from './violationTracker';
 import type { IViolationTracker } from './violationTracker';
+import type { IZoomController } from './zoomView';
 import { diagramStyles, dimensionErrorKey, parseDimension } from './sizing';
 import type { Dimension, DimensionField } from './sizing';
 
@@ -49,6 +50,8 @@ export interface IProcViewWebPartProps {
   hubLinkAlign?: string;
   /** `below` (default) the diagram or `overlay` in its bottom-right corner. */
   hubLinkPosition?: string;
+  /** Zoom and pan controls on the diagram (default off). */
+  offerZoom?: boolean;
 }
 
 type AlignProperty = 'captionAlign' | 'hubLinkAlign';
@@ -71,6 +74,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   private _loadError: ILoadError | undefined;
   /** Security-policy violations for images — tells "blocked" from other load errors. */
   private _violations: IViolationTracker | undefined;
+  /** Zoom on the current diagram ("Offer zoom"); replaced on every render. */
+  private _zoom: IZoomController | undefined;
 
   protected onInit(): Promise<void> {
     this._violations = trackImageViolations(document, () => this._onViolation());
@@ -78,12 +83,15 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   }
 
   protected onDispose(): void {
+    this._disposeZoom();
     this._violations?.dispose();
     this._violations = undefined;
     super.onDispose();
   }
 
   public render(): void {
+    // Every render builds a new diagram; the old zoom's listeners and observer must go
+    this._disposeZoom();
     const result = parseDiagramLink(this.properties.imageLink);
     const link = result.ok ? result.link : undefined;
     const outcome = outcomeFor(resolveState(result, this._loadError), this.displayMode === DisplayMode.Edit);
@@ -137,6 +145,24 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       caption: this._text(this.properties.caption),
       captionAlign: this._align('captionAlign'),
       hubLink,
+      zoom:
+        this.properties.offerZoom === true
+          ? {
+              labels: {
+                zoomIn: strings.ZoomIn,
+                zoomOut: strings.ZoomOut,
+                reset: strings.ZoomReset,
+                viewport: strings.ZoomViewportLabel
+              },
+              classNames: {
+                zoomable: styles.zoomable,
+                zoomed: styles.zoomed,
+                controls: styles.zoomControls,
+                button: styles.zoomButton
+              },
+              onAttach: (controller) => (this._zoom = controller)
+            }
+          : undefined,
       placeholderText: strings.NotConfiguredMessage,
       classNames: {
         root: styles.procView,
@@ -226,6 +252,17 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
                   placeholder: 'auto',
                   onGetErrorMessage: (value: string) => this._validateDimension(value, 'height'),
                   deferredValidationTime: 300
+                })
+              ]
+            },
+            {
+              // Own group: a toggle right below a text field's description sits too close to it
+              groupName: strings.ZoomGroupName,
+              groupFields: [
+                PropertyPaneToggle('offerZoom', {
+                  label: strings.OfferZoomLabel,
+                  onText: strings.ToggleOn,
+                  offText: strings.ToggleOff
                 })
               ]
             },
@@ -348,6 +385,11 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     if (propertyPath === 'showHubLink' || propertyPath === 'hubLinkPosition') {
       this.context.propertyPane.refresh();
     }
+  }
+
+  private _disposeZoom(): void {
+    this._zoom?.dispose();
+    this._zoom = undefined;
   }
 
   /** Trimmed text of a property — web part properties are untrusted, non-strings count as empty. */

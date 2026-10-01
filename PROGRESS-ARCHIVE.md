@@ -8,6 +8,80 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-006 — Zoom and pan (checkbox)
+
+_Completed 2026-10-01 via F-006a and F-006b._
+
+**Problem:** Large process diagrams are hard to read at page width.
+
+**Idea:** Add the setting "Offer zoom" to the configuration pane (introduced here, together
+with its function); when on: zoom in/out/reset controls and drag/touch panning inside the
+web part frame, styled from the page theme.
+
+**Solution sketch** (updated at prep-step, 2026-10-01; size: large, two substeps):
+- CSS transform on the image inside a clipped viewport; pointer events for mouse, touch and
+  pen; maximum zoom = natural image size (the PNG is sharp up to 100 %)
+- **Toggle, not checkbox** ("Offer zoom", default off — on/off settings are toggles)
+- **Own inline SVG icons, not the Fluent icon font** — the font is loaded by SharePoint
+  pages and missing in the local workbench (and possibly Teams); the alignment toolbar and
+  the hub link already use own SVGs
+- Controls hidden when there is nothing to zoom (diagram already shown at or above its
+  natural size)
+- With a fixed height the painted image can be smaller than its box (`object-fit:
+  contain`) — pan limits follow the painted image, not the box; a column resize (e.g.
+  rotating a tablet) re-clamps the zoom so the image never leaves the frame
+- Owner decisions (2026-10-01): mouse wheel zooms only with Ctrl/Cmd (plain wheel scrolls
+  the page); two-finger pinch zoom on touch, one finger pans while zoomed (page scrolling
+  is blocked only while zoomed in); controls top right on the image, subtle and always
+  visible (the hub overlay stays bottom right)
+
+**Dependencies:** F-002, F-005
+
+### F-006b — Wiring with the "Offer zoom" toggle
+
+_Part of F-006 — Zoom and pan. Completed 2026-10-01._
+
+**What:** Toggle "Offer zoom" in the "Size" group (default off, manifest initial value),
+zoom view wired into the diagram, texts in four languages, colours from the section theme
+(F-005 pattern), forced colours, no animation with reduced motion, docs.
+
+**Files:** `renderDiagram.ts`, `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`,
+`ProcViewWebPart.manifest.json`, `loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts`,
+tests (under `src/webparts/procView/`); `README.md`; `REQUIREMENTS.md`
+
+**Dependencies:** F-006a
+
+**Acceptance criteria:**
+- [x] With the toggle off the web part behaves exactly as before (existing tests green; a
+      test asserts no controls, buttons or tabindex without the option)
+- [x] With the toggle on: controls top right, hub overlay unaffected, controls hidden when
+      there is nothing to zoom (renderDiagram tests; owner in the local workbench)
+- [x] Texts in all four languages; theme colours on coloured sections; keyboard focus
+      visible
+- [x] Owner tries it in the local workbench with a large diagram (zoom, pan, reset —
+      "works"); pinch needs a touch device → to confirm in the IT test site or on a tablet
+- [x] `just check` green — 233 tests (isolated copy while the dev server runs)
+
+**Implemented:**
+- `renderDiagram.ts` — optional `zoom` in the view (`IDiagramZoom`: labels, class names,
+  `onAttach`); attaches `attachZoom` to the image frame after the overlay, so the controls
+  sit top right and the hub overlay stays bottom right.
+- `ProcViewWebPart.ts` — property `offerZoom`; own pane group "Zoom" with the toggle; the
+  zoom controller is disposed on every render and in `onDispose` (no leftover listeners or
+  observers); image loads do not re-render, so the zoom survives them.
+- `ProcViewWebPart.module.scss` — `.zoomable` (clips, `touch-action: pan-x pan-y`, focus
+  outline), `.zoomed` (`touch-action: none`, grab cursor), `.zoomControls` (top right,
+  `[hidden]` wins over flex), `.zoomButton` (section theme colours like the hub overlay,
+  disabled state, forced colours); no animation at all.
+- Manifest — `"offerZoom": false`; `loc/*` — `ZoomGroupName`, `OfferZoomLabel`, `ZoomIn`,
+  `ZoomOut`, `ZoomReset`, `ZoomViewportLabel` in four languages.
+- Tests — 5 renderDiagram tests for the wiring. Docs — README "Zoom → Offer zoom",
+  decision log entry.
+
+**Decisions / deviations:** The toggle moved from the "Size" group to its own group "Zoom"
+after the owner's visual check — a toggle right below a text field's description sat too
+close to it, and the built-in fields cannot be restyled cleanly.
+
 ### F-006a — Zoom logic and controls (not wired yet)
 
 _Part of F-006 — Zoom and pan. Completed 2026-10-01._

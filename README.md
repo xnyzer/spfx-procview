@@ -33,6 +33,10 @@ there is **no release yet** — versioning and the release pipeline follow (F-00
    - **Size** — width in pixels, percent of the column (e.g. `50%`) or empty for automatic;
      height in pixels or empty. The diagram is never wider than its column and never
      distorted.
+   - **Zoom → Offer zoom** — switch on to let readers zoom into large diagrams: buttons top right
+     on the diagram (−, +, fit), Ctrl/Cmd + mouse wheel, two-finger pinch on touch screens,
+     drag to move while zoomed, and keys (+, −, 0, arrow keys). Zooming goes up to the
+     diagram's natural size; the buttons only appear when the diagram is shown smaller.
    - **Accessibility** — alternative text for screen readers (default "Process diagram").
    - **About** — link to this repository (source code, documentation, issues).
 4. **When something is wrong:** editors see what to fix (no link yet, a wrong link such as

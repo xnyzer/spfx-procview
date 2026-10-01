@@ -1,5 +1,6 @@
 import { parseHubLinkPosition, parseTextAlign, renderDiagram } from './renderDiagram';
-import type { IDiagramView } from './renderDiagram';
+import type { IDiagramView, IDiagramZoom } from './renderDiagram';
+import type { IZoomController } from './zoomView';
 import { diagramStyles } from './sizing';
 import type { IDiagramLink } from '../../providers/types';
 
@@ -258,6 +259,63 @@ describe('renderDiagram — hub link as overlay', () => {
 
   it('renders no overlay without a valid diagram', () => {
     expect(renderDiagram(document, view({ link: undefined, hubLink: OVERLAY })).querySelector('a')).toBeNull();
+  });
+});
+
+describe('renderDiagram — zoom', () => {
+  function zoomOption(onAttach: (controller: IZoomController) => void): IDiagramZoom {
+    return {
+      labels: { zoomIn: 'Zoom in', zoomOut: 'Zoom out', reset: 'Fit to frame', viewport: 'Zoomable diagram' },
+      classNames: { zoomable: 'zoomable', zoomed: 'zoomed', controls: 'zoomControls', button: 'zoomButton' },
+      onAttach
+    };
+  }
+
+  it('adds no zoom without the option — the diagram is unchanged', () => {
+    const root = renderDiagram(document, view());
+    expect(root.querySelector('.zoomControls')).toBeNull();
+    expect(root.querySelector('button')).toBeNull();
+    expect(root.querySelector('.frame')?.hasAttribute('tabindex')).toBe(false);
+  });
+
+  it('attaches the zoom to the image frame and hands over the controller', () => {
+    const attached: IZoomController[] = [];
+    const root = renderDiagram(document, view({ zoom: zoomOption((controller) => attached.push(controller)) }));
+    const frame = root.querySelector('.frame');
+    expect(attached).toHaveLength(1);
+    expect(frame?.querySelector('.zoomControls')).not.toBeNull();
+    expect(frame?.querySelectorAll('.zoomButton')).toHaveLength(3);
+    expect((root.querySelector('img') as HTMLImageElement).style.transformOrigin).toBe('0 0');
+    attached[0].dispose();
+    expect(frame?.querySelector('.zoomControls')).toBeNull();
+  });
+
+  it('keeps the controls hidden until the loaded image turns out to be zoomable', () => {
+    // jsdom lays nothing out: the image has no size, so there is nothing to zoom
+    const root = renderDiagram(document, view({ zoom: zoomOption(() => undefined) }));
+    const controls = root.querySelector('.zoomControls') as HTMLElement;
+    expect(controls.hidden).toBe(true);
+    expect(root.querySelector('.frame')?.classList.contains('zoomable')).toBe(false);
+  });
+
+  it('leaves the hub overlay in place next to the controls', () => {
+    const hubLink = {
+      url: LINK.hubUrl as string,
+      text: 'Open in Signavio',
+      position: 'overlay' as const,
+      align: 'right' as const,
+      newTabHint: '(opens in a new tab)'
+    };
+    const root = renderDiagram(document, view({ hubLink, zoom: zoomOption(() => undefined) }));
+    const frame = root.querySelector('.frame');
+    expect(frame?.querySelector('a.hubOverlay')).not.toBeNull();
+    expect(frame?.querySelector('.zoomControls')).not.toBeNull();
+  });
+
+  it('adds no zoom without a valid diagram', () => {
+    const attached: IZoomController[] = [];
+    renderDiagram(document, view({ link: undefined, zoom: zoomOption((controller) => attached.push(controller)) }));
+    expect(attached).toHaveLength(0);
   });
 });
 
