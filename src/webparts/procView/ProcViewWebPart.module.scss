@@ -82,11 +82,18 @@
   }
 }
 
-// Controls top right on the image — subtle like the hub overlay, always visible
-.zoomControls {
+// Bar top right on the image for zoom and full screen — subtle like the hub overlay (which
+// stays bottom right), always visible
+.controlBar {
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+// Zoom buttons inside the bar; hidden while there is nothing to zoom
+.zoomControls {
   display: flex;
   gap: 4px;
 
@@ -290,4 +297,99 @@
   position: relative;
   margin: 8px 0 0;
   font-size: 14px;
+}
+
+// Full-screen view (lightbox.ts): a modal <dialog> covering the window. The dialog itself is the
+// dark layer, so a click on it next to the image is the "backdrop click" that closes it.
+// It lives in <body>, outside the web part, so colours fall back to the page theme tokens.
+.lightbox {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  // Room for the close button above the image
+  padding: 56px 24px 24px;
+  box-sizing: border-box;
+  border: 0;
+  background: rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+
+  // Only while open — a closed dialog must stay hidden
+  &[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &::backdrop {
+    background: transparent;
+  }
+
+  @media (forced-colors: active) {
+    background: Canvas;
+  }
+}
+
+// Hugs the image like the frame on the page: it is the zoom viewport and hosts the controls
+.lightboxFrame {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+// At most the natural size (never blown up — the PNG is sharp up to 100 %), scaled down to fit
+// the window without distortion. The white background sits exactly behind the PNG, whose own
+// background is transparent and hard to read on the dark layer — deliberately not a theme colour:
+// the diagram is drawn for white paper.
+.lightboxImage {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 80px);
+  background: #ffffff;
+}
+
+.lightboxClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: '[theme:white, default: #ffffff]';
+  color: '[theme:neutralPrimary, default: #323130]';
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid '[theme:white, default: #ffffff]';
+    outline-offset: 2px;
+  }
+
+  @media (forced-colors: active) {
+    background: ButtonFace;
+    color: ButtonText;
+    border: 1px solid ButtonText;
+  }
+}
+
+// Zoom buttons in full screen: top right inside the image frame, below the close button
+.lightboxZoomControls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+
+  &[hidden] {
+    display: none;
+  }
 }

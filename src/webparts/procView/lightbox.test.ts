@@ -109,6 +109,15 @@ describe('openLightbox — closing', () => {
     expect(document.activeElement).toBe(opener);
   });
 
+  it('returns the focus to an explicitly given opener', () => {
+    const other = document.createElement('button');
+    document.body.appendChild(other);
+    lightbox = openLightbox(document, { ...PROPS, opener: other });
+    lightbox.close();
+    expect(document.activeElement).toBe(other);
+    other.remove();
+  });
+
   it('closes with Escape (the cancel event)', () => {
     const dialog = open();
     const cancel = new Event('cancel', { cancelable: true });

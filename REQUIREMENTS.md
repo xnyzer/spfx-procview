@@ -130,6 +130,7 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-09-30 | Instructions name Signavio menu items as the Signavio UI shows them in each language; German texts avoid a form of address ("Sie"/"du") where possible | Owner decision during F-012 planning; editors recognise the labels they see in Signavio |
 | 2026-09-30 | French Signavio labels from the French SAP Signavio user guide (Partager → Incorporer un diagramme → « Image simple »); Spanish keeps the English labels; both unverified against the UI, native-speaker review before production | The SAP guides are machine-translated (the German one says "Teilen" where the UI shows "Freigeben"); no Spanish guide exists; the owner cannot switch the Signavio UI language — owner chose this over asking for screenshots |
 | 2026-10-01 | Zoom (F-006): toggle "Offer zoom" (default off) in its own group "Zoom" below "Size" (a toggle right below a text field description sat too close to it); controls top right on the diagram, subtle and always visible; Ctrl/Cmd + wheel zooms (plain wheel scrolls the page); two-finger pinch on touch, one finger pans while zoomed; maximum = natural size; controls only when the diagram is shown smaller | Owner decisions during F-006 planning; page scrolling must keep working for readers who do not want to zoom |
+| 2026-10-01 | Full-screen view (F-007): own toggle "Offer full screen", **on by default** (manifest value and a code fallback for web parts saved before); only the diagram in the overlay (no caption, no hub link), fitted to the window and zoomable; one control bar top right for zoom and full screen; the pane group "Zoom" is renamed "Viewing" and holds both toggles — supersedes the group name of the entry above | Owner decisions during F-007 planning; resolves the open question below |
 
 ### Technical decisions
 
@@ -166,5 +167,5 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
       Trusted Script Sources); "HTML Field Security" allowed domains apply to iframes (Embed
       web part). Neither blocks the web part's `<img>`; F-004 still detects an `img-src`
       violation as a safeguard.
-- [ ] **Full-screen view (F-007):** always available, tied to "Offer zoom", or its own
-      checkbox in the configuration pane?
+- [x] **Full-screen view (F-007):** ~~always available, tied to "Offer zoom", or its own
+      checkbox?~~ Its own toggle, on by default. Resolved 2026-10-01, see product decisions.

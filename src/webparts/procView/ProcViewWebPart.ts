@@ -26,7 +26,9 @@ import { renderMessage } from './renderMessage';
 import { applyThemeVariables } from './theme';
 import { trackImageViolations } from './violationTracker';
 import type { IViolationTracker } from './violationTracker';
-import type { IZoomController } from './zoomView';
+import type { IZoomClassNames, IZoomController, IZoomLabels } from './zoomView';
+import { openLightbox } from './lightbox';
+import type { ILightbox } from './lightbox';
 import { diagramStyles, dimensionErrorKey, parseDimension } from './sizing';
 import type { Dimension, DimensionField } from './sizing';
 
@@ -52,6 +54,8 @@ export interface IProcViewWebPartProps {
   hubLinkPosition?: string;
   /** Zoom and pan controls on the diagram (default off). */
   offerZoom?: boolean;
+  /** Full-screen button on the diagram (default on — a missing value counts as on). */
+  offerFullScreen?: boolean;
 }
 
 type AlignProperty = 'captionAlign' | 'hubLinkAlign';
@@ -76,6 +80,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   private _violations: IViolationTracker | undefined;
   /** Zoom on the current diagram ("Offer zoom"); replaced on every render. */
   private _zoom: IZoomController | undefined;
+  /** Open full-screen view, if any — closed when the web part goes away. */
+  private _lightbox: ILightbox | undefined;
 
   protected onInit(): Promise<void> {
     this._violations = trackImageViolations(document, () => this._onViolation());
@@ -84,6 +90,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
 
   protected onDispose(): void {
     this._disposeZoom();
+    this._lightbox?.close();
+    this._lightbox = undefined;
     this._violations?.dispose();
     this._violations = undefined;
     super.onDispose();
@@ -148,19 +156,19 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       zoom:
         this.properties.offerZoom === true
           ? {
-              labels: {
-                zoomIn: strings.ZoomIn,
-                zoomOut: strings.ZoomOut,
-                reset: strings.ZoomReset,
-                viewport: strings.ZoomViewportLabel
-              },
-              classNames: {
-                zoomable: styles.zoomable,
-                zoomed: styles.zoomed,
-                controls: styles.zoomControls,
-                button: styles.zoomButton
-              },
+              labels: this._zoomLabels(),
+              classNames: this._zoomClassNames(styles.zoomControls),
               onAttach: (controller) => (this._zoom = controller)
+            }
+          : undefined,
+      // Default on: only an explicit `false` switches full screen off (also for web parts saved
+      // before the setting existed)
+      fullScreen:
+        this.properties.offerFullScreen !== false && link
+          ? {
+              label: strings.FullScreen,
+              className: styles.zoomButton,
+              onOpen: (button) => this._openFullScreen(link.imageUrl, button)
             }
           : undefined,
       placeholderText: strings.NotConfiguredMessage,
@@ -168,6 +176,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
         root: styles.procView,
         figure: styles.figure,
         frame: styles.frame,
+        controlBar: styles.controlBar,
         image: styles.image,
         caption: styles.caption,
         placeholder: styles.placeholder,
@@ -257,12 +266,19 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
             },
             {
               // Own group: a toggle right below a text field's description sits too close to it
-              groupName: strings.ZoomGroupName,
+              groupName: strings.ViewingGroupName,
               groupFields: [
                 PropertyPaneToggle('offerZoom', {
                   label: strings.OfferZoomLabel,
                   onText: strings.ToggleOn,
                   offText: strings.ToggleOff
+                }),
+                PropertyPaneToggle('offerFullScreen', {
+                  label: strings.OfferFullScreenLabel,
+                  onText: strings.ToggleOn,
+                  offText: strings.ToggleOff,
+                  // Shows the default for web parts saved before the setting existed
+                  checked: this.properties.offerFullScreen !== false
                 })
               ]
             },
@@ -385,6 +401,37 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     if (propertyPath === 'showHubLink' || propertyPath === 'hubLinkPosition') {
       this.context.propertyPane.refresh();
     }
+  }
+
+  private _zoomLabels(): IZoomLabels {
+    return {
+      zoomIn: strings.ZoomIn,
+      zoomOut: strings.ZoomOut,
+      reset: strings.ZoomReset,
+      viewport: strings.ZoomViewportLabel
+    };
+  }
+
+  private _zoomClassNames(controls: string): IZoomClassNames {
+    return { zoomable: styles.zoomable, zoomed: styles.zoomed, controls, button: styles.zoomButton };
+  }
+
+  /** Full-screen view of the diagram: only the image, zoom and a close button (lightbox.ts). */
+  private _openFullScreen(imageUrl: string, opener: HTMLElement): void {
+    this._lightbox?.close();
+    this._lightbox = openLightbox(document, {
+      imageUrl,
+      altText: this._text(this.properties.altText) || strings.DefaultAltText,
+      opener,
+      labels: { close: strings.CloseFullScreen, zoom: this._zoomLabels() },
+      classNames: {
+        dialog: styles.lightbox,
+        frame: styles.lightboxFrame,
+        image: styles.lightboxImage,
+        close: styles.lightboxClose,
+        zoom: this._zoomClassNames(styles.lightboxZoomControls)
+      }
+    });
   }
 
   private _disposeZoom(): void {

@@ -8,6 +8,94 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-007 — Full-screen view (lightbox)
+
+_Completed 2026-10-01 via F-007a and F-007b._
+
+**Problem:** Within a narrow page column even a zoomable diagram stays cramped.
+
+**Idea:** A button opens the diagram in a large overlay; closes via button, Escape, or
+backdrop click.
+
+**Solution sketch** (updated at prep-step, 2026-10-01; size: medium, two substeps):
+- Native `<dialog>` with `showModal()` instead of a hand-made dialog: the browser makes the
+  page inert, closes on Escape, keeps focus inside and renders in the top layer (above the
+  SharePoint chrome, no z-index fights); focus returns to the full-screen button on close
+  (manual — not every browser does it). The Fullscreen API was rejected: often blocked in
+  Teams tabs
+- Opened only by a button with a full-screen icon — a click on the image means drag/pan
+  when zoom is offered
+- Inside: only the diagram, a close button (top right) and zoom (F-006 `attachZoom`): the
+  diagram first fits the window, then zooms up to its natural size — always available in
+  full screen, independent of "Offer zoom"
+- The image is fetched again on open (Signavio sends `no-store`) — once per opening
+- Owner decisions (2026-10-01): **own toggle "Offer full screen", default on** (manifest
+  initial value `true` **and** a code fallback that treats a missing value as on, so
+  existing web parts get it too); full-screen button always visible while the toggle is
+  on (also a focused large view for small diagrams); **nothing but the diagram** in the
+  overlay (no caption, no hub link)
+- Shared control bar top right on the image: zoom buttons (if "Offer zoom") and the
+  full-screen button (if "Offer full screen"), alone or together — `attachZoom` gets an
+  option to put its buttons into a host element instead of its own container
+- Pane: both toggles in one group, renamed from "Zoom" to "Viewing" (DE "Ansicht", FR
+  "Affichage", ES "Visualización")
+- Teams shows the overlay within the tab — fits a tab; part of F-008
+
+**Dependencies:** F-002, F-005, F-006
+
+### F-007b — Wiring with the "Offer full screen" toggle
+
+_Part of F-007 — Full-screen view (lightbox). Completed 2026-10-01._
+
+**What:** Shared control bar top right (zoom buttons and/or full-screen button),
+`attachZoom` host option, toggle "Offer full screen" (default on, manifest + code fallback),
+pane group renamed to "Viewing", texts in four languages, SCSS (theme colours, dark
+backdrop, forced colours), docs.
+
+**Files:** `zoomView.ts`, `renderDiagram.ts`, `ProcViewWebPart.ts`,
+`ProcViewWebPart.module.scss`, `ProcViewWebPart.manifest.json`, `loc/*.js`,
+`loc/mystrings.d.ts`, `linkErrors.test.ts`, tests (under `src/webparts/procView/`);
+`README.md`; `REQUIREMENTS.md` (decision log, resolve the open question)
+
+**Dependencies:** F-007a
+
+**Acceptance criteria:**
+- [x] Toggle on by default — also for existing web parts without the property (code
+      fallback `!== false`, toggle `checked` shows it); off removes the button
+- [x] Control bar: zoom only, full screen only, or both — no overlap with the hub overlay
+      (renderDiagram tests)
+- [x] Full screen shows only the diagram, fits the window (never above natural size),
+      zooms up to natural size, closes via button/Escape/backdrop, focus back on the button
+- [x] Texts in four languages; theme colours; forced colours; keyboard only works end to end
+- [x] Owner tries it in the local workbench (first round found the missing zoom and the
+      transparent PNG on the dark layer — fixed, see below; owner closed the step)
+- [x] `just check` green — 250 tests (isolated copy while the dev server runs)
+
+**Implemented:**
+- `zoomView.ts` — option `host`: the zoom buttons go into a shared bar.
+- `lightbox.ts` — option `opener` (Safari does not focus clicked buttons).
+- `renderDiagram.ts` — `IDiagramFullScreen` (label, class, `onOpen(button)`); one
+  `controlBar` top right in the frame holds the zoom group and/or the full-screen button
+  (own SVG: two arrows outwards — distinct from the zoom "fit" corners).
+- `ProcViewWebPart.ts` — `offerFullScreen` (manifest `true`, fallback `!== false`, toggle
+  `checked`), `_openFullScreen` opens `openLightbox` (closed in `onDispose`), shared
+  `_zoomLabels`/`_zoomClassNames`; pane group "Viewing" with both toggles.
+- `ProcViewWebPart.module.scss` — `.controlBar` (position) and `.zoomControls` (flex only);
+  lightbox: the dialog is the dark layer (`[open]` flex-centres the frame, padding leaves room
+  for the close button), `.lightboxFrame` hugs the image, `.lightboxImage` at most natural size
+  and scaled down to the window, white background exactly behind the PNG, close button and
+  zoom controls; forced colours.
+- `loc/*` — `ViewingGroupName` (renamed from `ZoomGroupName`), `OfferFullScreenLabel`,
+  `FullScreen`, `CloseFullScreen`. Tests: 7 new. Docs: README "Viewing"; decision log entry;
+  the open question on F-007 resolved.
+
+**Decisions / deviations:** After the owner's first test the lightbox image no longer fills the
+frame (`object-fit: contain` blew small diagrams up beyond their natural size, so zoom had
+nothing left to do, and a white background would have covered the letterbox). The white
+background behind the PNG (deliberately not a theme colour — the diagram is drawn for white)
+was an owner request. **Proposed follow-up (not built):** the same white backing behind the
+diagram on the page, for dark or strongly coloured sections.
+
 ### F-007a — Full-screen overlay (not wired yet)
 
 _Part of F-007 — Full-screen view (lightbox). Completed 2026-10-01._

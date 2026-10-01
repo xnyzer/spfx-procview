@@ -228,6 +228,28 @@ describe('attachZoom — pointer gestures', () => {
   });
 });
 
+describe('attachZoom — host', () => {
+  it('puts the controls into the given host, e.g. a shared control bar', () => {
+    const viewport = document.createElement('div');
+    const host = document.createElement('div');
+    viewport.appendChild(host);
+    const image = document.createElement('img');
+    viewport.appendChild(image);
+    const zoom = attachZoom(document, {
+      viewport,
+      image,
+      labels: LABELS,
+      classNames: CLASS_NAMES,
+      host,
+      measure: () => ZOOMABLE
+    });
+    expect(host.querySelector('.controls')).not.toBeNull();
+    expect(host.firstElementChild?.className).toBe('controls');
+    zoom.dispose();
+    expect(host.querySelector('.controls')).toBeNull();
+  });
+});
+
 describe('attachZoom — dispose', () => {
   it('removes controls, listeners and the transform', () => {
     const { viewport, image, zoom } = setup();

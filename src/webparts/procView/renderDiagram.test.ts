@@ -1,5 +1,5 @@
 import { parseHubLinkPosition, parseTextAlign, renderDiagram } from './renderDiagram';
-import type { IDiagramView, IDiagramZoom } from './renderDiagram';
+import type { IDiagramFullScreen, IDiagramView, IDiagramZoom } from './renderDiagram';
 import type { IZoomController } from './zoomView';
 import { diagramStyles } from './sizing';
 import type { IDiagramLink } from '../../providers/types';
@@ -24,6 +24,7 @@ function view(overrides: Partial<IDiagramView> = {}): IDiagramView {
       root: 'root',
       figure: 'figure',
       frame: 'frame',
+      controlBar: 'controlBar',
       image: 'image',
       caption: 'caption',
       placeholder: 'placeholder',
@@ -283,7 +284,7 @@ describe('renderDiagram — zoom', () => {
     const root = renderDiagram(document, view({ zoom: zoomOption((controller) => attached.push(controller)) }));
     const frame = root.querySelector('.frame');
     expect(attached).toHaveLength(1);
-    expect(frame?.querySelector('.zoomControls')).not.toBeNull();
+    expect(frame?.querySelector('.controlBar > .zoomControls')).not.toBeNull();
     expect(frame?.querySelectorAll('.zoomButton')).toHaveLength(3);
     expect((root.querySelector('img') as HTMLImageElement).style.transformOrigin).toBe('0 0');
     attached[0].dispose();
@@ -316,6 +317,53 @@ describe('renderDiagram — zoom', () => {
     const attached: IZoomController[] = [];
     renderDiagram(document, view({ link: undefined, zoom: zoomOption((controller) => attached.push(controller)) }));
     expect(attached).toHaveLength(0);
+  });
+});
+
+describe('renderDiagram — full screen and control bar', () => {
+  function fullScreenOption(onOpen: (button: HTMLButtonElement) => void): IDiagramFullScreen {
+    return { label: 'Full screen', className: 'zoomButton', onOpen };
+  }
+  const zoom: IDiagramZoom = {
+    labels: { zoomIn: 'Zoom in', zoomOut: 'Zoom out', reset: 'Fit to frame', viewport: 'Zoomable diagram' },
+    classNames: { zoomable: 'zoomable', zoomed: 'zoomed', controls: 'zoomControls', button: 'zoomButton' },
+    onAttach: () => undefined
+  };
+
+  it('adds no control bar without zoom and full screen', () => {
+    const root = renderDiagram(document, view());
+    expect(root.querySelector('.controlBar')).toBeNull();
+  });
+
+  it('shows the full-screen button alone when only full screen is offered', () => {
+    const root = renderDiagram(document, view({ fullScreen: fullScreenOption(() => undefined) }));
+    const bar = root.querySelector('.frame > .controlBar') as HTMLElement;
+    expect(bar.querySelectorAll('button')).toHaveLength(1);
+    const button = bar.querySelector('button') as HTMLButtonElement;
+    expect(button.getAttribute('aria-label')).toBe('Full screen');
+    expect(button.title).toBe('Full screen');
+    expect(button.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(root.querySelector('.zoomControls')).toBeNull();
+  });
+
+  it('puts zoom and full screen into one bar, the full-screen button last', () => {
+    const root = renderDiagram(document, view({ zoom, fullScreen: fullScreenOption(() => undefined) }));
+    const bar = root.querySelector('.controlBar') as HTMLElement;
+    expect(Array.from(bar.children).map((child) => child.className)).toEqual(['zoomControls', 'zoomButton']);
+    expect(root.querySelectorAll('.controlBar')).toHaveLength(1);
+  });
+
+  it('hands the button to onOpen, so the focus can return to it', () => {
+    const opened: HTMLButtonElement[] = [];
+    const root = renderDiagram(document, view({ fullScreen: fullScreenOption((button) => opened.push(button)) }));
+    const button = root.querySelector('.controlBar button') as HTMLButtonElement;
+    button.click();
+    expect(opened).toEqual([button]);
+  });
+
+  it('adds no full-screen button without a valid diagram', () => {
+    const root = renderDiagram(document, view({ link: undefined, fullScreen: fullScreenOption(() => undefined) }));
+    expect(root.querySelector('button')).toBeNull();
   });
 });
 

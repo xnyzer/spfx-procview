@@ -46,8 +46,11 @@ declare interface IProcViewWebPartStrings {
   WidthDescription: string;
   HeightLabel: string;
   HeightDescription: string;
-  ZoomGroupName: string;
+  ViewingGroupName: string;
   OfferZoomLabel: string;
+  OfferFullScreenLabel: string;
+  FullScreen: string;
+  CloseFullScreen: string;
   ZoomIn: string;
   ZoomOut: string;
   ZoomReset: string;

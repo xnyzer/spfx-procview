@@ -41,6 +41,8 @@ export interface IZoomViewProps {
   image: HTMLImageElement;
   labels: IZoomLabels;
   classNames: IZoomClassNames;
+  /** Where the controls go, e.g. a control bar shared with other buttons; default the viewport. */
+  host?: HTMLElement;
   /** Current geometry; by default the image element's box and its natural size. */
   measure?: () => IZoomGeometry;
 }
@@ -136,7 +138,7 @@ export function attachZoom(doc: Document, props: IZoomViewProps): IZoomControlle
   const zoomOutButton = button('zoomOut', labels.zoomOut, () => set(zoomBy(state, measure(), 1 / ZOOM_STEP)));
   const zoomInButton = button('zoomIn', labels.zoomIn, () => set(zoomBy(state, measure(), ZOOM_STEP)));
   const resetButton = button('reset', labels.reset, () => set(INITIAL_STATE));
-  viewport.appendChild(controls);
+  (props.host ?? viewport).appendChild(controls);
 
   image.style.setProperty('transform-origin', '0 0');
 

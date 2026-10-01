@@ -4,6 +4,8 @@ import type { IZoomClassNames, IZoomLabels } from './zoomView';
 export interface ILightboxProps {
   imageUrl: string;
   altText: string;
+  /** Gets the focus back on close; default the focused element (Safari does not focus clicked buttons). */
+  opener?: HTMLElement;
   labels: {
     close: string;
     zoom: IZoomLabels;
@@ -50,7 +52,7 @@ function closeIcon(doc: Document): SVGElement {
  */
 export function openLightbox(doc: Document, props: ILightboxProps): ILightbox {
   const { labels, classNames } = props;
-  const opener = doc.activeElement instanceof HTMLElement ? doc.activeElement : undefined;
+  const opener = props.opener ?? (doc.activeElement instanceof HTMLElement ? doc.activeElement : undefined);
 
   const dialog = doc.createElement('dialog');
   dialog.className = classNames.dialog;

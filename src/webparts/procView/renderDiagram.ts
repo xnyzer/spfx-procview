@@ -37,6 +37,14 @@ export interface IDiagramZoom {
   onAttach: (controller: IZoomController) => void;
 }
 
+/** Button that opens the full-screen view ("Offer full screen"). */
+export interface IDiagramFullScreen {
+  label: string;
+  className: string;
+  /** Opens the full-screen view; the button gets the focus back when it closes. */
+  onOpen: (button: HTMLButtonElement) => void;
+}
+
 /** Everything the diagram view needs — assembled by the web part, rendered here. */
 export interface IDiagramView {
   /** Validated link; `undefined` shows the placeholder instead of an image. */
@@ -50,11 +58,15 @@ export interface IDiagramView {
   hubLink?: IHubLinkView;
   /** Zoom and pan on the image; `undefined` → off. */
   zoom?: IDiagramZoom;
+  /** Full-screen button on the image; `undefined` → off. */
+  fullScreen?: IDiagramFullScreen;
   placeholderText: string;
   classNames: {
     root: string;
     figure: string;
     frame: string;
+    /** Bar top right on the image for the zoom and full-screen buttons. */
+    controlBar: string;
     image: string;
     caption: string;
     placeholder: string;
@@ -119,12 +131,26 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
     frame.appendChild(overlay);
   }
   figure.appendChild(frame);
-  if (view.zoom) {
-    // The frame clips the zoomed image and hosts the controls (top right, the overlay stays
-    // bottom right)
-    view.zoom.onAttach(
-      attachZoom(doc, { viewport: frame, image, labels: view.zoom.labels, classNames: view.zoom.classNames })
-    );
+  if (view.zoom || view.fullScreen) {
+    // One bar top right for zoom and full screen, alone or together; the hub overlay stays
+    // bottom right. The frame clips the zoomed image.
+    const bar = doc.createElement('div');
+    bar.className = view.classNames.controlBar;
+    frame.appendChild(bar);
+    if (view.zoom) {
+      view.zoom.onAttach(
+        attachZoom(doc, {
+          viewport: frame,
+          image,
+          labels: view.zoom.labels,
+          classNames: view.zoom.classNames,
+          host: bar
+        })
+      );
+    }
+    if (view.fullScreen) {
+      bar.appendChild(fullScreenButton(doc, view.fullScreen));
+    }
   }
 
   if (view.caption !== '') {
@@ -150,6 +176,31 @@ function applyStyles(element: HTMLElement, declarations: CssDeclarations): void 
   Object.keys(declarations).forEach((property) => {
     element.style.setProperty(property, declarations[property]);
   });
+}
+
+/** The full-screen button with its icon (two arrows pointing outwards). */
+function fullScreenButton(doc: Document, fullScreen: IDiagramFullScreen): HTMLButtonElement {
+  const button = doc.createElement('button');
+  button.type = 'button';
+  button.className = fullScreen.className;
+  button.setAttribute('aria-label', fullScreen.label);
+  button.title = fullScreen.label;
+  const svg = doc.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 16 16');
+  svg.setAttribute('width', '16');
+  svg.setAttribute('height', '16');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  const path = doc.createElementNS(SVG_NS, 'path');
+  path.setAttribute('d', 'M9 7l5-5M10 2h4v4M7 9l-5 5M2 10v4h4');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', '1.5');
+  path.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(path);
+  button.appendChild(svg);
+  button.addEventListener('click', () => fullScreen.onOpen(button));
+  return button;
 }
 
 /** Small "external link" icon (arrow out of a box). */

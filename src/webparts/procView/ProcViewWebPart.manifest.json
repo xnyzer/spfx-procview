@@ -46,7 +46,8 @@
         "showHubLink": false,
         "hubLinkPosition": "below",
         "hubLinkAlign": "right",
-        "offerZoom": false
+        "offerZoom": false,
+        "offerFullScreen": true
       }
     }
   ]
