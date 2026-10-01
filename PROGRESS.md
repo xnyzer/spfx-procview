@@ -46,18 +46,80 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-007 — Full-screen view (lightbox)
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** Within a narrow page column even a zoomable diagram stays cramped.
 
-**Idea:** Clicking the diagram (or a button) opens it in a large overlay at natural size;
-closes via button, Escape, or backdrop click.
+**Idea:** A button opens the diagram in a large overlay; closes via button, Escape, or
+backdrop click.
 
-**Solution sketch:**
-- Accessible dialog (focus trap, `aria-modal`), theme colors
-- Reuses zoom/pan from F-006 where sensible
+**Solution sketch** (updated at prep-step, 2026-10-01; size: medium, two substeps):
+- Native `<dialog>` with `showModal()` instead of a hand-made dialog: the browser makes the
+  page inert, closes on Escape, keeps focus inside and renders in the top layer (above the
+  SharePoint chrome, no z-index fights); focus returns to the full-screen button on close
+  (manual — not every browser does it). The Fullscreen API was rejected: often blocked in
+  Teams tabs
+- Opened only by a button with a full-screen icon — a click on the image means drag/pan
+  when zoom is offered
+- Inside: only the diagram, a close button (top right) and zoom (F-006 `attachZoom`): the
+  diagram first fits the window, then zooms up to its natural size — always available in
+  full screen, independent of "Offer zoom"
+- The image is fetched again on open (Signavio sends `no-store`) — once per opening
+- Owner decisions (2026-10-01): **own toggle "Offer full screen", default on** (manifest
+  initial value `true` **and** a code fallback that treats a missing value as on, so
+  existing web parts get it too); full-screen button always visible while the toggle is
+  on (also a focused large view for small diagrams); **nothing but the diagram** in the
+  overlay (no caption, no hub link)
+- Shared control bar top right on the image: zoom buttons (if "Offer zoom") and the
+  full-screen button (if "Offer full screen"), alone or together — `attachZoom` gets an
+  option to put its buttons into a host element instead of its own container
+- Pane: both toggles in one group, renamed from "Zoom" to "Viewing" (DE "Ansicht", FR
+  "Affichage", ES "Visualización")
+- Teams shows the overlay within the tab — fits a tab; part of F-008
 
-**Dependencies:** F-002, F-005 (F-006 optional)
+**Dependencies:** F-002, F-005, F-006
+
+#### F-007a — Full-screen overlay (not wired yet)
+
+**What:** `lightbox.ts`: dialog with the image, a close button and zoom; open/close, focus
+return, Escape and backdrop click, cleanup — tested in isolation.
+
+**Files:** `lightbox.ts`, `lightbox.test.ts` (new, under `src/webparts/procView/`)
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] Opens a modal `<dialog>` with only the image (alt text, `referrerpolicy="no-referrer"`),
+      a labelled close button and the zoom controls
+- [ ] Closes via button, Escape (`cancel`) and backdrop click — not via clicks on the image
+      or the controls; focus returns to the element that opened it; everything is removed
+      after closing (no leftover listeners)
+- [ ] Covered by jsdom tests (`showModal` stubbed where jsdom lacks it)
+- [ ] `just check` green (isolated copy while the dev server runs)
+
+#### F-007b — Wiring with the "Offer full screen" toggle
+
+**What:** Shared control bar top right (zoom buttons and/or full-screen button),
+`attachZoom` host option, toggle "Offer full screen" (default on, manifest + code fallback),
+pane group renamed to "Viewing", texts in four languages, SCSS (theme colours, dark
+backdrop, forced colours), docs.
+
+**Files:** `zoomView.ts`, `renderDiagram.ts`, `ProcViewWebPart.ts`,
+`ProcViewWebPart.module.scss`, `ProcViewWebPart.manifest.json`, `loc/*.js`,
+`loc/mystrings.d.ts`, `linkErrors.test.ts`, tests (under `src/webparts/procView/`);
+`README.md`; `REQUIREMENTS.md` (decision log, resolve the open question)
+
+**Dependencies:** F-007a
+
+**Acceptance criteria:**
+- [ ] Toggle on by default — also for existing web parts without the property; off removes
+      the button
+- [ ] Control bar: zoom only, full screen only, or both — no overlap with the hub overlay
+- [ ] Full screen shows only the diagram, fits the window, zooms up to natural size,
+      closes via button/Escape/backdrop, focus back on the button
+- [ ] Texts in four languages; theme colours; forced colours; keyboard only works end to end
+- [ ] Owner tries it in the local workbench
+- [ ] `just check` green (isolated copy while the dev server runs)
 
 ### F-008 — Microsoft Teams hosting
 
@@ -129,7 +191,7 @@ F-003 Collaboration Hub link (DONE)
 F-004 Empty and error states (DONE)
 F-005 Theme, section backgrounds, accessibility (DONE)
 F-006 Zoom and pan (checkbox) (DONE)
-F-007 Full-screen view (lightbox)
+F-007 Full-screen view (lightbox) (PLANNED)
 F-008 Microsoft Teams hosting
 F-009 Versioning, release via CI + IT deployment guide
 F-010 SPFx upgrade before Node 22 end of life
