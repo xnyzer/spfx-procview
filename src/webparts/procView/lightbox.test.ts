@@ -100,6 +100,23 @@ describe('openLightbox — content', () => {
   });
 });
 
+describe('openLightbox — background', () => {
+  it('puts the configured colour behind the PNG, or nothing without it', () => {
+    lightbox = openLightbox(document, { ...PROPS, background: '#0e5a73' });
+    const image = document.querySelector('dialog img') as HTMLImageElement;
+    Object.defineProperty(image, 'naturalWidth', { value: 720 });
+    Object.defineProperty(image, 'naturalHeight', { value: 457 });
+    image.dispatchEvent(new Event('load'));
+    expect(decodeURIComponent(image.style.backgroundImage)).toContain('#0e5a73');
+    lightbox.close();
+
+    lightbox = openLightbox(document, PROPS);
+    const plain = document.querySelector('dialog img') as HTMLImageElement;
+    plain.dispatchEvent(new Event('load'));
+    expect(plain.style.backgroundImage).toBe('');
+  });
+});
+
 describe('openLightbox — closing', () => {
   it('closes with the close button and returns the focus', () => {
     const dialog = open();

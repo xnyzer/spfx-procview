@@ -146,6 +146,8 @@ const ALL_STRING_KEYS: Record<keyof IProcViewWebPartStrings, true> = {
   ViewingGroupName: true,
   OfferZoomLabel: true,
   OfferFullScreenLabel: true,
+  ShowBackgroundLabel: true,
+  BackgroundColorLabel: true,
   FullScreen: true,
   CloseFullScreen: true,
   ZoomIn: true,

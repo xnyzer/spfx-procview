@@ -17,6 +17,8 @@ import * as strings from 'ProcViewWebPartStrings';
 import { parseDiagramLink } from '../../providers/registry';
 import { LINK_ERROR_KEYS } from './linkErrors';
 import { renderAboutField } from './aboutField';
+import { parseBackgroundColor } from './background';
+import { renderColorField } from './colorField';
 import { renderAlignmentButtons } from './alignmentField';
 import { outcomeFor, resolveMessage, resolveState } from './messages';
 import type { ILoadError } from './messages';
@@ -56,6 +58,10 @@ export interface IProcViewWebPartProps {
   offerZoom?: boolean;
   /** Full-screen button on the diagram (default on — a missing value counts as on). */
   offerFullScreen?: boolean;
+  /** Colour behind the transparent PNG (default on — a missing value counts as on). */
+  showBackground?: boolean;
+  /** `#rrggbb`; anything else counts as white. */
+  backgroundColor?: string;
 }
 
 type AlignProperty = 'captionAlign' | 'hubLinkAlign';
@@ -171,6 +177,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
               onOpen: (button) => this._openFullScreen(link.imageUrl, button)
             }
           : undefined,
+      background: this._background(),
       placeholderText: strings.NotConfiguredMessage,
       classNames: {
         root: styles.procView,
@@ -279,7 +286,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
                   offText: strings.ToggleOff,
                   // Shows the default for web parts saved before the setting existed
                   checked: this.properties.offerFullScreen !== false
-                })
+                }),
+                ...this._backgroundFields()
               ]
             },
             {
@@ -396,9 +404,58 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     };
   }
 
-  /** Re-evaluates the pane when the hub link is switched on or off (conditional fields). */
+  /** Background toggle and, only while it is on, the colour (default on and white). */
+  private _backgroundFields(): IPropertyPaneField<unknown>[] {
+    const on = this.properties.showBackground !== false;
+    const fields: IPropertyPaneField<unknown>[] = [
+      PropertyPaneToggle('showBackground', {
+        label: strings.ShowBackgroundLabel,
+        onText: strings.ToggleOn,
+        offText: strings.ToggleOff,
+        // Shows the default for web parts saved before the setting existed
+        checked: on
+      })
+    ];
+    if (on) {
+      fields.push(this._colorField());
+    }
+    return fields;
+  }
+
+  /** Custom property pane field with the browser's colour picker (colorField.ts). */
+  private _colorField(): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
+    return {
+      type: PropertyPaneFieldType.Custom,
+      targetProperty: 'backgroundColor',
+      properties: {
+        key: 'backgroundColorField',
+        onRender: (
+          element: HTMLElement,
+          _context?: unknown,
+          changeCallback?: (targetProperty?: string, newValue?: unknown) => void
+        ) =>
+          element.replaceChildren(
+            renderColorField(document, {
+              labelText: strings.BackgroundColorLabel,
+              value: parseBackgroundColor(this.properties.backgroundColor),
+              idPrefix: `${this.instanceId}-backgroundColor`,
+              classNames: { root: styles.colorField, label: styles.colorLabel, input: styles.colorInput },
+              onChange: (value) => changeCallback?.('backgroundColor', value)
+            })
+          ),
+        onDispose: (element: HTMLElement) => element.replaceChildren()
+      }
+    };
+  }
+
+  /** Validated colour behind the PNG, or `undefined` when switched off (default on and white). */
+  private _background(): string | undefined {
+    return this.properties.showBackground !== false ? parseBackgroundColor(this.properties.backgroundColor) : undefined;
+  }
+
+  /** Re-evaluates the pane when a setting with conditional fields is switched. */
   protected onPropertyPaneFieldChanged(propertyPath: string): void {
-    if (propertyPath === 'showHubLink' || propertyPath === 'hubLinkPosition') {
+    if (propertyPath === 'showHubLink' || propertyPath === 'hubLinkPosition' || propertyPath === 'showBackground') {
       this.context.propertyPane.refresh();
     }
   }
@@ -423,6 +480,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       imageUrl,
       altText: this._text(this.properties.altText) || strings.DefaultAltText,
       opener,
+      background: this._background(),
       labels: { close: strings.CloseFullScreen, zoom: this._zoomLabels() },
       classNames: {
         dialog: styles.lightbox,

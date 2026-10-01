@@ -341,16 +341,14 @@
 }
 
 // At most the natural size (never blown up — the PNG is sharp up to 100 %), scaled down to fit
-// the window without distortion. The white background sits exactly behind the PNG, whose own
-// background is transparent and hard to read on the dark layer — deliberately not a theme colour:
-// the diagram is drawn for white paper.
+// the window without distortion. The "background behind the diagram" setting (background.ts)
+// puts its colour exactly behind the transparent PNG.
 .lightboxImage {
   display: block;
   width: auto;
   height: auto;
   max-width: calc(100vw - 48px);
   max-height: calc(100vh - 80px);
-  background: #ffffff;
 }
 
 .lightboxClose {
@@ -391,5 +389,32 @@
 
   &[hidden] {
     display: none;
+  }
+}
+
+// Background colour setting in the property pane (custom field, see colorField.ts)
+.colorField {
+  margin-top: 8px;
+}
+
+.colorLabel {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: '[theme:neutralPrimary, default: #323130]';
+}
+
+.colorInput {
+  width: 48px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid '[theme:neutralTertiaryAlt, default: #c8c6c4]';
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid '[theme:themePrimary, default: #0078d4]';
+    outline-offset: 1px;
   }
 }

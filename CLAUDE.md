@@ -33,7 +33,7 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 ## Status & where to start
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
-requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-014 in `PROGRESS.md`). Done: F-001
+requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-015 in `PROGRESS.md`). Done: F-001
 (provider contract, Signavio link validation), F-002 (configuration pane, sized diagram
 display, caption with alignment toolbar), F-003 (Collaboration Hub link below the diagram or
 as corner overlay), F-004 (empty and error states per display mode, incl. blocked-image
@@ -42,8 +42,9 @@ workbench), F-012 (texts in English, German, French and Spanish; French/Spanish 
 labels unverified — native-speaker review before production), F-005 (every page colour
 follows the section's theme, `theme.ts`), F-013 (repository link in the property pane) and
 F-014 (own Teams app icons, `just icons`), F-006 (zoom and pan, toggle "Offer zoom") and
-F-007 (full-screen view, toggle "Offer full screen", default on) — 250 Jest tests. Next:
-`/prep-step F-008` (Microsoft Teams hosting).
+F-007 (full-screen view, toggle "Offer full screen", default on) and F-015 (background
+behind the diagram, default on and white) — 261 Jest tests. Next: `/prep-step F-008`
+(Microsoft Teams hosting).
 
 ## Project notes (learned the hard way)
 

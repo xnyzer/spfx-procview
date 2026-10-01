@@ -1,3 +1,4 @@
+import { backgroundStyles } from './background';
 import { attachZoom } from './zoomView';
 import type { IZoomClassNames, IZoomLabels } from './zoomView';
 
@@ -6,6 +7,8 @@ export interface ILightboxProps {
   altText: string;
   /** Gets the focus back on close; default the focused element (Safari does not focus clicked buttons). */
   opener?: HTMLElement;
+  /** Colour exactly behind the PNG (`#rrggbb`, validated); `undefined` → transparent. */
+  background?: string;
   labels: {
     close: string;
     zoom: IZoomLabels;
@@ -66,6 +69,13 @@ export function openLightbox(doc: Document, props: ILightboxProps): ILightbox {
   // As on the page: the process tool must not learn which SharePoint page shows the diagram
   image.setAttribute('referrerpolicy', 'no-referrer');
   image.setAttribute('decoding', 'async');
+  const background = props.background;
+  if (background) {
+    image.addEventListener('load', () => {
+      const styles = backgroundStyles(background, { width: image.naturalWidth, height: image.naturalHeight });
+      Object.keys(styles).forEach((property) => image.style.setProperty(property, styles[property]));
+    });
+  }
   frame.appendChild(image);
   dialog.appendChild(frame);
 

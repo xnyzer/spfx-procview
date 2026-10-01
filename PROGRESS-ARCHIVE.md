@@ -8,6 +8,68 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-015 — Diagram background (setting)
+
+_Completed 2026-10-01._
+
+**Problem:** The Signavio PNG has a transparent background. On a dark or strongly coloured
+section (or a dark site theme) its dark lines sit directly on that colour and become hard to
+read.
+
+**Idea:** A setting for a background behind the diagram — on/off and its colour, default on
+and white — applied on the page and in full screen.
+
+**Solution sketch** (planned 2026-10-01 with the owner; size: small–medium, no substeps):
+- Pane group "Viewing": toggle "Background behind the diagram" (default on) and, only while
+  it is on, the colour (default white); manifest initial values plus code fallbacks
+  (missing → on / white), so existing web parts get them too
+- Colour via the browser's own picker (`<input type="color">`) in a small custom pane field
+  (`PropertyPaneFieldType.Custom`, the alignment toolbar's pattern) — SharePoint has no colour
+  picker and the PnP property controls would be a large new runtime dependency; stored values
+  are validated strictly (`#rrggbb`), anything else counts as white
+- The colour sits exactly behind the PNG, also with a fixed height (`object-fit: contain`
+  letterbox): a single-colour SVG data URI with the PNG's aspect ratio as background image,
+  `background-size: contain` and centred — it is fitted exactly like the image; no resize
+  handling, and it moves with the zoom transform; built by a tested pure function
+- Full screen uses the same setting (off → transparent there too); the fixed white of F-007
+  goes away
+- Texts in four languages; tests; README and decision log
+
+**Files:** `background.ts`, `background.test.ts`, `colorField.ts`, `colorField.test.ts` (new),
+`renderDiagram.ts`, `lightbox.ts`, `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`,
+`ProcViewWebPart.manifest.json`, `loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts`,
+tests (under `src/webparts/procView/`); `README.md`; `REQUIREMENTS.md`
+
+**Dependencies:** F-007
+
+**Acceptance criteria:**
+- [x] Default on and white — also for existing web parts (fallbacks `!== false` and
+      `parseBackgroundColor`, toggle `checked`); off → transparent as before
+- [x] The colour covers exactly the PNG (no coloured letterbox bars with a fixed height), on
+      the page and in full screen, and follows the zoom (SVG background fitted like the image)
+- [x] Colour picker in the pane; invalid stored values fall back to white (tests)
+- [x] Texts in four languages
+- [x] Owner checks it in the local workbench (e.g. with the "Dark Teal" theme) — owner
+      closed the step
+- [x] `just check` green — 261 tests (isolated copy while the dev server runs)
+
+**Implemented:**
+- `background.ts` — `DEFAULT_BACKGROUND`, `parseBackgroundColor` (`#rrggbb` only, else
+  white), `backgroundStyles(color, natural)`: single-colour SVG data URI with the natural size
+  (`'` encoded too, so nothing can end the `url()`), `background-size: contain`, centred, no
+  repeat; empty without a valid colour or size.
+- `colorField.ts` — `renderColorField`: label linked to `<input type="color">`, reports on
+  `change` only (each change re-renders the web part and reloads the PNG).
+- `renderDiagram.ts` / `lightbox.ts` — option `background`; applied on image load (natural size
+  known); the fixed white of the lightbox CSS removed.
+- `ProcViewWebPart.ts` — `showBackground`, `backgroundColor`; `_backgroundFields` (toggle with
+  `checked`, colour field only while on, pane refresh on toggle), `_colorField`, `_background()`
+  used for page and full screen. Manifest `showBackground: true`, `backgroundColor: "#ffffff"`.
+- SCSS `.colorField`, `.colorLabel`, `.colorInput`; `loc/*` `ShowBackgroundLabel`,
+  `BackgroundColorLabel`. Tests: 11 new. Docs: README "Viewing", decision log entry.
+
+**Decisions / deviations:** none from the plan.
+
 ### F-007 — Full-screen view (lightbox)
 
 _Completed 2026-10-01 via F-007a and F-007b._

@@ -47,7 +47,9 @@
         "hubLinkPosition": "below",
         "hubLinkAlign": "right",
         "offerZoom": false,
-        "offerFullScreen": true
+        "offerFullScreen": true,
+        "showBackground": true,
+        "backgroundColor": "#ffffff"
       }
     }
   ]

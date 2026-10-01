@@ -1,5 +1,6 @@
 import type { IDiagramLink } from '../../providers/types';
 import type { CssDeclarations, IDiagramStyles } from './sizing';
+import { backgroundStyles } from './background';
 import { attachZoom } from './zoomView';
 import type { IZoomClassNames, IZoomController, IZoomLabels } from './zoomView';
 
@@ -60,6 +61,8 @@ export interface IDiagramView {
   zoom?: IDiagramZoom;
   /** Full-screen button on the image; `undefined` → off. */
   fullScreen?: IDiagramFullScreen;
+  /** Colour exactly behind the PNG (`#rrggbb`, validated); `undefined` → transparent. */
+  background?: string;
   placeholderText: string;
   classNames: {
     root: string;
@@ -114,6 +117,13 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
   image.setAttribute('decoding', 'async');
   applyStyles(image, view.style.image);
 
+  const background = view.background;
+  if (background) {
+    // The natural size is known only now; the colour then covers exactly the painted PNG
+    image.addEventListener('load', () =>
+      applyStyles(image, backgroundStyles(background, { width: image.naturalWidth, height: image.naturalHeight }))
+    );
+  }
   const onImageLoad = view.onImageLoad;
   if (onImageLoad) {
     image.addEventListener('load', () => onImageLoad(image.naturalWidth, image.naturalHeight));

@@ -42,6 +42,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-007a | Full-screen overlay (`<dialog>` with zoom, close via button/Escape/backdrop), tested, not wired yet | 2026-10-01 |
 | F-007b | Full screen wired: toggle "Offer full screen" (default on), shared control bar, group "Viewing" | 2026-10-01 |
 | F-007 | Full-screen view (F-007a, F-007b) | 2026-10-01 |
+| F-015 | Diagram background setting (on, white, colour picker) — exactly behind the PNG, page and full screen | 2026-10-01 |
 
 ---
 
@@ -110,7 +111,7 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 ---
 
 <!-- FEATURE-INDEX
-next-feature: F-015
+next-feature: F-016
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
@@ -125,4 +126,5 @@ F-011 Local testing setup + online workbench retirement (DONE)
 F-012 Localisation: German, English, French, Spanish (DONE)
 F-013 Link to the GitHub repository in the property pane (DONE)
 F-014 Own Teams app icons instead of the generator placeholders (DONE)
+F-015 Diagram background (setting) (DONE)
 -->

@@ -59,6 +59,8 @@ define([], function () {
     ViewingGroupName: 'Affichage',
     OfferZoomLabel: 'Proposer le zoom',
     OfferFullScreenLabel: 'Proposer le plein écran',
+    ShowBackgroundLabel: 'Arrière-plan derrière le diagramme',
+    BackgroundColorLabel: 'Couleur d’arrière-plan',
     FullScreen: 'Plein écran',
     CloseFullScreen: 'Fermer',
     ZoomIn: 'Zoom avant',

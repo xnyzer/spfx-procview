@@ -58,6 +58,8 @@ define([], function () {
     ViewingGroupName: 'Ansicht',
     OfferZoomLabel: 'Zoom anbieten',
     OfferFullScreenLabel: 'Vollbild anbieten',
+    ShowBackgroundLabel: 'Hintergrund hinter dem Diagramm',
+    BackgroundColorLabel: 'Hintergrundfarbe',
     FullScreen: 'Vollbild',
     CloseFullScreen: 'Schließen',
     ZoomIn: 'Vergrößern',

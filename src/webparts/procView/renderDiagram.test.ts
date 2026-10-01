@@ -367,6 +367,31 @@ describe('renderDiagram — full screen and control bar', () => {
   });
 });
 
+describe('renderDiagram — background behind the diagram', () => {
+  /** jsdom loads nothing: give the image a natural size and fire its load event. */
+  function load(image: HTMLImageElement, width: number, height: number): void {
+    Object.defineProperty(image, 'naturalWidth', { value: width });
+    Object.defineProperty(image, 'naturalHeight', { value: height });
+    image.dispatchEvent(new Event('load'));
+  }
+
+  it('puts the colour exactly behind the PNG once it has loaded', () => {
+    const root = renderDiagram(document, view({ background: '#ffffff' }));
+    const image = root.querySelector('img') as HTMLImageElement;
+    expect(image.style.backgroundImage).toBe('');
+    load(image, 2000, 1000);
+    expect(image.style.backgroundImage).toContain('data:image/svg+xml');
+    expect(image.style.backgroundSize).toBe('contain');
+  });
+
+  it('stays transparent without the option', () => {
+    const root = renderDiagram(document, view());
+    const image = root.querySelector('img') as HTMLImageElement;
+    load(image, 2000, 1000);
+    expect(image.style.backgroundImage).toBe('');
+  });
+});
+
 describe('parseHubLinkPosition', () => {
   it('accepts overlay and below', () => {
     expect(parseHubLinkPosition('overlay')).toBe('overlay');

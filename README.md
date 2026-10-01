@@ -40,6 +40,9 @@ there is **no release yet** — versioning and the release pipeline follow (F-00
      **Offer full screen** (on by default) adds a button that opens the diagram alone on a
      dark background, fitted to the window and zoomable; close it with the button, Escape or
      a click next to the diagram.
+     **Background behind the diagram** (on by default, white) puts a colour exactly behind
+     the diagram — Signavio images are transparent and hard to read on dark or coloured
+     sections; pick another colour or switch it off. It applies in full screen as well.
    - **Accessibility** — alternative text for screen readers (default "Process diagram").
    - **About** — link to this repository (source code, documentation, issues).
 4. **When something is wrong:** editors see what to fix (no link yet, a wrong link such as

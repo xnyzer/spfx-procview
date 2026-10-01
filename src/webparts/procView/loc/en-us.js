@@ -54,6 +54,8 @@ define([], function () {
     ViewingGroupName: 'Viewing',
     OfferZoomLabel: 'Offer zoom',
     OfferFullScreenLabel: 'Offer full screen',
+    ShowBackgroundLabel: 'Background behind the diagram',
+    BackgroundColorLabel: 'Background color',
     FullScreen: 'Full screen',
     CloseFullScreen: 'Close',
     ZoomIn: 'Zoom in',
