@@ -49,9 +49,35 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ## Open tasks — work top to bottom
 
-### F-009 — Versioning, release via CI + IT deployment guide
+### F-016 — Audit before the first release
 
 **Status:** BACKLOG
+
+**Problem:** Before 1.0.0 goes to IT, the whole web part should be checked once end to end —
+not only step by step as built.
+
+**Idea:** A full audit with `/coding-kit:audit-code` (results in `AUDIT-RESULTS.md`), with
+three explicit focal points from the owner; findings are fixed directly or become own
+F-numbers.
+
+**Solution sketch:**
+- **Correctness:** review against CODING-STANDARDS and the requirements, edge cases (invalid
+  sizes, broken links, images that fail, fast toggling, listener cleanup)
+- **Licences:** what actually ships in the built package (expected: own code plus `tslib`
+  helpers, 0BSD; SharePoint libraries are provided by SharePoint — SPFx licence, ADR-0001); a
+  licence list of all dependencies with npm's own tooling (no new tool): no GPL/AGPL beyond
+  the dual-licensed exceptions in ADR-0001; other rights (icons, texts, trademark notice)
+- **Injection robustness:** every input (image link, caption, alt text, link text, width,
+  height, colour, alignment, position, toggles) with hostile values — HTML tags,
+  `javascript:` links, quotes, CSS breakouts, Unicode tricks, wrong types (objects instead of
+  text); extra tests that feed all fields at once and assert nothing becomes active HTML, CSS
+  or script
+
+**Dependencies:** F-015, F-008 (all features built)
+
+### F-009 — Versioning, release via CI + IT deployment guide
+
+**Status:** PLANNED
 
 **Problem:** IT needs a reproducible, versioned `.sppkg` and clear deployment steps. The
 App Catalog only offers an update when the solution version increases — today it is fixed
@@ -61,20 +87,59 @@ App Catalog only offers an update when the solution version increases — today 
 and tags the release, and a GitHub Actions workflow that builds the package on version
 tags and attaches it to a GitHub release; a deployment guide for IT.
 
-**Solution sketch:**
-- Version only in `package.json` (SemVer, e.g. `1.2.0`); `package-solution.json`
-  (solution + feature: the SemVer plus a trailing build part `0`) derived by a script and
-  checked in CI
-- Release recipe (e.g. `just release 1.2.0`): set version, update `CHANGELOG.md`, commit,
-  tag — the tag triggers the CI release with the `.sppkg` attached
-- Version shown in the property pane (small note, e.g. "ProcView 1.2.0") for support
-  (owner decision 2026-09-30) — in the info group next to the repository link (F-013)
-- `CHANGELOG.md`; `docs/deployment.md` for IT (App Catalog upload, updating an existing
-  deployment, tenant-wide availability, data-classification rule for shared links)
-- Still to analyse (prep-step): script vs. `npm version` hook; whether `dataVersion` needs
-  bumps for property migrations
+**Solution sketch** (updated at prep-step, 2026-10-01; size: medium, two substeps):
+- Version only in `package.json`; `package-solution.json` (solution + feature) gets `x.y.z.0`
+  from a dependency-free script (`scripts/sync-version.mjs`), `--check` in `just check`
+- Release recipe instead of an `npm version` hook (that would create its own commit/tag):
+  `just release x.y.z` — clean tree required; `npm version x.y.z --no-git-tag-version`
+  (package.json + lock), sync, CHANGELOG "Unreleased" → `x.y.z` with date, `just check`, commit
+  `chore(release): x.y.z`, tag `vx.y.z`; it **does not push** — it prints the push command
+- `dataVersion` stays 1.0: every new setting has a code fallback, no stored value ever needed a
+  migration; bump only when the meaning of stored values changes (documented)
+- Version in the property pane below the repository link ("About", e.g. "Version 1.0.0"),
+  from the web part manifest (`version: "*"` = package.json)
+- Release workflow on tags `v*`: tag must equal the version, `just setup` + `just build`,
+  GitHub release with the `.sppkg`, a SHA-256 checksum and the CHANGELOG section as notes
+- Owner decisions (2026-10-01): first release **1.0.0**; cutting it is the last step of F-009b
 
-**Dependencies:** F-002 (a usable web part)
+**Dependencies:** F-002, F-016 (audit before the first release)
+
+#### F-009a — One version, version display, release recipe (local)
+
+**What:** Version sync script and check, `just release`, `CHANGELOG.md`, version in the
+property pane.
+
+**Files:** `scripts/sync-version.mjs` (new), `justfile`, `config/package-solution.json`,
+`CHANGELOG.md` (new), `aboutField.ts`, `aboutField.test.ts`, `ProcViewWebPart.ts`,
+`loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts`; `README.md`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] `just check` fails when `package-solution.json` does not match `package.json`
+- [ ] `just release` refuses a dirty tree or an invalid version; in a scratch copy it sets the
+      version everywhere, moves the CHANGELOG section, commits and tags (no push)
+- [ ] The property pane shows the version below the repository link (four languages, tests)
+- [ ] `just check` green (isolated copy while the dev server runs)
+
+#### F-009b — Release workflow, IT deployment guide, first release
+
+**What:** `.github/workflows/release.yml`, `docs/deployment.md`, README update, release 1.0.0.
+
+**Files:** `.github/workflows/release.yml`, `docs/deployment.md` (new), `README.md`
+
+**Dependencies:** F-009a
+
+**Acceptance criteria:**
+- [ ] Workflow: runs on `v*` tags only, fails if the tag does not match the version, builds
+      and publishes a GitHub release with `.sppkg`, `.sha256` and the CHANGELOG notes; actions
+      pinned by SHA, minimal permissions (`contents: write` only for the release job)
+- [ ] `docs/deployment.md`: App Catalog upload and tenant-wide deployment, updating, Teams
+      sync, removal, the "shared links are effectively public" rule, Signavio domains for
+      firewall/proxy, where to see the version, checksum verification
+- [ ] First release: `just release 1.0.0`, owner approves the push of commit and tag, the
+      workflow publishes release `v1.0.0` with the package
+- [ ] `just check` green
 
 ### F-010 — SPFx upgrade before Node 22 end of life
 
@@ -96,7 +161,7 @@ deliberate task (README "Upgrading SPFx"), well before the deadline.
 ---
 
 <!-- FEATURE-INDEX
-next-feature: F-016
+next-feature: F-017
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
@@ -105,11 +170,12 @@ F-005 Theme, section backgrounds, accessibility (DONE)
 F-006 Zoom and pan (checkbox) (DONE)
 F-007 Full-screen view (lightbox) (DONE)
 F-008 Microsoft Teams hosting (DONE)
-F-009 Versioning, release via CI + IT deployment guide
+F-009 Versioning, release via CI + IT deployment guide (PLANNED)
 F-010 SPFx upgrade before Node 22 end of life
 F-011 Local testing setup + online workbench retirement (DONE)
 F-012 Localisation: German, English, French, Spanish (DONE)
 F-013 Link to the GitHub repository in the property pane (DONE)
 F-014 Own Teams app icons instead of the generator placeholders (DONE)
 F-015 Diagram background (setting) (DONE)
+F-016 Audit before the first release
 -->
