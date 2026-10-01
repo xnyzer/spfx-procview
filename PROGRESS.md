@@ -51,7 +51,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-016 — Audit before the first release
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** Before 1.0.0 goes to IT, the whole web part should be checked once end to end —
 not only step by step as built.
@@ -60,20 +60,94 @@ not only step by step as built.
 three explicit focal points from the owner; findings are fixed directly or become own
 F-numbers.
 
-**Solution sketch:**
+**Solution sketch** (updated at prep-step, 2026-10-01; size: medium, three substeps):
+- **Audit run:** the owner starts `/coding-kit:audit-code` without an argument (the skill
+  cannot be invoked by Claude); it documents only and overwrites the gitignored
+  `AUDIT-RESULTS.md` — the 2026-09-29 results exist nowhere else and are copied to `private/`
+  first. Checks run in an isolated copy while the dev server runs.
 - **Correctness:** review against CODING-STANDARDS and the requirements, edge cases (invalid
   sizes, broken links, images that fail, fast toggling, listener cleanup)
 - **Licences:** what actually ships in the built package (expected: own code plus `tslib`
-  helpers, 0BSD; SharePoint libraries are provided by SharePoint — SPFx licence, ADR-0001); a
-  licence list of all dependencies with npm's own tooling (no new tool): no GPL/AGPL beyond
-  the dual-licensed exceptions in ADR-0001; other rights (icons, texts, trademark notice)
+  helpers, 0BSD; SharePoint libraries are provided by SharePoint — SPFx licence, ADR-0001);
+  licences of all dependencies via `npm query` (npm's own tooling, verified to report the
+  `license` field): no GPL/AGPL beyond the dual-licensed exceptions in ADR-0001; other rights
+  (icons, texts — the trademark notice is already in the README). Owner decision: a permanent
+  check in `just check` (and thereby CI) instead of a one-off list — Renovate keeps updating
+  dependencies, a list would be stale after the next update
 - **Injection robustness:** every input (image link, caption, alt text, link text, width,
   height, colour, alignment, position, toggles) with hostile values — HTML tags,
   `javascript:` links, quotes, CSS breakouts, Unicode tricks, wrong types (objects instead of
   text); extra tests that feed all fields at once and assert nothing becomes active HTML, CSS
-  or script
+  or script. Owner decision: the mapping from web part properties to the views moves out of
+  `ProcViewWebPart.ts` (untested, needs SharePoint; 579 lines, above the 500-line hard limit
+  of CODING-STANDARDS §2) into a pure `settings.ts`, so the tests take the web part's own path
+- **Seen while planning** (to be assessed in the audit): the Teams theme handler is not
+  unregistered on dispose and its `.catch(() => undefined)` swallows errors without a reason
+  (§7); `@microsoft/sp-lodash-subset` and `@microsoft/sp-office-ui-fabric-core` are declared
+  dependencies but never imported; a stale image's error event after a link change triggers an
+  extra render (resets the zoom) — to be confirmed
 
 **Dependencies:** F-015, F-008 (all features built)
+
+#### F-016a — Audit run and triage
+
+**What:** Back up the previous results, run the full audit with the three focal points (built
+package contents, licence inventory, every place where input reaches DOM, CSS or URLs), then
+triage every finding with the owner: fix in F-016b/F-016c, own F-number, or accepted with a
+reason.
+
+**Files:** `AUDIT-RESULTS.md` (local, gitignored), `private/` (backup of the 2026-09-29
+results), `PROGRESS.md` (F-016c scope, new F-numbers)
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] The 2026-09-29 results are kept in `private/` before the new run
+- [ ] `AUDIT-RESULTS.md` covers the whole audit plus the three focal points, including the
+      `.sppkg` bundle contents and the `npm query` licence inventory
+- [ ] Every finding is triaged with the owner; F-016c lists the ones to fix, new F-numbers
+      are in the backlog
+- [ ] No code changed in this substep
+
+#### F-016b — Settings mapping and injection tests
+
+**What:** Move the mapping from web part properties to the page, full-screen and message
+views into a pure `settings.ts`; tests that feed hostile values into all fields at once and
+check the resulting DOM; fix the injection findings from F-016a.
+
+**Files:** `settings.ts` (new), `settings.test.ts` (new), `injection.test.ts` (new),
+`ProcViewWebPart.ts`; renderer files only where F-016a found a gap
+
+**Dependencies:** F-016a
+
+**Acceptance criteria:**
+- [ ] All fields at once with HTML, `javascript:` links, quotes, CSS breakouts, Unicode tricks
+      (RTL override, zero-width and null characters) and wrong types (objects, numbers,
+      arrays): page, full screen, messages and the custom pane fields (alignment, colour)
+      contain only the expected elements, no `on…` attributes, image and links only on
+      allow-listed Signavio hosts, inline styles only from an allow-list, the background SVG
+      only `svg` and `rect`
+- [ ] `ProcViewWebPart.ts` below 500 lines; the web part behaves and looks as before
+      (visual check in the workbench)
+- [ ] `just check` green (isolated copy while the dev server runs)
+
+#### F-016c — Remaining findings and licence check
+
+**What:** Fix the findings triaged into this substep; a dependency-free licence check on
+`npm query` in `just check` that fails on GPL/AGPL and accepts the ADR-0001 exceptions (SPFx
+licence terms, the permissive option of dual-licensed packages).
+
+**Files:** `scripts/licence-check.mjs` (new), `justfile`; further files from the F-016a
+triage
+
+**Dependencies:** F-016b
+
+**Acceptance criteria:**
+- [ ] `just check` fails on a GPL/AGPL-only package and passes on the current tree (SPDX `OR`
+      expressions pass when one option is permissive)
+- [ ] Every finding from F-016a has a status with evidence (fixed / own F-number / accepted
+      with reason), recorded in `AUDIT-RESULTS.md`
+- [ ] `just check` and `just build` green (isolated copy while the dev server runs)
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
@@ -177,5 +251,5 @@ F-012 Localisation: German, English, French, Spanish (DONE)
 F-013 Link to the GitHub repository in the property pane (DONE)
 F-014 Own Teams app icons instead of the generator placeholders (DONE)
 F-015 Diagram background (setting) (DONE)
-F-016 Audit before the first release
+F-016 Audit before the first release (PLANNED)
 -->
