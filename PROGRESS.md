@@ -43,55 +43,11 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-007b | Full screen wired: toggle "Offer full screen" (default on), shared control bar, group "Viewing" | 2026-10-01 |
 | F-007 | Full-screen view (F-007a, F-007b) | 2026-10-01 |
 | F-015 | Diagram background setting (on, white, colour picker) — exactly behind the PNG, page and full screen | 2026-10-01 |
+| F-008 | Teams: follows the Teams theme (dark, high contrast); personal-app host removed | 2026-10-01 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-008 — Microsoft Teams hosting
-
-**Status:** PLANNED
-
-**Problem:** The manifest already declares Teams hosts; they must actually work, or be
-removed.
-
-**Idea:** Make the web part work as a Teams tab including the Teams light/dark/high-contrast
-themes, and remove what cannot work.
-
-**Solution sketch** (updated at prep-step, 2026-10-01; size: small–medium, no substeps):
-- **Teams theme:** in Teams the web part gets the SharePoint site's theme, not the Teams
-  theme — in dark or high-contrast Teams it would be a light block. When
-  `this.context.sdks.microsoftTeams` exists, read `teamsJs.app.getContext()` → `app.theme`
-  and follow `teamsJs.app.registerOnThemeChangeHandler` (TeamsJS v2.36 ships with SPFx, MIT);
-  `dark` and `contrast` override the CSS variables (F-005) with fixed palettes in the style of
-  the Fluent UI Teams themes (values verified at build time); `default` keeps the SharePoint
-  colours from `onThemeChanged`
-- New pure `teamsTheme.ts` (palettes, theme name → variables) with tests; `theme.ts` gets a
-  generic "apply these variables" helper
-- **Remove `TeamsPersonalApp`** from `supportedHosts` (owner decision 2026-10-01): personal
-  apps show no property pane (Microsoft Learn), so no link could ever be entered — readers
-  would see an empty app. `TeamsTab` stays (the pane appears when the tab is added)
-- Full screen and the diagram background need no change (dark layer, white behind the PNG)
-- README section "Microsoft Teams": add as a channel tab, IT step "Sync to Teams" in the
-  App Catalog, limits
-- No Teams simulation locally (the local workbench sets `sdks.microsoftTeams` to undefined):
-  Teams logic covered by tests with a mocked TeamsJS; the real check moves to the IT test site
-
-**Files:** `teamsTheme.ts`, `teamsTheme.test.ts` (new), `theme.ts`, `theme.test.ts`,
-`ProcViewWebPart.ts`, `ProcViewWebPart.manifest.json` (under `src/webparts/procView/`);
-`README.md`; `REQUIREMENTS.md` (decision log)
-
-**Dependencies:** F-002, F-005
-
-**Acceptance criteria:**
-- [ ] Tests: the Teams theme is read on start and theme changes are applied; `default` keeps
-      the SharePoint colours; outside Teams nothing changes
-- [ ] `TeamsPersonalApp` removed from the manifest; `TeamsTab`, SharePoint web part and full
-      page remain
-- [ ] README "Microsoft Teams"; decision log entry
-- [ ] `just check` green (isolated copy while the dev server runs)
-- [ ] To confirm in the IT test site (not possible locally): add as a Teams tab, configure,
-      check light/dark/high contrast
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
@@ -148,7 +104,7 @@ F-004 Empty and error states (DONE)
 F-005 Theme, section backgrounds, accessibility (DONE)
 F-006 Zoom and pan (checkbox) (DONE)
 F-007 Full-screen view (lightbox) (DONE)
-F-008 Microsoft Teams hosting (PLANNED)
+F-008 Microsoft Teams hosting (DONE)
 F-009 Versioning, release via CI + IT deployment guide
 F-010 SPFx upgrade before Node 22 end of life
 F-011 Local testing setup + online workbench retirement (DONE)

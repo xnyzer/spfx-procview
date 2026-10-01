@@ -174,6 +174,19 @@ a site you may edit — typically a test site provided by IT:
   when the files no longer match the script. The file names must stay — SPFx packages the
   icons only under them.
 
+### Microsoft Teams
+
+- **Where:** as a **tab in a Teams channel** — the settings appear when the tab is added. The
+  web part is not offered as a personal Teams app: personal apps show no settings, so no
+  diagram link could ever be entered.
+- **IT:** after deploying the package, select it in the tenant App Catalog and choose
+  **Sync to Teams**; the app then shows up in Teams under the organisation's apps.
+- **Themes:** in Teams the web part follows Teams' light, dark and high-contrast themes
+  (via the Teams SDK that SPFx provides); the background behind the diagram keeps the
+  diagram readable in every theme.
+- **Limits:** full screen covers the tab, not the whole Teams window. Teams cannot be
+  simulated in the local workbench — check it in a test tenant.
+
 ### Upgrading SPFx
 
 SPFx releases dictate their toolchain (TypeScript, ESLint, Heft, webpack) and the supported

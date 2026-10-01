@@ -42,9 +42,9 @@ workbench), F-012 (texts in English, German, French and Spanish; French/Spanish 
 labels unverified — native-speaker review before production), F-005 (every page colour
 follows the section's theme, `theme.ts`), F-013 (repository link in the property pane) and
 F-014 (own Teams app icons, `just icons`), F-006 (zoom and pan, toggle "Offer zoom") and
-F-007 (full-screen view, toggle "Offer full screen", default on) and F-015 (background
-behind the diagram, default on and white) — 261 Jest tests. Next: `/prep-step F-008`
-(Microsoft Teams hosting).
+F-007 (full-screen view, toggle "Offer full screen", default on), F-015 (background behind
+the diagram, default on and white) and F-008 (Teams tab following the Teams theme; no personal
+app) — 271 Jest tests. Next: `/prep-step F-009` (versioning, release via CI, IT guide).
 
 ## Project notes (learned the hard way)
 
@@ -71,7 +71,8 @@ behind the diagram, default on and white) — 261 Jest tests. Next: `/prep-step 
 - **Local workbench limits** (SPFx Local Workbench 0.2.0): `propertyPane.open/refresh` are
   no-ops, text values containing `:` arrive as objects (known bug, see README), no live
   reload — confirm those behaviours in a SharePoint test site, plus two-finger pinch zoom
-  (needs a touch device).
+  (needs a touch device) and Teams (no Teams simulation locally; tab, themes incl. high
+  contrast).
 
 <!-- section:claude-startup -->
 Read `README.md` and `REQUIREMENTS.md` (while it exists). Then `PROGRESS.md`: its open-tasks

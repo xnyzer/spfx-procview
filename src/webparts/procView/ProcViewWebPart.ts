@@ -25,7 +25,9 @@ import type { ILoadError } from './messages';
 import { parseHubLinkPosition, parseTextAlign, renderDiagram } from './renderDiagram';
 import type { IHubLinkView, TextAlign } from './renderDiagram';
 import { renderMessage } from './renderMessage';
-import { applyThemeVariables } from './theme';
+import { applyVariables, themeVariables } from './theme';
+import { followTeamsTheme, teamsThemeVariables } from './teamsTheme';
+import type { TeamsTheme } from './teamsTheme';
 import { trackImageViolations } from './violationTracker';
 import type { IViolationTracker } from './violationTracker';
 import type { IZoomClassNames, IZoomController, IZoomLabels } from './zoomView';
@@ -88,9 +90,22 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   private _zoom: IZoomController | undefined;
   /** Open full-screen view, if any — closed when the web part goes away. */
   private _lightbox: ILightbox | undefined;
+  /** SharePoint theme (on a coloured section: the section's variant) from `onThemeChanged`. */
+  private _siteTheme: IReadonlyTheme | undefined;
+  /** Teams theme when hosted in Teams; `default` elsewhere. */
+  private _teamsTheme: TeamsTheme = 'default';
 
   protected onInit(): Promise<void> {
     this._violations = trackImageViolations(document, () => this._onViolation());
+    // In Teams the web part gets the SharePoint site theme, not the Teams theme — follow Teams'
+    // dark and high-contrast themes (TeamsJS ships with SPFx)
+    const teams = this.context.sdks.microsoftTeams;
+    if (teams) {
+      followTeamsTheme(teams.teamsJs, (theme) => {
+        this._teamsTheme = theme;
+        this._applyTheme();
+      });
+    }
     return super.onInit();
   }
 
@@ -207,7 +222,13 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     // On a coloured section this is the section's theme variant — every colour on the page
     // comes from these variables (theme.ts); they cascade to the rendered elements, so no
     // re-render is needed
-    applyThemeVariables(this.domElement.style, currentTheme);
+    this._siteTheme = currentTheme;
+    this._applyTheme();
+  }
+
+  /** Teams' dark/high-contrast palette when hosted there, otherwise the SharePoint theme. */
+  private _applyTheme(): void {
+    applyVariables(this.domElement.style, teamsThemeVariables(this._teamsTheme) ?? themeVariables(this._siteTheme));
   }
 
   protected get dataVersion(): Version {

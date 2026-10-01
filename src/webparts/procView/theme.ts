@@ -62,7 +62,14 @@ export function themeVariables(theme: IReadonlyTheme | undefined): Record<string
  * does not provide, so a colour from a previous theme never lingers.
  */
 export function applyThemeVariables(style: CSSStyleDeclaration, theme: IReadonlyTheme | undefined): void {
-  const variables = themeVariables(theme);
+  applyVariables(style, themeVariables(theme));
+}
+
+/**
+ * Sets the given colour variables (e.g. a Teams palette) on the web part element and removes the
+ * other known ones, so a colour from a previous theme never lingers.
+ */
+export function applyVariables(style: CSSStyleDeclaration, variables: Record<string, string>): void {
   const names = SEMANTIC_SLOTS.map((slot) => `--${slot}`).concat(ACCENT_VARIABLE);
   names.forEach((name) => {
     if (name in variables) {

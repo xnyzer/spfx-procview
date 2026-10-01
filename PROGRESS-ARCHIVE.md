@@ -8,6 +8,71 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-008 — Microsoft Teams hosting
+
+_Completed 2026-10-01._
+
+**Problem:** The manifest already declares Teams hosts; they must actually work, or be
+removed.
+
+**Idea:** Make the web part work as a Teams tab including the Teams light/dark/high-contrast
+themes, and remove what cannot work.
+
+**Solution sketch** (updated at prep-step, 2026-10-01; size: small–medium, no substeps):
+- **Teams theme:** in Teams the web part gets the SharePoint site's theme, not the Teams
+  theme — in dark or high-contrast Teams it would be a light block. When
+  `this.context.sdks.microsoftTeams` exists, read `teamsJs.app.getContext()` → `app.theme`
+  and follow `teamsJs.app.registerOnThemeChangeHandler` (TeamsJS v2.36 ships with SPFx, MIT);
+  `dark` and `contrast` override the CSS variables (F-005) with fixed palettes in the style of
+  the Fluent UI Teams themes (values verified at build time); `default` keeps the SharePoint
+  colours from `onThemeChanged`
+- New pure `teamsTheme.ts` (palettes, theme name → variables) with tests; `theme.ts` gets a
+  generic "apply these variables" helper
+- **Remove `TeamsPersonalApp`** from `supportedHosts` (owner decision 2026-10-01): personal
+  apps show no property pane (Microsoft Learn), so no link could ever be entered — readers
+  would see an empty app. `TeamsTab` stays (the pane appears when the tab is added)
+- Full screen and the diagram background need no change (dark layer, white behind the PNG)
+- README section "Microsoft Teams": add as a channel tab, IT step "Sync to Teams" in the
+  App Catalog, limits
+- No Teams simulation locally (the local workbench sets `sdks.microsoftTeams` to undefined):
+  Teams logic covered by tests with a mocked TeamsJS; the real check moves to the IT test site
+
+**Files:** `teamsTheme.ts`, `teamsTheme.test.ts` (new), `theme.ts`, `theme.test.ts`,
+`ProcViewWebPart.ts`, `ProcViewWebPart.manifest.json` (under `src/webparts/procView/`);
+`README.md`; `REQUIREMENTS.md` (decision log)
+
+**Dependencies:** F-002, F-005
+
+**Acceptance criteria:**
+- [x] Tests: the Teams theme is read on start and theme changes are applied; `default` keeps
+      the SharePoint colours; outside Teams nothing changes (`teamsTheme.test.ts`, 9;
+      `theme.test.ts` +1)
+- [x] `TeamsPersonalApp` removed from the manifest; `TeamsTab`, SharePoint web part and full
+      page remain
+- [x] README "Microsoft Teams"; decision log entry
+- [x] `just check` green — 271 tests (isolated copy while the dev server runs)
+- [ ] **Open — IT test site** (not possible locally): add as a Teams tab, configure, check
+      light/dark/high contrast — especially the unverified high-contrast palette
+
+**Implemented:**
+- `teamsTheme.ts` — `parseTeamsTheme`; palettes `DARK` (Fluent UI v9 `teamsDarkTheme` tokens:
+  teamsDarkColor.ts with the Teams brand ramp, red tint30 for errors — verified 2026-10-01 in
+  the fluentui repository) and `CONTRAST` (classic Teams black/white/yellow/cyan — fixed values,
+  because Fluent v9 maps it to CSS system colours that only resolve in OS forced-colours mode;
+  not checked against a published source); `teamsThemeVariables(theme)` (undefined for
+  `default`); `followTeamsTheme(teamsJs, onTheme)` registers the change handler and reads
+  `getContext()` (errors ignored → SharePoint colours stay).
+- `theme.ts` — `applyVariables(style, variables)`; `applyThemeVariables` uses it.
+- `ProcViewWebPart.ts` — `_siteTheme` from `onThemeChanged`, `_teamsTheme` from
+  `followTeamsTheme` (only when `context.sdks.microsoftTeams` exists); `_applyTheme()` applies
+  the Teams palette or the site theme.
+- Manifest — `supportedHosts` without `TeamsPersonalApp` (comment with the reason).
+- README "Microsoft Teams"; decision log entry. Tests check that both Teams palettes keep text,
+  links and buttons at ≥ 4.5:1.
+
+**Decisions / deviations:** none from the plan. The real Teams check (and the high-contrast
+values) stays open for the IT test site.
+
 ### F-015 — Diagram background (setting)
 
 _Completed 2026-10-01._

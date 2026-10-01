@@ -1,5 +1,5 @@
 import type { IReadonlyTheme } from '@microsoft/sp-component-base';
-import { ACCENT_VARIABLE, SEMANTIC_SLOTS, applyThemeVariables, themeVariables } from './theme';
+import { ACCENT_VARIABLE, SEMANTIC_SLOTS, applyThemeVariables, applyVariables, themeVariables } from './theme';
 
 /** A light page theme (default Fluent colours). */
 const PAGE_THEME = {
@@ -102,5 +102,17 @@ describe('applyThemeVariables', () => {
     applyThemeVariables(element.style, PAGE_THEME);
     applyThemeVariables(element.style, undefined);
     expect(element.style.cssText).toBe('');
+  });
+});
+
+describe('applyVariables', () => {
+  it('sets a given palette and removes the other known colours', () => {
+    const element = document.createElement('div');
+    applyThemeVariables(element.style, PAGE_THEME);
+    applyVariables(element.style, { '--bodyText': '#ffffff', '--bodyBackground': '#292929' });
+    expect(element.style.getPropertyValue('--bodyText')).toBe('#ffffff');
+    expect(element.style.getPropertyValue('--bodyBackground')).toBe('#292929');
+    expect(element.style.getPropertyValue('--link')).toBe('');
+    expect(element.style.getPropertyValue(ACCENT_VARIABLE)).toBe('');
   });
 });
