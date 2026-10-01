@@ -8,6 +8,39 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-007a — Full-screen overlay (not wired yet)
+
+_Part of F-007 — Full-screen view (lightbox). Completed 2026-10-01._
+
+**What:** `lightbox.ts`: dialog with the image, a close button and zoom; open/close, focus
+return, Escape and backdrop click, cleanup — tested in isolation.
+
+**Files:** `lightbox.ts`, `lightbox.test.ts` (new, under `src/webparts/procView/`)
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] Opens a modal `<dialog>` with only the image (alt text, `referrerpolicy="no-referrer"`),
+      a labelled close button and the zoom controls
+- [x] Closes via button, Escape (`cancel`) and backdrop click — not via clicks on the image
+      or the controls (nor a drag that ends on the backdrop); focus returns to the element
+      that opened it; everything is removed after closing (no leftover listeners)
+- [x] Covered by jsdom tests (`lightbox.test.ts`, 10; `showModal`/`close` stubbed)
+- [x] `just check` green — 243 tests (isolated copy while the dev server runs)
+
+**Implemented:**
+- `lightbox.ts` — `openLightbox(doc, props)` returns `{ close }`: `<dialog>` named after the
+  alt text with a frame (zoom viewport) holding the image (`referrerpolicy="no-referrer"`,
+  `decoding="async"`, `src` set last) and a close button (inline SVG X, `aria-label` +
+  `title`); `attachZoom` on the frame (always in full screen); `showModal()` with an
+  `open`-attribute fallback; focus to the close button, back to the opener on close;
+  `cancel` (Escape) closes through the same path; a backdrop click closes only when the
+  press also started on the dialog itself (a drag from the image ending on the backdrop
+  would otherwise close it); a browser-side `close` event also cleans up; idempotent.
+
+**Decisions / deviations:** none from the plan; the drag-ends-on-backdrop guard was added
+while writing the tests.
+
 ### F-006 — Zoom and pan (checkbox)
 
 _Completed 2026-10-01 via F-006a and F-006b._

@@ -39,6 +39,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-006a | Zoom maths and zoom view (controls, wheel, keys, drag, pinch), tested, not wired yet | 2026-10-01 |
 | F-006b | Zoom wired into the diagram with the toggle "Offer zoom" (own group "Zoom") | 2026-10-01 |
 | F-006 | Zoom and pan (F-006a, F-006b) | 2026-10-01 |
+| F-007a | Full-screen overlay (`<dialog>` with zoom, close via button/Escape/backdrop), tested, not wired yet | 2026-10-01 |
 
 ---
 
@@ -79,24 +80,6 @@ backdrop click.
 
 **Dependencies:** F-002, F-005, F-006
 
-#### F-007a — Full-screen overlay (not wired yet)
-
-**What:** `lightbox.ts`: dialog with the image, a close button and zoom; open/close, focus
-return, Escape and backdrop click, cleanup — tested in isolation.
-
-**Files:** `lightbox.ts`, `lightbox.test.ts` (new, under `src/webparts/procView/`)
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] Opens a modal `<dialog>` with only the image (alt text, `referrerpolicy="no-referrer"`),
-      a labelled close button and the zoom controls
-- [ ] Closes via button, Escape (`cancel`) and backdrop click — not via clicks on the image
-      or the controls; focus returns to the element that opened it; everything is removed
-      after closing (no leftover listeners)
-- [ ] Covered by jsdom tests (`showModal` stubbed where jsdom lacks it)
-- [ ] `just check` green (isolated copy while the dev server runs)
-
 #### F-007b — Wiring with the "Offer full screen" toggle
 
 **What:** Shared control bar top right (zoom buttons and/or full-screen button),
@@ -109,7 +92,7 @@ backdrop, forced colours), docs.
 `loc/mystrings.d.ts`, `linkErrors.test.ts`, tests (under `src/webparts/procView/`);
 `README.md`; `REQUIREMENTS.md` (decision log, resolve the open question)
 
-**Dependencies:** F-007a
+**Dependencies:** F-007a (done)
 
 **Acceptance criteria:**
 - [ ] Toggle on by default — also for existing web parts without the property; off removes
