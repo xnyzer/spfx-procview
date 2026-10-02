@@ -10,8 +10,8 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ### F-021a — Release path, tooling, docs, GitHub settings
 
-_Completed 2026-10-02; the dry run on GitHub follows after the push. Part of F-021, which stays
-open with F-021b and F-021c._
+_Completed 2026-10-02; the dry run on GitHub followed right after the push. Part of F-021, which
+stays open with F-021b and F-021c._
 
 **What:** The release can only be cut from and published for a commit on `main`, published
 releases cannot be changed any more, the reporting channel of SECURITY.md works, and the low
@@ -46,10 +46,15 @@ settings
 - [x] The script tests leave no temp folders behind — counted before and after a run (unchanged);
       the 266 folders of earlier runs were deleted with the owner's approval
 - [x] The recipe and README print `git push --atomic origin main vx.y.z`
-- [ ] Release workflow: ancestry check on tag runs, `publish` only on `push`, no tool cache; all
+- [x] Release workflow: ancestry check on tag runs, `publish` only on `push`, no tool cache; all
       workflows on `ubuntu-24.04`; a dry run on GitHub is green with `publish` skipped; CI and
-      CodeQL green — the workflow files are changed and parse; the runs on GitHub follow after
-      the owner approves the push
+      CodeQL green — after the owner approved the push of `9d84685`: CI (check, secrets-scan,
+      package) and CodeQL (`javascript-typescript` and `actions`, 0 results each) green on
+      `ubuntu-24.04` with the SHA-pinning requirement on; dry run 37046931971 on `main`: `build`
+      green with `fetch-depth: 0` and `cache: false`, the tag and ancestry checks skipped as on
+      any branch, `publish` skipped; the artifact holds the package (its checksum verifies), the
+      notices with absolute links and the notes. The ancestry check runs for the first time on
+      the tag of release 1.0.0 (F-009c)
 - [x] Immutable releases, private vulnerability reporting and the SHA-pinning requirement read
       back as on via `gh api` — `{"enabled":true}` each, `sha_pinning_required: true` (owner's
       approval for each setting)

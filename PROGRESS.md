@@ -60,7 +60,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-020 | README with screenshots: settings, controls and messages tables, an IT section with the Signavio hosts, an FAQ; only the CI badge | 2026-10-02 |
 | F-009a | One version from package.json (sync and check), `just release` with a tested release script, CHANGELOG with the 1.0.0 features, version in the property pane | 2026-10-02 |
 | F-009b | Release workflow (read-only build job, publish job with write access on tags only, dry run), `--notes` from the CHANGELOG, CodeQL for workflows, IT deployment guide; dry run on GitHub green | 2026-10-02 |
-| F-021a | Release only from `main` (fetch and up-to-date check, atomic push, ancestry check in the build), `publish` only for a pushed tag, immutable releases, private vulnerability reporting, SHA pinning required, pinned runner image; stricter version and character checks, docs | 2026-10-02 |
+| F-021a | Release only from `main` (fetch and up-to-date check, atomic push, ancestry check in the build), `publish` only for a pushed tag, immutable releases, private vulnerability reporting, SHA pinning required, pinned runner image; stricter version and character checks, docs; dry run on GitHub green | 2026-10-02 |
 
 ---
 
