@@ -8,6 +8,8 @@ releases").
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-02
+
 ### Added
 
 - Process diagrams from SAP Signavio on modern SharePoint pages: paste the "Simple image" link
