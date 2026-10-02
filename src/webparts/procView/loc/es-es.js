@@ -51,7 +51,7 @@ define([], function () {
     SizeGroupName: 'Tamaño y alineación',
     WidthLabel: 'Ancho',
     WidthDescription:
-      'Píxeles (p. ej., 800), porcentaje de la columna (p. ej., 50 %) o vacío para automático. Nunca más ancho que la columna.',
+      'Píxeles (p. ej., 800), porcentaje de la columna (p. ej., 50\u00a0%) o vacío para automático. Nunca más ancho que la columna.',
     HeightLabel: 'Alto',
     HeightDescription: 'Píxeles (p. ej., 600) o vacío para automático. El diagrama conserva sus proporciones.',
     DiagramAlignLabel: 'Alineación',
@@ -89,10 +89,10 @@ define([], function () {
       'La clave de acceso de este enlace no es válida. Copiar de nuevo el enlace desde Signavio.',
 
     DimensionErrorInvalidWidth:
-      'Escribir píxeles (p. ej., 800) o un porcentaje de la columna (p. ej., 50 %), o dejar vacío para automático.',
+      'Escribir píxeles (p. ej., 800) o un porcentaje de la columna (p. ej., 50\u00a0%), o dejar vacío para automático.',
     DimensionErrorInvalidHeight: 'Escribir píxeles (p. ej., 600) o dejar vacío para automático.',
     DimensionErrorTooLarge: 'El máximo es {0} píxeles.',
-    DimensionErrorPercentOutOfRange: 'Usar un porcentaje del 1 % al 100 %.',
+    DimensionErrorPercentOutOfRange: 'Usar un porcentaje del 1\u00a0% al 100\u00a0%.',
     DimensionErrorPercentHeight: 'El alto no puede ser un porcentaje: escribir píxeles o dejar vacío para automático.'
   };
 });

@@ -2,21 +2,25 @@
 //
 //   1. every installed package (runtime and build) is under a permissive licence; an SPDX `OR`
 //      expression passes when one option is permissive, `AND` needs all parts to be;
-//   2. THIRD-PARTY-NOTICES.md names the exact versions of the third-party code compiled into the
-//      web part bundle.
+//   2. THIRD-PARTY-NOTICES.md has a section with the exact version of every third-party package
+//      compiled into the web part bundle, and no section for anything else. The bundled packages
+//      come from the build's source map in dist/, which `just test` writes before this runs.
 //
-//   node scripts/licence-check.mjs                 check the installed packages (`just check`)
-//   node scripts/licence-check.mjs --input <file>  check a saved `npm query '*'` output instead
+//   node scripts/licence-check.mjs                  check the installed packages (`just check`)
+//   node scripts/licence-check.mjs --input <file>   check a saved `npm query '*'` output instead
+//   node scripts/licence-check.mjs --dist <folder>  read the source maps from another folder
 //
 // Unknown or missing licences fail — the allow-list is the rule, not a list of forbidden ones.
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const NOTICES = join(ROOT, 'THIRD-PARTY-NOTICES.md');
+/** Where the build writes the web part bundle and its source map. */
+const DIST = join(ROOT, 'dist');
 /** Upper bound for the `npm query` output (about 1 MB per 400 packages today). */
 const QUERY_BUFFER_BYTES = 64 * 1024 * 1024;
 
@@ -51,14 +55,50 @@ export const MISSING_LICENCE_EXCEPTIONS = new Map([
   ]
 ]);
 
-/** Third-party packages compiled into the bundle — each needs its notice (by location in node_modules). */
-export const BUNDLED = [
-  { name: 'tslib', location: 'node_modules/tslib' },
-  {
-    name: '@microsoft/load-themed-styles',
-    location: 'node_modules/@microsoft/sp-css-loader/node_modules/@microsoft/load-themed-styles'
+/**
+ * Package folders (e.g. `node_modules/@scope/name`, nested ones included) of the third-party code
+ * in a webpack source map — the code the SharePoint Framework build compiled into the bundle.
+ */
+export function findBundledLocations(sourceMap) {
+  const locations = new Set();
+  (sourceMap.sources ?? []).forEach((source) => {
+    const start = source.indexOf('node_modules/');
+    if (start < 0) {
+      return;
+    }
+    const segments = source.slice(start).split('/');
+    let end = 0;
+    while (segments[end] === 'node_modules' && segments[end + 1]) {
+      end += segments[end + 1].indexOf('@') === 0 ? 3 : 2;
+    }
+    locations.add(segments.slice(0, end).join('/'));
+  });
+  return [...locations];
+}
+
+/** The package folders of all source maps in `dist`, or `undefined` when there is none. */
+export function readBundledLocations(dist) {
+  const maps = existsSync(dist) ? readdirSync(dist).filter((name) => name.endsWith('.js.map')) : [];
+  if (maps.length === 0) {
+    return undefined;
   }
-];
+  const locations = new Set();
+  maps.forEach((name) =>
+    findBundledLocations(JSON.parse(readFileSync(join(dist, name), 'utf8'))).forEach((location) =>
+      locations.add(location)
+    )
+  );
+  return [...locations];
+}
+
+/** The `## <name> <version>` sections of THIRD-PARTY-NOTICES.md. */
+export function parseNoticeSections(notices) {
+  return notices
+    .split('\n')
+    .map((line) => /^## (\S+) (\S+)$/.exec(line))
+    .filter(Boolean)
+    .map(([, name, version]) => ({ name, version }));
+}
 
 /** The licence of a package as one SPDX expression, or `undefined` when it declares none. */
 export function licenceOf(pkg) {
@@ -142,8 +182,8 @@ export function licenceProblem(pkg) {
   }
 }
 
-/** Problems of all packages and of the notices file — empty when everything is fine. */
-export function findProblems(packages, notices) {
+/** Problems with the licences of `packages`. */
+function findLicenceProblems(packages) {
   const problems = [];
   const seen = new Set();
   packages.forEach((pkg) => {
@@ -154,36 +194,73 @@ export function findProblems(packages, notices) {
       problems.push(`${id} ${problem}`);
     }
   });
-  BUNDLED.forEach(({ name, location }) => {
+  return problems;
+}
+
+/** Problems between the notices file and the packages at the bundled locations — both ways. */
+function findNoticeProblems(packages, notices, bundled) {
+  const problems = [];
+  const bundledPackages = [];
+  bundled.forEach((location) => {
     const pkg = packages.find((candidate) => candidate.location === location);
     if (!pkg) {
-      problems.push(`bundled ${name} not found at ${location} — update BUNDLED in scripts/licence-check.mjs`);
-    } else if (notices.indexOf(`## ${name} ${pkg.version}\n`) < 0) {
-      problems.push(`THIRD-PARTY-NOTICES.md has no section "## ${name} ${pkg.version}"`);
+      problems.push(`the bundle contains code from ${location}, which is no installed package`);
+    } else {
+      bundledPackages.push(pkg);
+      if (notices.indexOf(`## ${pkg.name} ${pkg.version}\n`) < 0) {
+        problems.push(`THIRD-PARTY-NOTICES.md has no section "## ${pkg.name} ${pkg.version}" for code in the bundle`);
+      }
+    }
+  });
+  parseNoticeSections(notices).forEach(({ name, version }) => {
+    if (!bundledPackages.some((pkg) => pkg.name === name && pkg.version === version)) {
+      problems.push(`THIRD-PARTY-NOTICES.md lists ${name} ${version}, which is not in the bundle`);
     }
   });
   return problems;
 }
 
+/**
+ * Problems of all packages and of the notices file — empty when everything is fine. `bundled`
+ * holds the package folders of the code in the bundle (`findBundledLocations`).
+ */
+export function findProblems(packages, notices, bundled) {
+  return findLicenceProblems(packages).concat(findNoticeProblems(packages, notices, bundled));
+}
+
+/** The value after a command-line option, or `undefined`. */
+function readOption(argv, option) {
+  const index = argv.indexOf(option);
+  return index >= 0 ? argv[index + 1] : undefined;
+}
+
 function readPackages(argv) {
-  const inputIndex = argv.indexOf('--input');
-  const json =
-    inputIndex >= 0
-      ? readFileSync(argv[inputIndex + 1], 'utf8')
-      : execFileSync('npm', ['query', '*'], { cwd: ROOT, encoding: 'utf8', maxBuffer: QUERY_BUFFER_BYTES });
+  const input = readOption(argv, '--input');
+  const json = input
+    ? readFileSync(input, 'utf8')
+    : execFileSync('npm', ['query', '*'], { cwd: ROOT, encoding: 'utf8', maxBuffer: QUERY_BUFFER_BYTES });
   return JSON.parse(json);
 }
 
 function main() {
+  const dist = readOption(process.argv, '--dist') ?? DIST;
+  const bundled = readBundledLocations(dist);
+  if (!bundled) {
+    console.error(`Licence check failed: no source map in ${dist} — build first (\`just test\` writes it)`);
+    process.exitCode = 1;
+    return;
+  }
   const packages = readPackages(process.argv);
-  const problems = findProblems(packages, readFileSync(NOTICES, 'utf8'));
+  const problems = findProblems(packages, readFileSync(NOTICES, 'utf8'), bundled);
   if (problems.length > 0) {
     console.error(`Licence check failed:\n${problems.map((problem) => `  - ${problem}`).join('\n')}`);
     process.exitCode = 1;
     return;
   }
   const count = new Set(packages.map((pkg) => `${pkg.name}@${pkg.version}`)).size;
-  console.log(`Licences are fine (${count} packages); third-party notices match the bundle.`);
+  console.log(
+    `Licences are fine (${count} packages); third-party notices match the bundle (${bundled.length} packages).`
+  );
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

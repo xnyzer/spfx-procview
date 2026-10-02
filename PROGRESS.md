@@ -54,6 +54,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-017c | Full screen: no close right after opening, two-tone focus ring, error state, `onClose` with focus return, `openLightbox` split, background switch applies in full screen too | 2026-10-02 |
 | F-017 | Zoom and full-screen fixes from the audit (F-017a, F-017b, F-017c) | 2026-10-02 |
 | F-019a | Web part and pane tests on SharePoint stand-ins; stale load errors dropped, Teams theme errors reported, invisible-only texts, pane settings via `settings.ts`, focus return by reference | 2026-10-02 |
+| F-019b | Pane fields keep focus when SharePoint renders them again; node-forge in ADR-0002, Dependabot alerts dismissed; raw no-break spaces escaped and a character check; licence check from the build | 2026-10-02 |
 
 ---
 
@@ -90,18 +91,18 @@ tests of a):
   through `readPaneSettings()` in `settings.ts` (L39); the full-screen button reports itself
   via `onAttach`, so the focus returns by reference, not by its label (L40); a real assertion
   for the colour field (L41)
-- **F-019b — pane focus, tooling, docs (updated at prep-step, 2026-10-02):** SharePoint
+- **F-019b — pane focus, tooling, docs (updated at prep-step, done 2026-10-02):** SharePoint
   fetches the pane configuration again after every change and calls `onRender` of each custom
   field again; `customPaneField` keeps the content per host element and only shows the new
   value, so the alignment toolbars and the colour input keep the keyboard focus (M15 — no
   SharePoint test environment, so the runtime check moves to the first-use check of the F-009b
-  IT guide); the `node-forge` advisory GHSA-86w9-cpqp-85rv (dev only, not reachable) recorded
-  in ADR-0001, both open Dependabot alerts (`node-forge`, `uuid`) dismissed as tolerable risk
-  with that reference (M17, owner approved); raw no-break spaces written as `\u` escapes (L44,
-  owner decision) and a dependency-free check in `just check` that fails on raw invisible or
-  control characters in the source (owner decision); the licence check takes the bundled
-  packages from the build's source map and checks the notices both ways (L45); doc drift —
-  README status, decision table order, FEATURE-INDEX marker, the hub link target question
+  IT guide); the `node-forge` advisory GHSA-86w9-cpqp-85rv (dev only, not reachable) recorded in
+  ADR-0002 (extends ADR-0001), both open Dependabot alerts (`node-forge`, `uuid`) dismissed as
+  tolerable risk with that reference (M17, owner approved); raw no-break spaces written as `\u`
+  escapes (L44, owner decision) and a dependency-free check in `just check` that fails on raw
+  invisible or control characters in the source (owner decision); the licence check takes the
+  bundled packages from the build's source map and checks the notices both ways (L45); doc drift
+  — README status, decision table order, FEATURE-INDEX marker, the hub link target question
   points to the F-009b IT guide (L46); the README's template-managed "Getting started" block
   stays as it is — icons and licences are described as part of `just check` elsewhere
 - **F-019c — zoom and full screen:** back to the fitted view when a resize leaves too little
@@ -115,43 +116,6 @@ tests of a):
   only in files touched anyway (L43)
 
 **Dependencies:** F-016, F-017, F-018 (done)
-
-#### F-019b — Pane focus, tooling, docs
-
-**What:** Custom pane fields keep their DOM and the keyboard focus when SharePoint renders them
-again (M15); the `node-forge` advisory in ADR-0001 and the open Dependabot alerts dismissed
-(M17); raw no-break spaces as escapes plus a check against raw invisible characters (L44);
-the licence check derives the bundled packages from the build (L45); doc drift (L46). Size:
-about 500 lines in about 20 files, many of them small.
-
-**Files:** `customPaneField.ts`, `alignmentField.ts`, `colorField.ts`, `propertyPane.ts` and
-their tests (`customPaneField.test.ts`, `alignmentField.test.ts`, `colorField.test.ts`,
-`propertyPane.test.ts`); `scripts/licence-check.mjs`, `scripts/licence-check.test.mjs`,
-`THIRD-PARTY-NOTICES.md`; `loc/fr-fr.js`, `loc/es-es.js`, `linkErrors.test.ts`,
-`scripts/source-chars-check.mjs` and its test (new), `justfile`, `CLAUDE.md`;
-`docs/adr/0001-spfx-platform-dependencies.md`, `README.md`, `REQUIREMENTS.md`, `PROGRESS.md`
-(FEATURE-INDEX)
-
-**Dependencies:** F-019a
-
-**Acceptance criteria:**
-- [ ] M15: on a second `onRender` for the same host element a custom field keeps its DOM and
-      the focus and shows the new value; a new element is built fresh — `customPaneField.test.ts`
-      and a `propertyPane.test.ts` case that plays SharePoint's re-render after a toolbar
-      change (both fail before the fix); the SharePoint runtime check is part of F-009b
-- [ ] M17: ADR-0001 records the `node-forge` advisory with its reachability; both open
-      Dependabot alerts (`node-forge`, `uuid`) are dismissed as tolerable risk with a reference
-      to ADR-0001
-- [ ] L44: no raw U+00A0 left in `loc/` and the tests; the language file tests stay green
-- [ ] `scripts/source-chars-check.mjs` (with tests) makes `just check` fail on raw invisible or
-      control characters in `src/` and `scripts/`, naming file, line and code point; green on
-      the current tree
-- [ ] L45: the licence check reads the bundled packages from the build's source map; a bundled
-      package without a notice section, a notice section no longer in the bundle and a missing
-      source map each fail — tests; green on the current tree
-- [ ] L46: README status, decision table order, `(BACKLOG)` for F-010 in the FEATURE-INDEX, the
-      hub link open question points to the F-009b IT guide
-- [ ] `just check` green (isolated copy while the dev server runs)
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
@@ -260,7 +224,7 @@ F-006 Zoom and pan (checkbox) (DONE)
 F-007 Full-screen view (lightbox) (DONE)
 F-008 Microsoft Teams hosting (DONE)
 F-009 Versioning, release via CI + IT deployment guide (PLANNED)
-F-010 SPFx upgrade before Node 22 end of life
+F-010 SPFx upgrade before Node 22 end of life (BACKLOG)
 F-011 Local testing setup + online workbench retirement (DONE)
 F-012 Localisation: German, English, French, Spanish (DONE)
 F-013 Link to the GitHub repository in the property pane (DONE)

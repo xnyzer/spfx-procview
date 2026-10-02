@@ -38,6 +38,7 @@ format:
 # Full gate — must be green before every commit
 check:
     npx --no-install prettier --check --log-level warn {{prettier_globs}}
+    node scripts/source-chars-check.mjs
     just lint
     just test
     node scripts/teams-icons.mjs --check

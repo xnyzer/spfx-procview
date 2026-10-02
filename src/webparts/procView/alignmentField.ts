@@ -1,3 +1,4 @@
+import type { ICustomFieldContent } from './customPaneField';
 import type { TextAlign } from './renderDiagram';
 import { SVG_NS, createIconCanvas } from './svgIcon';
 
@@ -95,13 +96,27 @@ function createOptionButton(doc: Document, option: IAlignmentOption): HTMLButton
   return button;
 }
 
+/** A click selects its option; arrow keys, Home and End move the selection and the focus. */
+function bindOptionEvents(buttons: HTMLButtonElement[], select: (index: number, moveFocus: boolean) => void): void {
+  buttons.forEach((button, index) => {
+    button.addEventListener('click', () => select(index, false));
+    button.addEventListener('keydown', (event: KeyboardEvent) => {
+      const target = keyTarget(event.key, index, buttons.length - 1);
+      if (target !== undefined) {
+        event.preventDefault();
+        select(target, true);
+      }
+    });
+  });
+}
+
 /**
  * Compact icon toolbar for a text alignment, built as an accessible radio group:
  * one tab stop (the selected button), arrow keys/Home/End move the selection, the
- * buttons carry `aria-checked`. It keeps its own state, because a property pane host may
- * render a custom field only once.
+ * buttons carry `aria-checked`. It keeps its own state, and `showValue` shows a newly stored
+ * value in place, so the keyboard focus stays on its button.
  */
-export function renderAlignmentButtons(doc: Document, props: IAlignmentButtonsProps): HTMLElement {
+export function renderAlignmentButtons(doc: Document, props: IAlignmentButtonsProps): ICustomFieldContent<TextAlign> {
   const { root, group } = createLabelledGroup(doc, props);
   const buttons = props.options.map((option) => group.appendChild(createOptionButton(doc, option)));
   let selected = props.selected;
@@ -130,17 +145,13 @@ export function renderAlignmentButtons(doc: Document, props: IAlignmentButtonsPr
     props.onChange(key);
   };
 
-  buttons.forEach((button, index) => {
-    button.addEventListener('click', () => select(index, false));
-    button.addEventListener('keydown', (event: KeyboardEvent) => {
-      const target = keyTarget(event.key, index, buttons.length - 1);
-      if (target !== undefined) {
-        event.preventDefault();
-        select(target, true);
-      }
-    });
-  });
-
+  bindOptionEvents(buttons, select);
   update();
-  return root;
+  return {
+    element: root,
+    showValue: (key) => {
+      selected = key;
+      update();
+    }
+  };
 }

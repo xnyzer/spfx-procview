@@ -8,6 +8,77 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-019b — Pane focus, tooling, docs
+
+_Part of F-019 — Fixes from the control audit before the first release. Completed 2026-10-02._
+
+**What:** Custom pane fields keep their DOM and the keyboard focus when SharePoint renders them
+again (M15); the `node-forge` advisory recorded and the open Dependabot alerts dismissed (M17);
+raw no-break spaces as escapes plus a check against raw invisible characters (L44); the
+licence check derives the bundled packages from the build (L45); doc drift (L46).
+
+**Files:** `customPaneField.ts`, `alignmentField.ts`, `colorField.ts`, `propertyPane.ts`,
+`customPaneField.test.ts`, `alignmentField.test.ts`, `colorField.test.ts`,
+`propertyPane.test.ts`, `loc/fr-fr.js`, `loc/es-es.js`, `linkErrors.test.ts`;
+`scripts/licence-check.mjs`, `scripts/licence-check.test.mjs`, `scripts/source-chars-check.mjs`
+and `scripts/source-chars-check.test.mjs` (new), `justfile`; `THIRD-PARTY-NOTICES.md`,
+`docs/adr/0002-node-forge-toolchain-advisory.md` (new), `README.md`, `CODING-STANDARDS.md`,
+`REQUIREMENTS.md`, `CLAUDE.md`, `PROGRESS.md`
+
+**Dependencies:** F-019a
+
+**Acceptance criteria:**
+- [x] M15: on a second `onRender` for the same host element a custom field keeps its DOM and
+      the focus and shows the new value; a new element is built fresh —
+      `customPaneField.test.ts` (6 tests) and two `propertyPane.test.ts` cases that play
+      SharePoint's re-render after a change (both failed before the fix); the SharePoint
+      runtime check is part of F-009b's first-use check
+- [x] M17: the `node-forge` advisory is recorded with its reachability — in a new ADR-0002
+      (see deviations); both Dependabot alerts (#1 `uuid`, #2 `node-forge`) are dismissed as
+      tolerable risk with a reference to the ADRs, none is open
+- [x] L44: 44 raw U+00A0 replaced by escapes (38 in `fr-fr.js`, 4 in `es-es.js`, 2 in the
+      test); the language file tests stay green
+- [x] `scripts/source-chars-check.mjs` (7 tests) makes `just check` fail on raw invisible or
+      control characters in `src/` and `scripts/`, naming file, line, column and code point;
+      green on the tree (63 source files)
+- [x] L45: the licence check reads the bundled packages from `dist/*.js.map`; a bundled
+      package without a section, a section no longer in the bundle and a missing source map
+      each fail — 19 tests, and a deliberately wrong notices file in the isolated copy failed
+      both ways; green on the tree (2 bundled packages)
+- [x] L46: README status, the decision table in date order, `(BACKLOG)` for F-010, the hub
+      link open question points to the F-009b IT guide
+- [x] `just check` green — 670 Jest tests (was 663), 26 script tests (was 12)
+
+**Implemented:**
+- `customPaneField.ts` — keeps the built content per host element (`WeakMap`); when SharePoint
+  calls `onRender` again for the same element it only calls `showValue` with the new value and
+  sends changes to the latest callback; a new or disposed element is built fresh. The field
+  spec separates the stored `value` from `create`.
+- `alignmentField.ts` / `colorField.ts` — return `{ element, showValue }`; the toolbar shows a
+  value stored elsewhere without moving the focus, the colour input only rewrites a different
+  colour; the toolbar's event wiring moved into `bindOptionEvents` (keeps the function short).
+- `propertyPane.ts` — the three custom fields pass value and builder separately.
+- `scripts/licence-check.mjs` — `findBundledLocations` (plain, scoped and nested package folders
+  from a source map), `readBundledLocations`, `parseNoticeSections`; the notices are checked
+  both ways; `--dist` option; the hand-kept `BUNDLED` list is gone.
+- `scripts/source-chars-check.mjs` — forbidden code point ranges (controls, no-break and
+  zero-width spaces, joiners and marks, direction controls, fillers, variation selectors, BOM,
+  annotation and tag characters, U+FFFD); wired into `just check` before lint.
+- `docs/adr/0002-node-forge-toolchain-advisory.md` — path, reachability, no fix, decision,
+  re-evaluation with F-010; README and CODING-STANDARDS point to both ADRs.
+- `REQUIREMENTS.md` — two technical decisions (custom fields in place; licence and character
+  checks), the decision table in date order, the hub link note; `README.md` status;
+  `THIRD-PARTY-NOTICES.md` describes the new check; `CLAUDE.md` names the character check.
+
+**Decisions / deviations:**
+- M17 went into a new ADR-0002 that extends ADR-0001 instead of an amendment to ADR-0001: the
+  ADR README forbids rewriting an accepted ADR.
+- The README's template-managed "Getting started" block stays unchanged (decided at prep-step).
+- The character check caught a raw zero-width joiner in its own test while it was written (an
+  emoji); the test uses an emoji without a joiner.
+- The Dependabot dismissal comments point to `docs/adr/0002-…`, which exists on GitHub only
+  after the push.
+
 ### F-019a — Web part and pane tests, lifecycle and settings remainders
 
 _Part of F-019 — Fixes from the control audit before the first release. Completed 2026-10-02._

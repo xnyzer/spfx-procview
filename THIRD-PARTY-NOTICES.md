@@ -6,8 +6,10 @@ compiles into the web part bundle. The SharePoint Framework libraries the web pa
 runtime are provided by SharePoint and are not part of the package (Microsoft SharePoint
 Framework licence terms, see [ADR-0001](docs/adr/0001-spfx-platform-dependencies.md)).
 
-`just check` (`scripts/licence-check.mjs`) fails when the versions below no longer match the
-installed ones, so this file is updated together with the dependency.
+`just check` (`scripts/licence-check.mjs`) reads the third-party code in the bundle from the
+build's source map and fails when a package there has no section below with its installed
+version, or when a section names a package that is no longer in the bundle — so this file
+changes together with the bundle.
 
 ## tslib 2.3.1
 

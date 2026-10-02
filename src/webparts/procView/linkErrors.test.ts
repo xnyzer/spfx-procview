@@ -40,8 +40,8 @@ const enUs = STRINGS['en-us'];
 const SIMPLE_IMAGE_TAB: Record<Locale, string> = {
   'en-us': '"Simple image"',
   'de-de': '„Einfaches Bild“',
-  // French typography: no-break spaces (U+00A0, invisible) inside the guillemets
-  'fr-fr': '« Image simple »',
+  // French typography: no-break spaces (U+00A0) inside the guillemets
+  'fr-fr': '«\u00a0Image simple\u00a0»',
   // No Spanish Signavio documentation found — the English label is used (owner decision)
   'es-es': '«Simple image»'
 };

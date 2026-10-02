@@ -22,7 +22,7 @@ function setup(selected: TextAlign = 'center', labelText: string = 'Alignment'):
     classNames: { root: 'root', label: 'label', group: 'group', button: 'button', selected: 'selected' },
     onChange
   };
-  const root = renderAlignmentButtons(document, props);
+  const root = renderAlignmentButtons(document, props).element;
   document.body.replaceChildren(root);
   const buttons = Array.from(root.querySelectorAll('button'));
   return { root, buttons, onChange };
@@ -122,6 +122,32 @@ describe('renderAlignmentButtons — interaction', () => {
     const { buttons, onChange } = setup('center');
     press(buttons[1], 'a');
     press(buttons[1], 'Tab');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('renderAlignmentButtons — a value stored elsewhere (audit M15)', () => {
+  it('shows it in place and leaves the focus where it is', () => {
+    const onChange = jest.fn();
+    const toolbar = renderAlignmentButtons(document, {
+      labelText: 'Alignment',
+      options: [
+        { key: 'left', text: 'Align left' },
+        { key: 'center', text: 'Center' },
+        { key: 'right', text: 'Align right' }
+      ],
+      selected: 'center',
+      idPrefix: 'wp1',
+      classNames: { root: 'root', label: 'label', group: 'group', button: 'button', selected: 'selected' },
+      onChange
+    });
+    document.body.replaceChildren(toolbar.element);
+    const buttons = Array.from(toolbar.element.querySelectorAll('button'));
+    buttons[1].focus();
+    toolbar.showValue('right');
+    expect(checked(buttons)).toEqual(['false', 'false', 'true']);
+    expect(buttons.map((button) => button.tabIndex)).toEqual([-1, -1, 0]);
+    expect(document.activeElement).toBe(buttons[1]);
     expect(onChange).not.toHaveBeenCalled();
   });
 });

@@ -1,3 +1,5 @@
+import type { ICustomFieldContent } from './customPaneField';
+
 /** Texts, value and classes of the colour field in the property pane. */
 export interface IColorFieldProps {
   labelText: string;
@@ -19,7 +21,7 @@ export interface IColorFieldProps {
  * value only when the picker is confirmed (`change`), not on every move (`input`): each change
  * re-renders the web part.
  */
-export function renderColorField(doc: Document, props: IColorFieldProps): HTMLElement {
+export function renderColorField(doc: Document, props: IColorFieldProps): ICustomFieldContent<string> {
   const root = doc.createElement('div');
   root.className = props.classNames.root;
 
@@ -37,5 +39,13 @@ export function renderColorField(doc: Document, props: IColorFieldProps): HTMLEl
   input.value = props.value;
   input.addEventListener('change', () => props.onChange(input.value));
   root.appendChild(input);
-  return root;
+  return {
+    element: root,
+    showValue: (value) => {
+      // Only a different colour: rewriting the value could reset a picker that is still open
+      if (input.value !== value) {
+        input.value = value;
+      }
+    }
+  };
 }

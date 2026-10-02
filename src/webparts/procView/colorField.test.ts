@@ -7,7 +7,7 @@ function render(onChange: (value: string) => void = () => undefined): HTMLElemen
     idPrefix: 'wp1-backgroundColor',
     classNames: { root: 'colorField', label: 'colorLabel', input: 'colorInput' },
     onChange
-  });
+  }).element;
 }
 
 describe('renderColorField', () => {
@@ -40,7 +40,23 @@ describe('renderColorField', () => {
       idPrefix: 'x',
       classNames: { root: 'r', label: 'l', input: 'i' },
       onChange: () => undefined
-    });
+    }).element;
     expect(root.querySelector('b')).toBeNull();
+  });
+
+  it('shows a colour stored elsewhere in place, without reporting it (audit M15)', () => {
+    const onChange = jest.fn();
+    const field = renderColorField(document, {
+      labelText: 'Background color',
+      value: '#ffffff',
+      idPrefix: 'wp1-backgroundColor',
+      classNames: { root: 'colorField', label: 'colorLabel', input: 'colorInput' },
+      onChange
+    });
+    const input = field.element.querySelector('input') as HTMLInputElement;
+    field.showValue('#0e5a73');
+    expect(input.value).toBe('#0e5a73');
+    expect(field.element.querySelector('input')).toBe(input);
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

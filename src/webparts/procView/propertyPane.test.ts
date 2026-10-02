@@ -156,3 +156,43 @@ describe('propertyPaneConfiguration — validation while typing', () => {
     expect(validate({}, 'height', '50%')).toBe('DimensionErrorPercentHeight');
   });
 });
+
+describe('propertyPaneConfiguration — SharePoint renders the pane again after a change (audit M15)', () => {
+  /** SharePoint keeps the host element, fetches the configuration again and calls `onRender` again. */
+  function renderInto(element: HTMLElement, properties: Record<string, unknown>, targetProperty: string): void {
+    const onRender = findField(properties, targetProperty).properties.onRender as (
+      element: HTMLElement,
+      context: unknown,
+      onChange: () => void
+    ) => void;
+    onRender(element, undefined, () => undefined);
+  }
+
+  let element: HTMLElement;
+
+  beforeEach(() => {
+    element = document.createElement('div');
+    document.body.appendChild(element);
+  });
+
+  afterEach(() => element.remove());
+
+  it('keeps the keyboard focus in a toolbar and shows the new choice', () => {
+    renderInto(element, {}, 'diagramAlign');
+    const right = element.querySelector<HTMLButtonElement>('[aria-label="AlignRight"]') as HTMLButtonElement;
+    right.focus();
+    right.click();
+    renderInto(element, { diagramAlign: 'right' }, 'diagramAlign');
+    expect(document.activeElement).toBe(right);
+    expect(element.querySelector('[aria-checked="true"]')).toBe(right);
+  });
+
+  it('keeps the colour input and shows the stored colour', () => {
+    renderInto(element, {}, 'backgroundColor');
+    const input = element.querySelector('input') as HTMLInputElement;
+    input.focus();
+    renderInto(element, { backgroundColor: '#0e5a73' }, 'backgroundColor');
+    expect(document.activeElement).toBe(input);
+    expect(input.value).toBe('#0e5a73');
+  });
+});

@@ -36,7 +36,7 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
 requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-018 in `PROGRESS.md`). All planned
-features are done (663 Jest tests, 12 script tests): Signavio link validation and provider
+features are done (670 Jest tests, 26 script tests): Signavio link validation and provider
 contract (F-001), configuration pane, sizing and caption (F-002), Collaboration Hub link
 (F-003), empty and error states (F-004), section theme colours (F-005), zoom and pan — "Offer
 zoom", default off (F-006), full-screen view — "Offer full screen", default on (F-007), Teams
@@ -47,8 +47,8 @@ behind the diagram — default on and white (F-015), and the audit before the fi
 (F-016: settings module with injection tests, lifecycle guard, licence check and third-party
 notices in `just check`), diagram alignment — centred by default — and the property pane in
 the editors' order (F-018), and the zoom and full-screen fixes from the audit (F-017). Next:
-F-019b and F-019c (fixes from the control audit of 2026-10-02; F-019a — web part and pane
-tests — is done), then F-009 (versioning, CI release, IT guide, release 1.0.0); F-010 waits for
+F-019c (zoom and full-screen fixes from the control audit of 2026-10-02; F-019a and
+F-019b are done), then F-009 (versioning, CI release, IT guide, release 1.0.0); F-010 waits for
 SPFx 1.24 (Node 24/26, GA targeted for October 2026).
 
 ## Project notes (learned the hard way)
@@ -78,9 +78,9 @@ SPFx 1.24 (Node 24/26, GA targeted for October 2026).
   characters); the renderers only get checked values. A new setting goes there, with hostile
   cases in `injection.test.ts`.
 - **Invisible characters in source:** write them as `\u` escapes. A raw U+200B/U+202E/U+00A0
-  can slip in when a file is written, and a typed dash can arrive as escape text; check
-  changed files for raw format characters (e.g. with `perl -CSD`) and stray escapes in
-  comments — Prettier keeps escapes as they are. Lines
+  can slip in when a file is written, and a typed dash can arrive as escape text. `just check`
+  fails on raw ones in `src/` and `scripts/` (`scripts/source-chars-check.mjs`); stray escapes
+  in comments still need a look — Prettier keeps escapes as they are. Lines
   full of escapes (e.g. a regex) are safest written with a placeholder that perl turns into
   the backslash; in tests, build such characters with `String.fromCharCode`.
 - **Web part tests:** the real SPFx packages do not load under Jest (`sp-core-library` needs

@@ -205,50 +205,61 @@ function alignField(
   property: AlignProperty,
   labelText: string
 ): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
-  return customPaneField(pane.instanceId, property, (onChange) =>
-    renderAlignmentButtons(document, {
-      labelText,
-      options: [
-        { key: 'left', text: strings.AlignLeft },
-        { key: 'center', text: strings.AlignCenter },
-        { key: 'right', text: strings.AlignRight }
-      ],
-      selected: pane.settings.align[property],
-      idPrefix: `${pane.instanceId}-${property}`,
-      classNames: {
-        root: styles.alignField,
-        label: styles.alignLabel,
-        group: styles.alignGroup,
-        button: styles.alignButton,
-        selected: styles.alignSelected
-      },
-      onChange
-    })
-  );
+  const selected = pane.settings.align[property];
+  return customPaneField(pane.instanceId, property, {
+    value: selected,
+    create: (onChange) =>
+      renderAlignmentButtons(document, {
+        labelText,
+        options: [
+          { key: 'left', text: strings.AlignLeft },
+          { key: 'center', text: strings.AlignCenter },
+          { key: 'right', text: strings.AlignRight }
+        ],
+        selected,
+        idPrefix: `${pane.instanceId}-${property}`,
+        classNames: {
+          root: styles.alignField,
+          label: styles.alignLabel,
+          group: styles.alignGroup,
+          button: styles.alignButton,
+          selected: styles.alignSelected
+        },
+        onChange
+      })
+  });
 }
 
 /** The browser's colour picker (colorField.ts). */
 function colorField(pane: IPane): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
-  return customPaneField(pane.instanceId, 'backgroundColor', (onChange) =>
-    renderColorField(document, {
-      labelText: strings.BackgroundColorLabel,
-      value: pane.settings.backgroundColor,
-      idPrefix: `${pane.instanceId}-backgroundColor`,
-      classNames: { root: styles.colorField, label: styles.colorLabel, input: styles.colorInput },
-      onChange
-    })
-  );
+  const colour = pane.settings.backgroundColor;
+  return customPaneField(pane.instanceId, 'backgroundColor', {
+    value: colour,
+    create: (onChange) =>
+      renderColorField(document, {
+        labelText: strings.BackgroundColorLabel,
+        value: colour,
+        idPrefix: `${pane.instanceId}-backgroundColor`,
+        classNames: { root: styles.colorField, label: styles.colorLabel, input: styles.colorInput },
+        onChange
+      })
+  });
 }
 
 /** Repository link — read-only (aboutField.ts). */
 function aboutField(pane: IPane): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
-  return customPaneField(pane.instanceId, 'aboutInfo', () =>
-    renderAboutField(document, {
-      linkText: strings.RepositoryLinkText,
-      newTabHint: strings.NewTabHint,
-      classNames: { root: styles.aboutField, anchor: styles.hubAnchor, srOnly: styles.srOnly }
+  return customPaneField(pane.instanceId, 'aboutInfo', {
+    value: undefined,
+    create: () => ({
+      element: renderAboutField(document, {
+        linkText: strings.RepositoryLinkText,
+        newTabHint: strings.NewTabHint,
+        classNames: { root: styles.aboutField, anchor: styles.hubAnchor, srOnly: styles.srOnly }
+      }),
+      // Nothing stored — the link stays as it is
+      showValue: () => undefined
     })
-  );
+  });
 }
 
 function validateLink(value: string): string {

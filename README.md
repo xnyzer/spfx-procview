@@ -16,8 +16,9 @@ designed so that further process tools can be supported later.
 In development: all planned features are implemented — display and sizing, caption,
 Collaboration Hub link, empty and error states, texts in English, German, French and
 Spanish, theme colours per section, zoom and pan, full-screen view, a background behind the
-diagram, and Microsoft Teams tabs. There is **no release yet**: an audit (F-016) and the
-first release 1.0.0 with versioning, CI release and an IT deployment guide (F-009) follow.
+diagram, and Microsoft Teams tabs. There is **no release yet**: the fixes from the control
+audit (F-019) and the first release 1.0.0 with versioning, CI release and an IT deployment
+guide (F-009) follow.
 See `PROGRESS.md` for the roadmap.
 
 ## Using the web part (for page editors)
@@ -203,8 +204,8 @@ releases on its Dependency Dashboard and never bumps the toolchain on its own
    `npx -p @pnp/cli-microsoft365 m365 spfx project upgrade --shell bash --output md`.
 2. Apply all steps together — SPFx packages, toolchain packages, `mise.toml` Node major,
    `engines` in `package.json`, `Node` rule in `renovate.json`.
-3. `just check` and `just build` must be green; re-check `npm audit` against ADR-0001
-   (drop the `qs` override once the toolchain ships a fixed version).
+3. `just check` and `just build` must be green; re-check `npm audit` against ADR-0001 and
+   ADR-0002 (drop the `qs` override once the toolchain ships a fixed version).
 
 **Deadline:** SPFx 1.23 supports Node 22 only, and Node 22 reaches end of life on
 **2027-04-30** — an upgrade to an SPFx release on a newer Node must land before then.
@@ -225,7 +226,8 @@ that kind of sharing.
 
 - `REQUIREMENTS.md` — intent (transitional; dissolved into `PROGRESS.md`)
 - `PROGRESS.md` — roadmap and task list; `PROGRESS-ARCHIVE.md` — finished tasks with details
-- `docs/adr/` — architecture decisions (ADR-0001: SPFx platform licences and toolchain advisories)
+- `docs/adr/` — architecture decisions (ADR-0001: SPFx platform licences and toolchain advisories;
+  ADR-0002: the `node-forge` toolchain advisory)
 - `CODING-STANDARDS.md` — binding coding rules
 - `HOW-TO-CODE-WITH-CLAUDE.md` — development workflow (Claude Code + coding-kit skills)
 - `CONTRIBUTING.md`, `SECURITY.md`, `AI-DISCLOSURE.md` — governance

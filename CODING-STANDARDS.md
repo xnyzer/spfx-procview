@@ -200,7 +200,8 @@ this section changes. Contract: `MANIFEST.md` § Standards fragments.
 - **Dependencies:** permissive licenses only (§8) — the one accepted exception is the SPFx
   platform itself (Microsoft SPFx license terms, ADR-0001). Every runtime dependency ends up
   in the bundle delivered to all page visitors — justify each one. Never run
-  `npm audit fix --force` (it downgrades SPFx); toolchain advisories are handled per ADR-0001.
+  `npm audit fix --force` (it downgrades SPFx); toolchain advisories are handled per ADR-0001
+  and ADR-0002.
 - **SPFx upgrades** are a deliberate task, never a drive-by Renovate merge: SPFx packages,
   TypeScript/ESLint/Heft and the Node major move together (README "Upgrading SPFx").
 <!-- /fragment:spfx -->
