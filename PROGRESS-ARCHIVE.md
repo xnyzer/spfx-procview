@@ -8,6 +8,54 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-017b — Zoom
+
+_Part of F-017 — Zoom and full-screen fixes from the audit. Completed 2026-10-02._
+
+**What:** `attachZoom` split into controls, pointer, wheel, keyboard and resize handling;
+options objects in `zoom.ts` (M2b, M3); focus kept when a button becomes unavailable (M7);
+primary mouse button only, end on `buttons === 0` and `lostpointercapture` (M10); no native
+image drag (M11); keys via `switch` (L3a); `update`/`reset` removed (L6b); one epsilon (L7b);
+pointer capture without try/catch (L9a); wheel page mode (L11); NaN guards (L12); one
+measurement per event, attributes written only on change (L13); doc comments and names (L19c).
+
+**Files:** `zoom.ts`, `zoomView.ts`, `zoom.test.ts`, `zoomView.test.ts`,
+`ProcViewWebPart.module.scss`, `injection.test.ts`
+
+**Dependencies:** F-017a
+
+**Acceptance criteria:**
+- [x] Tests for every item: right/middle button ignored, a lost `pointerup` does not leave the
+      view panning, focus stays on the reset button at scale 1, no drag start, `deltaMode` 2,
+      NaN and inherited key names change nothing — 17 new tests in `zoomView.test.ts` and
+      `zoom.test.ts`
+- [x] No function over 50 lines, no more than three parameters in these files — longest
+      method about 29 lines (was `attachZoom` with 211); `zoomView.ts` has 419 lines, above
+      the 300 target but below the 500 limit, kept as one cohesive module
+- [x] Visual check: zoom with buttons, Ctrl/Cmd + wheel, drag and keys works as before
+      (two-finger pinch stays on the SharePoint test-site list) — owner's visual check
+- [x] `just check` green — 593 Jest tests, 12 script tests
+
+**Implemented:**
+- `zoom.ts` — options objects: `zoomTo(state, geometry, { scale, focal })`,
+  `zoomBy(state, geometry, { factor, focal? })`, `pan(state, geometry, delta)`,
+  `pinch(start, geometry, gesture)`, `clampAxis(offset, scale, axis)`; one exported
+  `ZOOM_EPSILON`; values that are not finite numbers never reach the state (`clamp` falls back,
+  `zoomTo`/`pan`/`pinch` keep the state); doc comments, `getPaintedArea`.
+- `zoomView.ts` — `attachZoom` creates an internal `ZoomView` class: buttons with
+  `aria-disabled` (focus kept, unavailable buttons do nothing), one measurement per event,
+  attributes written only on change, pointer handling for the primary mouse button only with
+  an end on `buttons === 0` and `lostpointercapture`, `draggable = false` plus a cancelled
+  `dragstart` (restored on dispose), keys via a `switch`, wheel lines and pages converted to
+  pixels; `IZoomController` keeps `state()` and `dispose()` only.
+- Stylesheet — `[aria-disabled='true']` instead of `:disabled` (also in forced colours);
+  `user-select: none` while zoomed.
+- Tests — new cases as listed above; the test pointer helper takes an options object;
+  `injection.test.ts` allows the fixed `draggable` attribute.
+
+**Decisions / deviations:** an internal class instead of closures over a shared context —
+each handler is a short method and the listeners can be removed by reference.
+
 ### F-017a — Shared icons and `renderDiagram` split
 
 _Part of F-017 — Zoom and full-screen fixes from the audit. Completed 2026-10-02._

@@ -120,6 +120,7 @@ const ALLOWED_ATTRIBUTES = [
   'referrerpolicy',
   'loading',
   'decoding',
+  'draggable',
   'type',
   'role',
   'title',

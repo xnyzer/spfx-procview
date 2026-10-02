@@ -50,6 +50,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-016 | Audit before the first release (F-016a, F-016b, F-016c) | 2026-10-02 |
 | F-018 | Diagram alignment (centred by default) and property pane in the editors' order | 2026-10-02 |
 | F-017a | One shared SVG icon helper (`svgIcon.ts`), `renderDiagram` split into small builders, full-screen sizes as stylesheet variables | 2026-10-02 |
+| F-017b | Zoom: `ZoomView` class, options objects, focus kept via `aria-disabled`, primary mouse button only, no native image drag, wheel units, NaN guards | 2026-10-02 |
 
 ---
 
@@ -92,29 +93,6 @@ icons and the `renderDiagram` split first, so zoom and full screen build on them
   these files (L19b–c)
 
 **Dependencies:** F-016c
-
-#### F-017b — Zoom
-
-**What:** `attachZoom` split into controls, pointer, wheel, keyboard and resize handling;
-options objects in `zoom.ts` (M2b, M3); focus kept when a button becomes unavailable (M7);
-primary mouse button only, end on `buttons === 0` and `lostpointercapture` (M10); no native
-image drag (M11); keys via `switch` (L3a); `update`/`reset` removed (L6b); one epsilon (L7b);
-pointer capture without try/catch (L9a); wheel page mode (L11); NaN guards (L12); one
-measurement per event, attributes written only on change (L13); doc comments and names (L19c).
-
-**Files:** `zoom.ts`, `zoomView.ts`, `zoom.test.ts`, `zoomView.test.ts`,
-`ProcViewWebPart.module.scss`
-
-**Dependencies:** F-017a
-
-**Acceptance criteria:**
-- [ ] Tests for every item: right/middle button ignored, a lost `pointerup` does not leave the
-      view panning, focus stays on the reset button at scale 1, no drag start, `deltaMode` 2,
-      NaN and inherited key names change nothing
-- [ ] No function over 50 lines, no more than three parameters in these files
-- [ ] Visual check: zoom with buttons, Ctrl/Cmd + wheel, drag and keys works as before
-      (two-finger pinch stays on the SharePoint test-site list)
-- [ ] `just check` green
 
 #### F-017c — Full screen
 

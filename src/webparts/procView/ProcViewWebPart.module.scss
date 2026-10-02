@@ -76,6 +76,9 @@
 .zoomed {
   touch-action: none;
   cursor: grab;
+  // Dragging the zoomed diagram must not select text around it
+  -webkit-user-select: none;
+  user-select: none;
 
   &:active {
     cursor: grabbing;
@@ -116,7 +119,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   cursor: pointer;
 
-  &:hover:not(:disabled),
+  &:hover:not([aria-disabled='true']),
   &:focus-visible {
     background: var(--bodyBackground, '[theme:bodyBackground, default: #ffffff]');
   }
@@ -126,7 +129,8 @@
     outline-offset: 1px;
   }
 
-  &:disabled {
+  // Unavailable controls stay focusable (aria-disabled, zoomView.ts) — the focus is not lost
+  &[aria-disabled='true'] {
     opacity: 0.4;
     cursor: default;
   }
@@ -137,7 +141,7 @@
     color: ButtonText;
     border: 1px solid ButtonText;
 
-    &:disabled {
+    &[aria-disabled='true'] {
       color: GrayText;
       border-color: GrayText;
     }

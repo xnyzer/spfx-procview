@@ -48,10 +48,28 @@ afterEach(() => {
   fixture = undefined;
 });
 
-/** jsdom has no PointerEvent constructor everywhere — a MouseEvent with a pointerId will do. */
-function pointer(target: Element, type: string, pointerId: number, clientX: number, clientY: number): Event {
-  const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientX, clientY });
-  Object.defineProperty(event, 'pointerId', { value: pointerId });
+interface IPointerInit {
+  id: number;
+  x: number;
+  y: number;
+  /** `mouse`, `touch` or `pen`; empty like a synthetic event by default. */
+  pointerType?: string;
+  button?: number;
+  buttons?: number;
+}
+
+/** jsdom has no PointerEvent constructor everywhere — a MouseEvent with the pointer fields will do. */
+function pointer(target: Element, type: string, init: IPointerInit): Event {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: init.x,
+    clientY: init.y,
+    button: init.button ?? 0,
+    buttons: init.buttons ?? 0
+  });
+  Object.defineProperty(event, 'pointerId', { value: init.id });
+  Object.defineProperty(event, 'pointerType', { value: init.pointerType ?? '' });
   target.dispatchEvent(event);
   return event;
 }
@@ -82,9 +100,11 @@ describe('attachZoom — controls', () => {
     expect(viewport.querySelectorAll('button')).toHaveLength(3);
     expect(zoomIn.title).toBe('Zoom in');
     expect(zoomIn.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
-    expect(zoomIn.disabled).toBe(false);
-    expect(zoomOut.disabled).toBe(true);
-    expect(reset.disabled).toBe(true);
+    expect(zoomIn.getAttribute('aria-disabled')).toBe('false');
+    expect(zoomOut.getAttribute('aria-disabled')).toBe('true');
+    expect(reset.getAttribute('aria-disabled')).toBe('true');
+    // Unavailable, not disabled: they stay focusable
+    expect(zoomOut.disabled).toBe(false);
     expect(viewport.classList.contains('zoomable')).toBe(true);
     expect(viewport.tabIndex).toBe(0);
     expect(viewport.getAttribute('aria-label')).toBe('Diagram, zoomable');
@@ -104,13 +124,13 @@ describe('attachZoom — controls', () => {
     expect(viewport.classList.contains('zoomed')).toBe(false);
   });
 
-  it('disables "zoom in" at the natural size', () => {
+  it('marks "zoom in" unavailable at the natural size', () => {
     const { zoom, buttons } = setup();
     for (let i = 0; i < 20; i++) {
       buttons().zoomIn.click();
     }
     expect(zoom.state().scale).toBe(4);
-    expect(buttons().zoomIn.disabled).toBe(true);
+    expect(buttons().zoomIn.getAttribute('aria-disabled')).toBe('true');
   });
 
   it('hides the controls when there is nothing to zoom — and shows them once the image has loaded', () => {
@@ -177,40 +197,40 @@ describe('attachZoom — pointer gestures', () => {
     key(viewport, '+');
     key(viewport, '+');
     const before = zoom.state();
-    pointer(image, 'pointerdown', 1, 200, 100);
-    pointer(image, 'pointermove', 1, 180, 90);
-    pointer(image, 'pointerup', 1, 180, 90);
+    pointer(image, 'pointerdown', { id: 1, x: 200, y: 100 });
+    pointer(image, 'pointermove', { id: 1, x: 180, y: 90 });
+    pointer(image, 'pointerup', { id: 1, x: 180, y: 90 });
     expect(zoom.state().x).toBeCloseTo(before.x - 20);
     expect(zoom.state().y).toBeCloseTo(before.y - 10);
   });
 
   it('does not take over a one-finger swipe at the configured size (page keeps scrolling)', () => {
     const { image, zoom } = setup();
-    const down = pointer(image, 'pointerdown', 1, 200, 100);
-    pointer(image, 'pointermove', 1, 150, 50);
+    const down = pointer(image, 'pointerdown', { id: 1, x: 200, y: 100 });
+    pointer(image, 'pointermove', { id: 1, x: 150, y: 50 });
     expect(down.defaultPrevented).toBe(false);
     expect(zoom.state()).toEqual({ scale: 1, x: 0, y: 0 });
   });
 
   it('zooms with a two-finger pinch', () => {
     const { image, zoom } = setup();
-    pointer(image, 'pointerdown', 1, 200, 125);
-    pointer(image, 'pointerdown', 2, 300, 125);
-    pointer(image, 'pointermove', 2, 400, 125);
+    pointer(image, 'pointerdown', { id: 1, x: 200, y: 125 });
+    pointer(image, 'pointerdown', { id: 2, x: 300, y: 125 });
+    pointer(image, 'pointermove', { id: 2, x: 400, y: 125 });
     expect(zoom.state().scale).toBeCloseTo(2);
-    pointer(image, 'pointerup', 2, 400, 125);
-    pointer(image, 'pointerup', 1, 200, 125);
+    pointer(image, 'pointerup', { id: 2, x: 400, y: 125 });
+    pointer(image, 'pointerup', { id: 1, x: 200, y: 125 });
     expect(zoom.state().scale).toBeCloseTo(2);
   });
 
   it('keeps panning with the remaining finger after a pinch', () => {
     const { image, zoom } = setup();
-    pointer(image, 'pointerdown', 1, 200, 125);
-    pointer(image, 'pointerdown', 2, 300, 125);
-    pointer(image, 'pointermove', 2, 400, 125);
-    pointer(image, 'pointerup', 2, 400, 125);
+    pointer(image, 'pointerdown', { id: 1, x: 200, y: 125 });
+    pointer(image, 'pointerdown', { id: 2, x: 300, y: 125 });
+    pointer(image, 'pointermove', { id: 2, x: 400, y: 125 });
+    pointer(image, 'pointerup', { id: 2, x: 400, y: 125 });
     const before = zoom.state().x;
-    pointer(image, 'pointermove', 1, 190, 125);
+    pointer(image, 'pointermove', { id: 1, x: 190, y: 125 });
     expect(zoom.state().x).toBeCloseTo(before - 10);
   });
 
@@ -220,10 +240,10 @@ describe('attachZoom — pointer gestures', () => {
     const link = document.createElement('a');
     viewport.appendChild(link);
     const before = zoom.state();
-    pointer(buttons().zoomOut, 'pointerdown', 1, 480, 10);
-    pointer(buttons().zoomOut, 'pointermove', 1, 400, 10);
-    pointer(link, 'pointerdown', 2, 480, 240);
-    pointer(link, 'pointermove', 2, 400, 240);
+    pointer(buttons().zoomOut, 'pointerdown', { id: 1, x: 480, y: 10 });
+    pointer(buttons().zoomOut, 'pointermove', { id: 1, x: 400, y: 10 });
+    pointer(link, 'pointerdown', { id: 2, x: 480, y: 240 });
+    pointer(link, 'pointermove', { id: 2, x: 400, y: 240 });
     expect(zoom.state()).toEqual(before);
   });
 });
@@ -262,4 +282,114 @@ describe('attachZoom — dispose', () => {
     key(viewport, '+');
     expect(zoom.state().scale).toBe(1);
   });
+});
+
+describe('attachZoom — focus and unavailable controls', () => {
+  it('keeps the focus on "fit" when fitting makes it unavailable', () => {
+    const { buttons } = setup();
+    buttons().zoomIn.click();
+    const reset = buttons().reset;
+    reset.focus();
+    reset.click();
+    expect(reset.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(reset);
+  });
+
+  it('does nothing when an unavailable control is pressed', () => {
+    const { zoom, buttons } = setup();
+    buttons().zoomOut.click();
+    buttons().reset.click();
+    expect(zoom.state()).toEqual({ scale: 1, x: 0, y: 0 });
+  });
+
+  it('writes the viewport attributes only when zooming becomes possible or impossible', () => {
+    const { viewport, buttons } = setup();
+    const setAttribute = jest.spyOn(viewport, 'setAttribute');
+    buttons().zoomIn.click();
+    buttons().zoomIn.click();
+    expect(setAttribute).not.toHaveBeenCalled();
+  });
+});
+
+describe('attachZoom — mouse buttons, lost pointers and native drag', () => {
+  function zoomedFixture(): IFixture {
+    const zoomed = setup();
+    key(zoomed.viewport, '+');
+    key(zoomed.viewport, '+');
+    return zoomed;
+  }
+
+  it('pans only with the primary mouse button (right and middle open menus or autoscroll)', () => {
+    const { image, zoom } = zoomedFixture();
+    const before = zoom.state();
+    // [button, buttons bit]: middle (1 → 4) and right (2 → 2)
+    [
+      [1, 4],
+      [2, 2]
+    ].forEach(([button, buttons]) => {
+      pointer(image, 'pointerdown', { id: 1, x: 200, y: 100, pointerType: 'mouse', button, buttons });
+      pointer(image, 'pointermove', { id: 1, x: 150, y: 50, pointerType: 'mouse', buttons });
+      pointer(image, 'pointerup', { id: 1, x: 150, y: 50, pointerType: 'mouse' });
+    });
+    expect(zoom.state()).toEqual(before);
+  });
+
+  it('ends the drag when the mouse button turns out to be released (lost pointerup)', () => {
+    const { image, zoom } = zoomedFixture();
+    pointer(image, 'pointerdown', { id: 1, x: 200, y: 100, pointerType: 'mouse', buttons: 1 });
+    pointer(image, 'pointermove', { id: 1, x: 190, y: 100, pointerType: 'mouse', buttons: 1 });
+    const afterDrag = zoom.state();
+    // The pointerup went to a context menu — the next move has no button pressed
+    pointer(image, 'pointermove', { id: 1, x: 100, y: 100, pointerType: 'mouse', buttons: 0 });
+    pointer(image, 'pointermove', { id: 1, x: 50, y: 100, pointerType: 'mouse', buttons: 1 });
+    expect(zoom.state()).toEqual(afterDrag);
+  });
+
+  it('ends the gesture when the pointer capture is lost', () => {
+    const { viewport, image, zoom } = zoomedFixture();
+    pointer(image, 'pointerdown', { id: 1, x: 200, y: 100 });
+    pointer(viewport, 'lostpointercapture', { id: 1, x: 200, y: 100 });
+    const before = zoom.state();
+    pointer(image, 'pointermove', { id: 1, x: 100, y: 100 });
+    expect(zoom.state()).toEqual(before);
+  });
+
+  it('blocks the native image drag while attached and restores it afterwards', () => {
+    const { image, zoom } = setup();
+    expect(image.draggable).toBe(false);
+    const drag = new Event('dragstart', { bubbles: true, cancelable: true });
+    image.dispatchEvent(drag);
+    expect(drag.defaultPrevented).toBe(true);
+    zoom.dispose();
+    expect(image.draggable).toBe(true);
+  });
+});
+
+describe('attachZoom — wheel units and unexpected keys', () => {
+  function wheelIn(target: Element, deltaMode: number, deltaY: number): void {
+    target.dispatchEvent(
+      new WheelEvent('wheel', { bubbles: true, cancelable: true, ctrlKey: true, deltaMode, deltaY })
+    );
+  }
+
+  it('zooms for wheel lines and pages, not only for pixels', () => {
+    const lines = setup();
+    wheelIn(lines.viewport, 1, -3);
+    expect(lines.zoom.state().scale).toBeGreaterThan(1.05);
+    lines.zoom.dispose();
+    lines.viewport.remove();
+
+    const pages = setup();
+    wheelIn(pages.viewport, 2, -1);
+    expect(pages.zoom.state().scale).toBeGreaterThan(1.3);
+  });
+
+  it.each([['constructor'], ['toString'], ['__proto__'], ['valueOf'], ['Enter']])(
+    'ignores the key %p without an error',
+    (keyName) => {
+      const { viewport, zoom } = setup();
+      expect(() => key(viewport, keyName)).not.toThrow();
+      expect(zoom.state()).toEqual({ scale: 1, x: 0, y: 0 });
+    }
+  );
 });
