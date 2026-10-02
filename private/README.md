@@ -31,6 +31,10 @@ only the lint's generic patterns run.
 - `screenshots/` — the owner's SPFx Local Workbench screenshots, the README images composed
   from them (`composed/`) and the dependency-free Node scripts that composed them (`tools/`,
   with a README).
+- `browser-check/` — a local test page for browser checks outside the VS Code webview
+  (Firefox, Safari, Chromium): it bundles the compiled diagram, zoom and full-screen modules
+  from `lib/` with the stylesheet (`build.mjs`, then a local web server on 127.0.0.1).
+- `template-proposals/` — changes that belong in project-template, ready to hand over.
 
 ## Rules
 

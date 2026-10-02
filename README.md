@@ -1,6 +1,11 @@
 # spfx-procview
 
 [![CI](https://github.com/xnyzer/spfx-procview/actions/workflows/ci.yml/badge.svg)](https://github.com/xnyzer/spfx-procview/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/xnyzer/spfx-procview/actions/workflows/codeql.yml/badge.svg)](https://github.com/xnyzer/spfx-procview/actions/workflows/codeql.yml)
+[![Release workflow](https://github.com/xnyzer/spfx-procview/actions/workflows/release.yml/badge.svg)](https://github.com/xnyzer/spfx-procview/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/xnyzer/spfx-procview)](https://github.com/xnyzer/spfx-procview/releases/latest)
+[![Licence](https://img.shields.io/github/license/xnyzer/spfx-procview)](LICENSE)
+[![SPFx](https://img.shields.io/github/package-json/dependency-version/xnyzer/spfx-procview/@microsoft/sp-core-library?label=SPFx)](#development-sharepoint-framework)
 
 SPFx web part to embed SAP Signavio process diagrams in SharePoint with adjustable size.
 
@@ -38,12 +43,13 @@ screenshots come from the local workbench; on SharePoint pages the web part look
 
 ## Status
 
-In development: all planned features are implemented — display and sizing, caption,
-Collaboration Hub link, empty and error states, texts in English, German, French and
-Spanish, theme colours per section, zoom and pan, full-screen view, a background behind the
-diagram, and Microsoft Teams tabs. There is **no release yet**: the first release 1.0.0 with
-versioning, CI release and an IT deployment guide (F-009) follows.
-See `PROGRESS.md` for the roadmap.
+Released: the **[latest release](https://github.com/xnyzer/spfx-procview/releases/latest)**
+carries the solution package `spfx-procview.sppkg`, its SHA-256 checksum and the third-party
+notices; IT deploys it as described in [docs/deployment.md](docs/deployment.md). All planned
+features are implemented — display and sizing, caption, Collaboration Hub link, empty and error
+states, texts in English, German, French and Spanish, theme colours per section, zoom and pan,
+full-screen view, a background behind the diagram, and Microsoft Teams tabs. What each release
+changed is in [CHANGELOG.md](CHANGELOG.md); the roadmap is in `PROGRESS.md`.
 
 ## Quick start (for page editors)
 
@@ -190,15 +196,20 @@ browsers load the diagram directly from the Signavio host of the link.
 download and checksum verification, first deployment, Microsoft Teams, updates, removal,
 network and privacy, and a check on the first page. In short:
 
-- **Package:** `spfx-procview.sppkg` — built with `just build` (see
-  [Development](#development-sharepoint-framework)); from release 1.0.0 on, every GitHub
-  release carries it.
+- **Package:** `spfx-procview.sppkg` from the
+  [latest release](https://github.com/xnyzer/spfx-procview/releases/latest), with its SHA-256
+  checksum. Releases are immutable and carry a signed release attestation — `gh release
+  verify-asset` shows that a downloaded package is the one GitHub published. The package can
+  also be built from source with `just build` (see
+  [Development](#development-sharepoint-framework)).
 - **Deploy:** upload the package to the tenant (or a site collection) App Catalog. The
   solution uses `skipFeatureDeployment`, so it can be made available to all sites at once.
 - **Teams:** select **Add to Teams** while uploading, or later for the app on the **Manage
   apps** page; the app then shows up in Teams under the organisation's apps.
-- **Updates:** the App Catalog only treats a package as an update when its version is
-  higher — versioning and release packages follow with F-009.
+- **Updates:** every release has a higher version — the App Catalog only treats a package as
+  an update when its version is higher. Upload the new package with the same file name and
+  replace the old one; pages keep their settings ([CHANGELOG.md](CHANGELOG.md) lists what
+  changed).
 
 **Firewall and proxy:** the readers' browsers need HTTPS access to the SAP Signavio host
 your organisation uses. The web part accepts links from exactly these hosts:

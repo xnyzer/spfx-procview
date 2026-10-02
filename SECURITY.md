@@ -50,9 +50,11 @@ vary — please be patient.
 
 | Version | Supported |
 |---------|-----------|
-| pre-release (no tagged release yet) | latest `main` only |
+| The latest release | yes — a fix comes as a new patch release |
+| Older releases | no — update to the latest release |
 
-This table will be updated once the project has tagged releases.
+Releases are immutable: a published version is never changed, so every fix gets a new, higher
+version number that the SharePoint App Catalog offers as an update.
 
 ## Safe harbor
 
