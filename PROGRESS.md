@@ -59,7 +59,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-019 | Fixes from the control audit before the first release (F-019a, F-019b, F-019c) | 2026-10-02 |
 | F-020 | README with screenshots: settings, controls and messages tables, an IT section with the Signavio hosts, an FAQ; only the CI badge | 2026-10-02 |
 | F-009a | One version from package.json (sync and check), `just release` with a tested release script, CHANGELOG with the 1.0.0 features, version in the property pane | 2026-10-02 |
-| F-009b | Release workflow (read-only build job, publish job with write access on tags only, dry run), `--notes` from the CHANGELOG, CodeQL for workflows, IT deployment guide — its dry run on GitHub follows the push | 2026-10-02 |
+| F-009b | Release workflow (read-only build job, publish job with write access on tags only, dry run), `--notes` from the CHANGELOG, CodeQL for workflows, IT deployment guide; dry run on GitHub green | 2026-10-02 |
 
 ---
 
@@ -138,8 +138,7 @@ the release, the README's release statements, `just release 1.0.0` and the publi
 `README.md`; the release commit (`package.json`, `package-lock.json`,
 `config/package-solution.json`, `CHANGELOG.md`)
 
-**Dependencies:** F-009b — its dry run on GitHub was still open when F-009b was completed: it
-must be green before the release (then tick it in the archive entry of F-009b)
+**Dependencies:** F-009b (its dry run on GitHub is green)
 
 **Acceptance criteria:**
 - [ ] Control audit before the release, in a new session: `/audit-code` focused on the changes

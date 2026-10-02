@@ -57,9 +57,9 @@ badge — the repository depends on no third-party website). F-009a is done: one
 `CHANGELOG.md`, the version in the property pane. F-009b is done: the release workflow
 (`.github/workflows/release.yml` — a read-only build job, a publish job with write access only
 on tags, a dry run via "Run workflow"), CodeQL for the workflow files and the IT guide
-`docs/deployment.md` with a first-use check. Next: F-009c (the dry run first, then the control
-audit in a new session, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for
-October 2026).
+`docs/deployment.md` with a first-use check. The dry run on GitHub is green. Next: F-009c (the
+control audit in a new session, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA
+targeted for October 2026).
 
 ## Project notes (learned the hard way)
 

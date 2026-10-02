@@ -10,8 +10,8 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ### F-009b — Release workflow and IT deployment guide
 
-_Completed 2026-10-02, except the dry run on GitHub, which needs this step pushed first (see
-the criterion). Part of F-009, which stays open with F-009c._
+_Completed 2026-10-02; the dry run on GitHub followed right after the push. Part of F-009,
+which stays open with F-009c._
 
 **What:** `.github/workflows/release.yml` in two jobs plus a dry run, release notes from the
 CHANGELOG, `docs/deployment.md`, README "For IT" and "Versioning and releases", CodeQL for the
@@ -59,8 +59,10 @@ four-part versions as `x.y.z.0` — privacy-lint reads written-out ones as IP ad
       the README; the macOS/Linux checksum command ran, the PowerShell one could not be run here
 - [x] README: "For IT" links to `docs/deployment.md`; "Versioning and releases" describes the
       release workflow and its dry run
-- [ ] Dry run on GitHub green after the owner approves the push of F-009b and the start of the
-      workflow — open at completion: it can only run once the workflow is on `main`
+- [x] Dry run on GitHub green after the owner approves the push of F-009b and the start of the
+      workflow — run 37036298098 on `556cc2b`: `build` green, `publish` skipped; the artifact
+      holds the package, its checksum (verifies), the notices and the notes; CodeQL's first
+      analysis of the workflow files (`actions`) found nothing
 - [x] `just check` green (isolated copy while the dev server runs) — 689 Jest tests, 67 script
       tests
 
