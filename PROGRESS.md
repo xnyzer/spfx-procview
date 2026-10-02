@@ -105,17 +105,51 @@ tests of a):
   — README status, decision table order, FEATURE-INDEX marker, the hub link target question
   points to the F-009b IT guide (L46); the README's template-managed "Getting started" block
   stays as it is — icons and licences are described as part of `just check` elsewhere
-- **F-019c — zoom and full screen:** back to the fitted view when a resize leaves too little
-  headroom to zoom (M14); keep the focus when the zoom controls disappear (L26); hide the
-  image in the full-screen error state (L27); held Enter repeats on the zoom buttons again,
-  only closing is guarded (L28); no orphaned dialog if `showModal()` fails (L33); no native drag
-  only for the image while zoomable (L34); pens handled like mice (L35); in full screen the
-  browser's pinch magnification stays available while the diagram cannot be zoomed (L36, owner
-  decision); tests for these (L41); wrong comments (L42); section comments in `zoomView.ts`,
-  shared image setup for page and full screen, a monotonic clock for the close guard, renames
-  only in files touched anyway (L43)
+- **F-019c — zoom and full screen (updated at prep-step, 2026-10-02):** `clamp` in `zoom.ts`
+  falls back to the configured size whenever the headroom is too small to zoom, for every path
+  (M14); when the zoom controls disappear while focused, the frame takes the focus with
+  `tabindex="-1"` (L26); the broken image is removed in the full-screen error state (L27);
+  only the close button ignores held Enter/space (L28); `showModal()` before the zoom is
+  attached, a failure removes the dialog and is passed on (L33); no native drag only for the
+  image while zoomable (L34); pens handled like mice (L35); the dark layer drops
+  `touch-action: none` for `overscroll-behavior: contain`, so the frame's classes decide and
+  the browser's pinch magnification stays available while the diagram cannot be zoomed (L36,
+  owner decision; checked on a touch device in the F-009b first-use check); tests for these
+  (L41); wrong comments (L42); section comments in `zoomView.ts`, the image setup of page and
+  full screen shared in `diagramImage.ts` with `applyStyles`, `performance.now()` for the
+  close guard, renames only in files touched anyway (L43)
 
 **Dependencies:** F-016, F-017, F-018 (done)
+
+#### F-019c — Zoom and full-screen remainders
+
+**What:** The zoom and full-screen remainders of the control audit (M14, L26, L27, L28, L33,
+L34, L35, L36, L41, L42, L43), each behaviour change with a test that fails before the fix.
+Size: about 400 lines in about 12 files, half of them tests.
+
+**Files:** `zoom.ts`, `zoomView.ts`, `lightbox.ts`, `renderDiagram.ts`, `diagramImage.ts`
+(new — the shared image setup and `applyStyles`), `ProcViewWebPart.module.scss`, `svgIcon.ts`,
+`theme.ts`; `zoom.test.ts`, `zoomView.test.ts`, `lightbox.test.ts`, `renderDiagram.test.ts`
+
+**Dependencies:** F-019b
+
+**Acceptance criteria:**
+- [ ] M14: after a resize into the 1.00–1.05 headroom band the zoom is back at the configured
+      size — no transform, no `zoomed` class — `zoom.test.ts` and `zoomView.test.ts` (fail
+      before the fix)
+- [ ] L26: when the zoom controls disappear while one of them is focused, the focus stays in
+      the frame, not on `<body>` (test)
+- [ ] L27, L28, L33: the error state has no image; held Enter is ignored only on the close
+      button; a failing `showModal()` leaves no dialog behind (tests)
+- [ ] L34, L35: `dragstart` is cancelled only on the image and only while zoomable; a pen's
+      barrel button does not pan and a pen pointer without pressed buttons ends (tests)
+- [ ] L36: the dark layer has no `touch-action: none` but `overscroll-behavior: contain`; the
+      touch-device check is part of the F-009b first-use check
+- [ ] L41–L43: dispose in the middle of a gesture and a second dispose tested; comments
+      corrected; section comments in `zoomView.ts`; page and full screen build the image with
+      `diagramImage.ts`; the close guard uses `performance.now()`; renames done
+- [ ] `just check` green (isolated copy while the dev server runs); no function over 50 lines,
+      no file over 500 lines
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
@@ -187,7 +221,9 @@ property pane.
       the hub link target as a known limitation (REQUIREMENTS open question, control audit
       L46); a short first-use check on the first SharePoint page, including that the keyboard
       focus stays in the property pane's alignment toolbars and colour field after a change
-      (F-019b, M15 — no SharePoint test environment during development)
+      (F-019b, M15 — no SharePoint test environment during development) and, on a touch device,
+      that a pinch in full screen zooms a zoomable diagram and magnifies the page otherwise,
+      without scrolling the page behind (F-019c, L36)
 - [ ] First release: `just release 1.0.0`, owner approves the push of commit and tag, the
       workflow publishes release `v1.0.0` with the package
 - [ ] `just check` green
