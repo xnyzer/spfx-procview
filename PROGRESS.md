@@ -55,7 +55,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-018 — Diagram alignment and property pane order
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** A diagram narrower than its column has no defined horizontal position: the code
 places it at the left, yet in the local workbench narrow diagrams appeared centred and jumped
@@ -68,21 +68,42 @@ default — and a property pane ordered the way editors work: the diagram and it
 first, then size and position, the texts around the diagram, the reader functions, and the
 about info last.
 
-**Solution sketch:**
+**Solution sketch** (updated at prep-step, 2026-10-02; size: small to medium, one step — the
+alignment field, the pane order and the texts belong together):
 - New setting `diagramAlign`: manifest initial value and code fallback `center` — also for
   web parts saved before the setting existed (they move from left to centred); the same icon
   toolbar as the caption, reusing `readAlign`
-- Position the image frame with automatic margins, so the hub overlay and the control bar move
-  with the image; caption and hub link keep their own alignment; full screen unaffected
+- The alignment becomes part of the frame styles: `diagramStyles(width, height, align)` sets
+  `margin-left`/`margin-right` (`auto` for centre, `0`/`auto` for the sides), `readSettings`
+  passes `readAlign(props, 'diagramAlign')`; `renderDiagram` stays unchanged. The hub overlay,
+  the control bar and zoom sit in the frame and move with it; caption and hub link keep their
+  own alignment; full screen unaffected
 - Pane order (owner decision 2026-10-02): **Diagram** (image link, alternative text) →
   **Size and alignment** (maximum-size info, width, height, alignment) → **Caption** →
   **Collaboration Hub link** → **Viewing** (zoom, full screen, background, colour) →
   **About**; the group "Accessibility" goes away, "Size" becomes "Size and alignment"
-- Texts in all four languages (new alignment label, renamed size group, removed accessibility
-  group name) — the typed completeness test covers them; the check on 2026-10-02 found all 75
-  keys complete in every language; hostile values covered by `injection.test.ts`
+- Texts in all four languages: new `DiagramAlignLabel` (Alignment / Ausrichtung / Alignement /
+  Alineación), `SizeGroupName` becomes "Size and alignment" (Größe und Ausrichtung / Taille et
+  alignement / Tamaño y alineación), `AccessibilityGroupName` goes away — the typed
+  completeness test covers them; the check on 2026-10-02 found all 75 keys complete in every
+  language; hostile values covered by `injection.test.ts`
+- README "Using the web part" in the new order; REQUIREMENTS decision log (alignment, order)
 
 **Dependencies:** F-016 (settings module, instance-keyed pane fields)
+
+**Files:** `settings.ts`, `sizing.ts`, `propertyPane.ts`, `ProcViewWebPart.manifest.json`,
+`loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts`, `sizing.test.ts`, `settings.test.ts`,
+`injection.test.ts`; `README.md`, `REQUIREMENTS.md`
+
+**Acceptance criteria:**
+- [ ] A diagram narrower than its column is centred by default — also in web parts saved
+      before the setting existed; left and right work with pixel, percent and automatic width;
+      the hub overlay and the control bar move with the diagram (tests, visual check)
+- [ ] The property pane follows the decided order; the alignment sits after width and height
+      and shows each web part's own value when switching between diagrams (visual check)
+- [ ] Texts complete in all four languages (typed test); hostile values in `diagramAlign`
+      have no effect (`injection.test.ts`)
+- [ ] `just check` green (isolated copy while the dev server runs)
 
 ### F-017 — Zoom and full-screen fixes from the audit
 
@@ -224,5 +245,5 @@ F-014 Own Teams app icons instead of the generator placeholders (DONE)
 F-015 Diagram background (setting) (DONE)
 F-016 Audit before the first release (DONE)
 F-017 Zoom and full-screen fixes from the audit
-F-018 Diagram alignment and property pane order
+F-018 Diagram alignment and property pane order (PLANNED)
 -->
