@@ -23,6 +23,15 @@ comment): real project names, codenames, customer identifiers. The pre-commit pr
 (case-insensitive). Like everything here it is gitignored; where it is absent (e.g. in CI),
 only the lint's generic patterns run.
 
+## In this project
+
+- `test-links.md` — real Signavio test links (they never enter the tracked tree).
+- `audits/` — earlier `AUDIT-RESULTS.md` files, kept before the next audit run overwrites the
+  root one.
+- `screenshots/` — the owner's SPFx Local Workbench screenshots, the README images composed
+  from them (`composed/`) and the dependency-free Node scripts that composed them (`tools/`,
+  with a README).
+
 ## Rules
 
 - **Never** copy anything from here into a tracked file. The living docs (README, PROGRESS,

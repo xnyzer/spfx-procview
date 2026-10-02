@@ -35,7 +35,7 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 ## Status & where to start
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
-requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-019 in `PROGRESS.md`). All planned
+requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-020 in `PROGRESS.md`). All planned
 features are done (681 Jest tests, 26 script tests): Signavio link validation and provider
 contract (F-001), configuration pane, sizing and caption (F-002), Collaboration Hub link
 (F-003), empty and error states (F-004), section theme colours (F-005), zoom and pan — "Offer
@@ -49,9 +49,10 @@ notices in `just check`), diagram alignment — centred by default — and the p
 the editors' order (F-018), the zoom and full-screen fixes from the audit (F-017), and the
 fixes from the control audit of 2026-10-02 (F-019: web part and pane tests on SharePoint
 stand-ins, pane focus kept, `just check` guarding source characters and deriving the licence
-notices from the build, zoom and full-screen remainders). Next: F-009 (versioning, CI release,
-IT guide with a first-use check, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA
-targeted for October 2026).
+notices from the build, zoom and full-screen remainders). Next: F-020 (README with screenshots
+— the owner's screenshots are in place, see the entry), then F-009 (versioning, CI release, IT
+guide with a first-use check, a control audit, release 1.0.0); F-010 waits for SPFx 1.24 (Node
+24/26, GA targeted for October 2026).
 
 ## Project notes (learned the hard way)
 
@@ -98,12 +99,14 @@ targeted for October 2026).
   placeholders — low-entropy keys (e.g. `'ab12'.repeat(16)`) so gitleaks stays quiet;
   attacker hosts in examples only `example.com`.
 - **Local workbench limits** (SPFx Local Workbench 0.2.0): `propertyPane.open/refresh` are
-  no-ops, text values containing `:` arrive as objects (known bug, see README), no live
-  reload — confirm those behaviours in a SharePoint test site, plus two-finger pinch zoom
-  (needs a touch device) and Teams (no Teams simulation locally; tab, themes incl. high
-  contrast). Its stand-in `BaseClientSideWebPart` has no `instanceId` getter — use
-  `this.context.instanceId` — and it renders a custom pane field again only when the field's
-  `key` changes, so keys must be unique per web part instance.
+  no-ops, text values containing `:` arrive as objects (known bug, see README — the owner's
+  installation carries a one-condition local patch, so it shows diagrams; an extension update
+  undoes the patch and the bug returns), no live reload — confirm those behaviours in a
+  SharePoint test site, plus two-finger pinch zoom (needs a touch device) and Teams (no Teams
+  simulation locally; tab, themes incl. high contrast). Its stand-in `BaseClientSideWebPart`
+  has no `instanceId` getter — use `this.context.instanceId` — and it renders a custom pane
+  field again only when the field's `key` changes, so keys must be unique per web part
+  instance.
 
 <!-- section:claude-startup -->
 Read `README.md` and `REQUIREMENTS.md` (while it exists). Then `PROGRESS.md`: its open-tasks
