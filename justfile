@@ -53,9 +53,11 @@ build:
 icons:
     node scripts/teams-icons.mjs
 
-# Cut a release, e.g. `just release 1.0.0` (README "Versioning and releases"): the script refuses
-# what cannot be released and sets the version and CHANGELOG; then the full gate, the release
-# commit and the tag. It never pushes. Stop the dev server first — `just check` cleans its folders.
+# Cut a release, e.g. `just release 1.0.0` (README "Versioning and releases"): the script fetches
+# origin, refuses what cannot be released and sets the version and CHANGELOG; then the full gate,
+# the release commit and the tag. It never pushes — the printed push is atomic, so the tag never
+# reaches GitHub without its commit on main. Stop the dev server first — `just check` cleans its
+# folders.
 # The first line checks the version as x.y.z, so the later lines only ever see digits and dots.
 release version:
     node scripts/release.mjs {{quote(version)}}
@@ -63,4 +65,4 @@ release version:
     git add package.json package-lock.json config/package-solution.json CHANGELOG.md
     git commit --quiet -m "chore(release): {{version}}" -m "Co-Authored-By: Claude <noreply@anthropic.com>"
     git tag -a "v{{version}}" -m "Release {{version}}"
-    @echo "Release {{version}} committed and tagged as v{{version}} — push both: git push origin main v{{version}}"
+    @echo "Release {{version}} committed and tagged as v{{version}} — push both at once: git push --atomic origin main v{{version}}"

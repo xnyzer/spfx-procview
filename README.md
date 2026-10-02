@@ -91,7 +91,7 @@ of the pane belongs to SharePoint, not to this web part.
 <details>
 <summary>The complete property pane (example values, every option switched on)</summary>
 <br>
-<img src="docs/images/procview-pane.png" width="342" alt="The property pane from top to bottom: Diagram (image link, alternative text), Size and alignment (maximum size, width 600, height auto, alignment), Caption (text, alignment), Collaboration Hub link (switched on, link text, position below the diagram, alignment), Viewing (zoom, full screen and background switched on, background color), About (link to GitHub) and SharePoint's own Visibility group">
+<img src="docs/images/procview-pane.png" width="342" alt="The property pane from top to bottom: Diagram (image link, alternative text), Size and alignment (maximum size, width 600, height auto, alignment), Caption (text, alignment), Collaboration Hub link (switched on, link text, position below the diagram, alignment), Viewing (zoom, full screen and background switched on, background color), About (link to GitHub, version 1.0.0) and SharePoint's own Visibility group">
 </details>
 
 ## Zoom and full screen
@@ -380,25 +380,35 @@ a site you may edit — typically a test site provided by IT:
   the version under "About".
 - **Changes** are noted under "Unreleased" in [CHANGELOG.md](CHANGELOG.md) as they are made.
 - **Cutting a release:** stop the dev server (`just check` cleans the folders it serves from),
-  then run `just release x.y.z` on a clean `main`. `scripts/release.mjs` refuses a version that
-  is not `x.y.z` or not higher than the latest `vx.y.z` tag, an existing tag, another branch,
-  uncommitted changes, an empty "Unreleased" section and a commit email that is not a GitHub
-  noreply address. It then sets the version (`npm version` for `package.json` and its lock, the
-  sync for the solution) and moves "Unreleased" under `## [x.y.z] - date`. The recipe runs
-  `just check`, commits `chore(release): x.y.z` and tags `vx.y.z`; it does not push, it prints
-  the push command. If `just check` fails, nothing is committed — `git restore .` undoes the
-  changes.
-- **Publishing:** pushing the tag (`git push origin main vx.y.z`) starts the release workflow
-  (`.github/workflows/release.yml`). Its `build` job, with read access only, checks that the tag
-  matches `package.json`, runs `just check` and `just build`, and collects the package, its
-  SHA-256 checksum, `THIRD-PARTY-NOTICES.md` and the release notes — the version's CHANGELOG
+  then run `just release x.y.z` on a clean `main`. `scripts/release.mjs` first fetches `origin`
+  with its tags — no release without the network, so its checks see GitHub's state. It refuses a
+  version that is not `x.y.z` (no leading zeros) or not higher than the latest `vx.y.z` tag, an
+  existing tag (also one that exists only on GitHub), another branch, a `main` that lacks commits
+  of `origin/main` (behind or diverged — pull first; being ahead is fine), uncommitted changes,
+  an empty "Unreleased" section and a commit email that is not a GitHub noreply address. It then
+  sets the version (`npm version` for `package.json` and its lock, the sync for the solution) and
+  moves "Unreleased" under `## [x.y.z] - date`. The recipe runs `just check`, commits
+  `chore(release): x.y.z` and tags `vx.y.z`; it does not push, it prints the push command. If
+  `just check` fails, nothing is committed — `git restore .` undoes the changes.
+- **Publishing:** pushing `main` and the tag together (`git push --atomic origin main vx.y.z` —
+  either both arrive or neither) starts the release workflow (`.github/workflows/release.yml`).
+  Its `build` job, with read access only, checks that the tag matches `package.json` and that
+  the tagged commit is on `main`, runs `just check` and `just build`, and collects the package,
+  its SHA-256 checksum, `THIRD-PARTY-NOTICES.md` and the release notes — the version's CHANGELOG
   section (`node scripts/release.mjs --notes x.y.z`). The `publish` job, the only one that may
-  write, then creates the GitHub release with these files using `gh`; it runs no project code,
-  so the token that may publish never meets `npm ci` and the install scripts of dependencies.
-  If publishing fails, re-run the failed job for the same tag — no new tag is needed.
+  write and only for a pushed tag, then creates the GitHub release with these files using `gh`;
+  it runs no project code, so the token that may publish never meets `npm ci` and the install
+  scripts of dependencies.
+- **Immutable releases:** the repository publishes immutable releases — once published, a
+  release's files and its tag cannot be changed, and GitHub attaches a signed release attestation
+  (`gh release verify-asset vx.y.z spfx-procview.sppkg` checks a downloaded file against it). A
+  published version can never be published again, not even after deleting its release: a broken
+  release is replaced by the next patch version. If publishing fails, delete a leftover draft
+  release of the tag, if there is one, and re-run the failed job — no new tag is needed.
 - **Dry run:** start the workflow by hand ("Run workflow" under Actions, or
-  `gh workflow run release.yml`) — it does everything but publish, with the "Unreleased"
-  changes as notes, and keeps the files as a workflow artifact for seven days.
+  `gh workflow run release.yml`) — on a branch or a tag, it does everything but publish, with
+  the "Unreleased" changes (on a tag: that version's section) as notes, and keeps the files as a
+  workflow artifact for seven days.
 - **Higher than the last release:** the App Catalog only treats a package as an update when its
   version is higher, so a release is compared with the latest tag, not with `package.json`. The
   first release is 1.0.0, the version `package.json` has had during development.

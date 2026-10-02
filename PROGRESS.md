@@ -60,6 +60,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-020 | README with screenshots: settings, controls and messages tables, an IT section with the Signavio hosts, an FAQ; only the CI badge | 2026-10-02 |
 | F-009a | One version from package.json (sync and check), `just release` with a tested release script, CHANGELOG with the 1.0.0 features, version in the property pane | 2026-10-02 |
 | F-009b | Release workflow (read-only build job, publish job with write access on tags only, dry run), `--notes` from the CHANGELOG, CodeQL for workflows, IT deployment guide; dry run on GitHub green | 2026-10-02 |
+| F-021a | Release only from `main` (fetch and up-to-date check, atomic push, ancestry check in the build), `publish` only for a pushed tag, immutable releases, private vulnerability reporting, SHA pinning required, pinned runner image; stricter version and character checks, docs | 2026-10-02 |
 
 ---
 
@@ -117,71 +118,6 @@ Owner decisions (2026-10-02): all findings of the release control audit are fixe
 release 1.0.0, in their own feature before F-009c.
 
 **Dependencies:** F-019, F-020, F-009a, F-009b (done)
-
-#### F-021a — Release path, tooling, docs, GitHub settings
-
-**What:** The release can only be cut from and published for a commit on `main`, published
-releases cannot be changed any more, the reporting channel of SECURITY.md works, and the low
-findings of the release workflow, the scripts and the release docs (M18–M20, L47–L53). Built in
-three blocks with `just check` after each: scripts and recipe, workflows, then GitHub settings
-and docs.
-
-- **Scripts and recipe:** `release.mjs` fetches `origin` with its tags before checking (no
-  release without the network — a check that silently drops out would be worse) and refuses a
-  `main` that is behind `origin/main` or has diverged from it — being ahead is fine (e.g. the
-  F-009c README commit); a tag that exists only on GitHub is then found by the existing tag
-  check. The recipe prints `git push --atomic origin main vx.y.z` (M18). Release versions and
-  release tags follow the SemVer core without leading zeros (L50). The source character check
-  also refuses U+2000–U+200A, U+202F, U+205F, U+2800 and U+3000 (L51; none in the source today).
-  The four script test files remove their temp folders (L53)
-- **Workflows:** the release build checks out the full history and stops when the tagged commit
-  is not an ancestor of `origin/main` (M18); `publish` runs only for a pushed tag, so a manual
-  run on a tag is a dry run too (L47); no mise tool cache in the release build (L48);
-  `runs-on: ubuntu-24.04` in all three workflows (L49)
-- **GitHub settings** (`gh api`, each only after the owner's approval, read back afterwards):
-  immutable releases (M19), private vulnerability reporting (M20), the requirement to pin
-  actions to a full commit SHA (L49)
-- **Docs:** README "Versioning and releases" — atomic push, the `main` checks, immutable
-  releases (a published tag name can never be used again, even after deleting its release: a
-  broken release is replaced by the next patch version), a failed publish (delete a leftover
-  draft, then re-run the job); IT guide — the checksum proves an intact download, `gh release
-  verify-asset` that the file comes from the release (M19); absolute links in
-  `THIRD-PARTY-NOTICES.md` (L52); the pane screenshot with the version line — the owner takes the
-  end of the pane in the local workbench, Claude composes it with the private screenshot tools
-  (L52); a technical decision in REQUIREMENTS
-- Decided at prep-step (2026-10-02, following Claude's recommendations): **no `v*` tag
-  ruleset** — immutable releases lock the tag of every published release; a ruleset would only
-  protect a tag without a release (after a failed build), which is exactly the one that must be
-  deletable, and the owner as admin could bypass it anyway. **`publish` stays one `gh release
-  create`** — with assets it creates a draft, uploads and then publishes (gh manual), so the
-  immutability applies only to the complete release. **No trial run of `publish`** — a test
-  release here would use up its tag name for good, a throwaway repository would be one more
-  public repository; F-009c watches the first real run instead
-
-**Files:** `scripts/release.mjs`, `scripts/release.test.mjs`, `scripts/sync-version.mjs`,
-`scripts/sync-version.test.mjs`, `scripts/source-chars-check.mjs`,
-`scripts/source-chars-check.test.mjs`, `scripts/licence-check.test.mjs`, `justfile`,
-`.github/workflows/release.yml`, `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`,
-`README.md`, `docs/deployment.md`, `THIRD-PARTY-NOTICES.md`, `docs/images/procview-pane.png`,
-`REQUIREMENTS.md`; GitHub repository settings
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] `release.mjs` refuses a `main` behind or diverged from `origin/main` and a failed fetch;
-      tests for both and for "ahead is fine"
-- [ ] Leading zeros (`1.0.01`, `01.0.0`) refused for versions and ignored for tags; tests
-- [ ] The source character check reports the new characters; tests; the source stays clean
-- [ ] The script tests leave no temp folders behind
-- [ ] The recipe and README print `git push --atomic origin main vx.y.z`
-- [ ] Release workflow: ancestry check on tag runs, `publish` only on `push`, no tool cache;
-      all workflows on `ubuntu-24.04`; a dry run on GitHub is green with `publish` skipped;
-      CI and CodeQL green
-- [ ] Immutable releases, private vulnerability reporting and the SHA-pinning requirement read
-      back as on via `gh api`
-- [ ] README, IT guide, `THIRD-PARTY-NOTICES.md` and REQUIREMENTS updated; the pane screenshot
-      shows "Version 1.0.0"
-- [ ] `just check` green
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 

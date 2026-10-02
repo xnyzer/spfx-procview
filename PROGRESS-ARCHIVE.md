@@ -8,6 +8,83 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-021a — Release path, tooling, docs, GitHub settings
+
+_Completed 2026-10-02; the dry run on GitHub follows after the push. Part of F-021, which stays
+open with F-021b and F-021c._
+
+**What:** The release can only be cut from and published for a commit on `main`, published
+releases cannot be changed any more, the reporting channel of SECURITY.md works, and the low
+findings of the release workflow, the scripts and the release docs (release control audit
+2026-10-02: M18–M20, L47–L53). Built in three blocks with `just check` after each: scripts and
+recipe, workflows, then GitHub settings and docs. About 450 lines.
+Decided at prep-step (owner, following Claude's recommendations): no `v*` tag ruleset —
+immutable releases lock the tag of every published release, and a ruleset would only protect a
+tag without a release, the one that must stay deletable; `publish` stays one `gh release
+create` — with assets it creates a draft, uploads and then publishes (gh manual); no trial run
+of `publish` — a test release would use up its tag name for good, F-009c watches the first run.
+
+**Files:** `scripts/release.mjs`, `scripts/release.test.mjs`, `scripts/release-remote.test.mjs`
+(new), `scripts/sync-version.mjs`, `scripts/sync-version.test.mjs`,
+`scripts/source-chars-check.mjs`, `scripts/source-chars-check.test.mjs`,
+`scripts/licence-check.test.mjs`, `justfile`, `.github/workflows/release.yml`,
+`.github/workflows/ci.yml`, `.github/workflows/codeql.yml`, `README.md`, `docs/deployment.md`,
+`THIRD-PARTY-NOTICES.md`, `docs/images/procview-pane.png`, `REQUIREMENTS.md`; GitHub repository
+settings
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] `release.mjs` refuses a `main` behind or diverged from `origin/main` and a failed fetch;
+      tests for both and for "ahead is fine" — pure tests in `release.test.mjs`, git tests on
+      throwaway repositories in `release-remote.test.mjs` (ahead, behind, diverged, a tag only on
+      the remote, an unreachable remote); swapping the `merge-base` arguments fails two of them
+- [x] Leading zeros (`1.0.01`, `01.0.0`) refused for versions and ignored for tags; tests —
+      `sync-version.test.mjs` and `release.test.mjs` (versions, `findLatestRelease`, the command)
+- [x] The source character check reports the new characters; tests; the source stays clean —
+      69 source files clean
+- [x] The script tests leave no temp folders behind — counted before and after a run (unchanged);
+      the 266 folders of earlier runs were deleted with the owner's approval
+- [x] The recipe and README print `git push --atomic origin main vx.y.z`
+- [ ] Release workflow: ancestry check on tag runs, `publish` only on `push`, no tool cache; all
+      workflows on `ubuntu-24.04`; a dry run on GitHub is green with `publish` skipped; CI and
+      CodeQL green — the workflow files are changed and parse; the runs on GitHub follow after
+      the owner approves the push
+- [x] Immutable releases, private vulnerability reporting and the SHA-pinning requirement read
+      back as on via `gh api` — `{"enabled":true}` each, `sha_pinning_required: true` (owner's
+      approval for each setting)
+- [x] README, IT guide, `THIRD-PARTY-NOTICES.md` and REQUIREMENTS updated; the pane screenshot
+      shows "Version 1.0.0"
+- [x] `just check` green (isolated copy while the dev server runs) — 689 Jest tests, 75 script
+      tests
+
+**Implemented:**
+- `scripts/release.mjs` — `fetchRemote` (`git fetch --quiet --tags origin`, returns git's reason
+  when it fails), `includesRemoteBranch` (`git merge-base --is-ancestor origin/main HEAD`),
+  `readTags`; the checks split into `findVersionProblems`, `findRepositoryProblems` and
+  `findChangelogProblems`; an invalid version is refused before anything is fetched or read;
+  `RELEASE_TAG` built from `RELEASE_VERSION`; section comments (311 lines)
+- `scripts/sync-version.mjs` — `RELEASE_VERSION` is the SemVer core without leading zeros
+- `scripts/source-chars-check.mjs` — U+2000–U+200A, U+202F, U+205F, U+2800 and U+3000 added
+- Script tests: one temporary folder per test file, removed in `after`
+- `justfile` — the recipe prints `git push --atomic origin main vx.y.z`
+- `.github/workflows/release.yml` — `fetch-depth: 0` and the step "Check that the tagged commit
+  is on main" (tag runs), mise without cache, `publish` only for `push` on a tag; all three
+  workflows on `ubuntu-24.04`
+- GitHub settings (`gh api`): immutable releases, private vulnerability reporting, actions must
+  be pinned to a full commit SHA
+- README "Versioning and releases" (fetch and `main` checks, atomic push, immutable releases, a
+  failed publish, the dry run on a tag); `docs/deployment.md` (what the checksum proves,
+  `gh release verify-asset`); absolute links in `THIRD-PARTY-NOTICES.md`; the README pane image
+  with the version line, composed from the owner's new whole-window shot (pane edge, sticky
+  header and a pixel-exact overlap with the previous part); a technical decision in REQUIREMENTS
+
+**Deviations from the plan:**
+- The git tests went into their own file `scripts/release-remote.test.mjs` — `release.test.mjs`
+  would have grown to 350 lines with a 75-line `describe` block
+- `release.mjs` stays one module above the 300-line target, delimited by section comments
+  (CODING-STANDARDS §2 exception)
+
 ### F-009b — Release workflow and IT deployment guide
 
 _Completed 2026-10-02; the dry run on GitHub followed right after the push. Part of F-009,

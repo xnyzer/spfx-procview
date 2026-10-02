@@ -1,12 +1,13 @@
 // Tests for release.mjs — Node's built-in test runner, no dependency (`just check`). The full
-// recipe (`just release`: npm, sync, check, commit, tag) is tried in a scratch copy, not here.
+// recipe (`just release`: npm, sync, check, commit, tag) is tried in a scratch copy, not here; the
+// git checks against the remote are tested on real repositories in release-remote.test.mjs.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -26,6 +27,10 @@ const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'release.mjs');
 const NOREPLY = '12345678+octocat@users.noreply.github.com';
 /** A four-part solution version (x.y.z.0), built from its parts — written out, privacy-lint takes it for an IP address. */
 const SOLUTION_VERSION = ['1', '1', '0', '0'].join('.');
+/** One temporary folder for all files of these tests, removed when they are done. */
+const TEMP = mkdtempSync(join(tmpdir(), 'release-test-'));
+
+after(() => rmSync(TEMP, { recursive: true, force: true }));
 
 const CHANGELOG = [
   '# Changelog',
@@ -52,6 +57,8 @@ function createState(overrides = {}) {
     version: '1.1.0',
     tags: ['v1.0.0'],
     branch: RELEASE_BRANCH,
+    fetchError: undefined,
+    hasRemoteBranch: true,
     isDirty: false,
     email: NOREPLY,
     unreleased: '### Added\n\n- Zoom',
@@ -70,7 +77,10 @@ describe('compareVersions', () => {
 
 describe('findLatestRelease', () => {
   it('takes the highest release tag and ignores other tags', () => {
-    assert.equal(findLatestRelease(['v1.0.0', 'v1.10.0', 'v1.9.2', 'v2.0.0-beta.1', 'demo', '1.20.0']), '1.10.0');
+    assert.equal(
+      findLatestRelease(['v1.0.0', 'v1.10.0', 'v1.9.2', 'v2.0.0-beta.1', 'v1.20.01', 'demo', '1.20.0']),
+      '1.10.0'
+    );
   });
 
   it('finds nothing before the first release', () => {
@@ -131,8 +141,8 @@ describe('findReleaseProblems', () => {
   });
 
   it('refuses versions that are not x.y.z', () => {
-    ['1.1', SOLUTION_VERSION, '1.1.0-beta.1', 'v1.1.0', '', undefined].forEach((version) =>
-      assert.match(findReleaseProblems(createState({ version })).join('\n'), /is not a release version/)
+    ['1.1', SOLUTION_VERSION, '1.1.0-beta.1', 'v1.1.0', '01.1.0', '1.01.0', '1.1.01', '', undefined].forEach(
+      (version) => assert.match(findReleaseProblems(createState({ version })).join('\n'), /is not a release version/)
     );
   });
 
@@ -155,6 +165,15 @@ describe('findReleaseProblems', () => {
     ]);
     assert.match(findReleaseProblems(createState({ email: 'me@example.com' })).join('\n'), /not a GitHub noreply/);
     assert.match(findReleaseProblems(createState({ email: '' })).join('\n'), /not a GitHub noreply/);
+  });
+
+  it('refuses a failed fetch and a branch that lacks commits of origin/main', () => {
+    assert.deepEqual(findReleaseProblems(createState({ fetchError: 'fatal: unable to access' })), [
+      "origin cannot be fetched (fatal: unable to access) — a release needs GitHub's current state"
+    ]);
+    assert.deepEqual(findReleaseProblems(createState({ hasRemoteBranch: false })), [
+      'HEAD lacks commits of origin/main (behind or diverged) — pull first'
+    ]);
   });
 
   it('refuses a CHANGELOG without entries or without the section', () => {
@@ -211,7 +230,7 @@ describe('readReleaseNotes', () => {
 describe('release.mjs as a command', () => {
   /** A temporary CHANGELOG.md with the test content above. */
   function createChangelog() {
-    const file = join(mkdtempSync(join(tmpdir(), 'release-notes-')), 'CHANGELOG.md');
+    const file = join(mkdtempSync(join(TEMP, 'notes-')), 'CHANGELOG.md');
     writeFileSync(file, CHANGELOG);
     return file;
   }
@@ -240,10 +259,13 @@ describe('release.mjs as a command', () => {
     execFileSync(process.execPath, [SCRIPT, '--notes', 'Unreleased'], { stdio: 'pipe' });
   });
 
-  it('refuses an invalid version with exit code 1 before changing anything', () => {
-    assert.throws(
-      () => execFileSync(process.execPath, [SCRIPT, '1.0'], { stdio: 'pipe' }),
-      (error) => error.status === 1 && /"1\.0" is not a release version/.test(String(error.stderr))
+  it('refuses an invalid version with exit code 1 before fetching or changing anything', () => {
+    ['1.0', '1.0.01'].forEach((version) =>
+      assert.throws(
+        () => execFileSync(process.execPath, [SCRIPT, version], { stdio: 'pipe' }),
+        (error) => error.status === 1 && /is not a release version/.test(String(error.stderr)),
+        version
+      )
     );
   });
 });

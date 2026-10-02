@@ -2,10 +2,10 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -19,6 +19,10 @@ import {
 } from './licence-check.mjs';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'licence-check.mjs');
+/** One temporary folder for all files of these tests, removed when they are done. */
+const TEMP = mkdtempSync(join(tmpdir(), 'licence-check-'));
+
+after(() => rmSync(TEMP, { recursive: true, force: true }));
 
 const TSLIB = { name: 'tslib', version: '1.0.0', license: '0BSD', location: 'node_modules/tslib' };
 const STYLES = {
@@ -35,7 +39,7 @@ const NOTICES = BUNDLED_PACKAGES.map(({ name }) => `## ${name} 1.0.0\n`).join('\
 
 /** A temporary dist folder with the given source maps (file name → sources). */
 function createDist(maps) {
-  const dist = join(mkdtempSync(join(tmpdir(), 'licence-check-')), 'dist');
+  const dist = join(mkdtempSync(join(TEMP, 'case-')), 'dist');
   mkdirSync(dist);
   Object.keys(maps).forEach((name) =>
     writeFileSync(join(dist, name), JSON.stringify({ version: 3, sources: maps[name] }))
@@ -131,7 +135,7 @@ describe('readBundledLocations', () => {
 
   it('gives undefined when there is no source map — the build has not run', () => {
     assert.equal(readBundledLocations(createDist({})), undefined);
-    assert.equal(readBundledLocations(join(tmpdir(), 'licence-check-missing-folder')), undefined);
+    assert.equal(readBundledLocations(join(TEMP, 'missing-folder')), undefined);
   });
 });
 
@@ -181,7 +185,7 @@ describe('findProblems', () => {
 
 describe('licence-check.mjs as a command', () => {
   it('fails with exit code 1 on a GPL/AGPL-only package', () => {
-    const input = join(mkdtempSync(join(tmpdir(), 'licence-check-')), 'packages.json');
+    const input = join(mkdtempSync(join(TEMP, 'case-')), 'packages.json');
     writeFileSync(input, JSON.stringify([{ name: 'copyleft', version: '1.0.0', license: 'AGPL-3.0-only' }]));
     const dist = createDist({ 'bundle.js.map': [] });
     assert.throws(

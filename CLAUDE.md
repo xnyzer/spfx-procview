@@ -36,7 +36,7 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
 requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-020 in `PROGRESS.md`). All planned
-features are done (689 Jest tests, 67 script tests): Signavio link validation and provider
+features are done (689 Jest tests, 75 script tests): Signavio link validation and provider
 contract (F-001), configuration pane, sizing and caption (F-002), Collaboration Hub link
 (F-003), empty and error states (F-004), section theme colours (F-005), zoom and pan — "Offer
 zoom", default off (F-006), full-screen view — "Offer full screen", default on (F-007), Teams
@@ -58,9 +58,13 @@ badge — the repository depends on no third-party website). F-009a is done: one
 (`.github/workflows/release.yml` — a read-only build job, a publish job with write access only
 on tags, a dry run via "Run workflow"), CodeQL for the workflow files and the IT guide
 `docs/deployment.md` with a first-use check. The dry run on GitHub is green. The release control
-audit of F-009c ran on 2026-10-02 (0 critical, 0 high, 3 medium, 18 low). Next: F-021 (all its
-findings, before the release), then F-009c (README for the release, release 1.0.0); F-010 waits
-for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
+audit of F-009c ran on 2026-10-02 (0 critical, 0 high, 3 medium, 18 low); all its findings go
+into F-021 before the release. F-021a is done: a release only from a commit on `main`
+(`release.mjs` fetches `origin` and refuses a stale `main`, `git push --atomic`, an ancestry check
+in the release build), `publish` only for a pushed tag, immutable releases, private vulnerability
+reporting and SHA-pinned actions required on GitHub. Next: F-021b and F-021c, then F-009c (README
+for the release, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October
+2026).
 
 ## Project notes (learned the hard way)
 

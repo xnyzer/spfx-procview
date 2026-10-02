@@ -24,7 +24,8 @@ From the [latest release](https://github.com/xnyzer/spfx-procview/releases/lates
 - `spfx-procview.sppkg.sha256` — its SHA-256 checksum,
 - `THIRD-PARTY-NOTICES.md` — the licences of third-party code in the package.
 
-Verify the package in the download folder before you upload it:
+Verify the package in the download folder before you upload it. The **checksum** shows that the
+download is complete and intact:
 
 - **macOS / Linux:** `shasum -a 256 -c spfx-procview.sppkg.sha256` (or `sha256sum -c …`) — it
   prints `spfx-procview.sppkg: OK`.
@@ -32,7 +33,18 @@ Verify the package in the download folder before you upload it:
   `(Get-FileHash .\spfx-procview.sppkg -Algorithm SHA256).Hash -eq (Get-Content .\spfx-procview.sppkg.sha256).Split(' ')[0]`
   — it prints `True`.
 
-Upload the package only when the check passes.
+The checksum comes from the same release as the package, so it cannot show whether both were
+replaced. Releases of this repository are **immutable**: once published, their files and tag
+cannot be changed, and GitHub signs a record of them (a release attestation). With the
+[GitHub CLI](https://cli.github.com), check that your file is exactly the one GitHub published —
+for example for release 1.0.0:
+
+```
+gh release verify-asset v1.0.0 spfx-procview.sppkg --repo xnyzer/spfx-procview
+```
+
+It confirms that the file matches the release's attestation. Upload the package only when the
+checks pass.
 
 ## 2. First deployment
 

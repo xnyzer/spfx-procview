@@ -1,10 +1,12 @@
 # Third-party notices
 
 The solution package `spfx-procview.sppkg` contains ProcView's own code (Apache-2.0, see
-[LICENSE](LICENSE)) and the third-party code listed below, which the SharePoint Framework build
-compiles into the web part bundle. The SharePoint Framework libraries the web part uses at
-runtime are provided by SharePoint and are not part of the package (Microsoft SharePoint
-Framework licence terms, see [ADR-0001](docs/adr/0001-spfx-platform-dependencies.md)).
+[LICENSE](https://github.com/xnyzer/spfx-procview/blob/main/LICENSE)) and the third-party code
+listed below, which the SharePoint Framework build compiles into the web part bundle. The
+SharePoint Framework libraries the web part uses at runtime are provided by SharePoint and are not
+part of the package (Microsoft SharePoint Framework licence terms, see
+[ADR-0001](https://github.com/xnyzer/spfx-procview/blob/main/docs/adr/0001-spfx-platform-dependencies.md)).
+The links are absolute because this file is also attached to every release on its own.
 
 `just check` (`scripts/licence-check.mjs`) reads the third-party code in the bundle from the
 build's source map and fails when a package there has no section below with its installed

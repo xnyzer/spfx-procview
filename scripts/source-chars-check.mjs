@@ -16,9 +16,10 @@ const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.json'
 
 /**
  * Code points that draw nothing or steer the text: control characters (except tab and line
- * ends), no-break and zero-width spaces, soft hyphen, joiners and marks, direction controls,
- * fillers, variation selectors, BOM, annotation and tag characters — and U+FFFD, the trace of a
- * character that broke while a file was written.
+ * ends), spaces other than the plain one (no-break, narrow no-break, en/em, thin, hair, figure,
+ * ideographic, Braille blank) and zero-width spaces, soft hyphen, joiners and marks, direction
+ * controls, fillers, variation selectors, BOM, annotation and tag characters — and U+FFFD, the
+ * trace of a character that broke while a file was written.
  */
 export const FORBIDDEN_RANGES = [
   [0x0000, 0x0008],
@@ -32,9 +33,11 @@ export const FORBIDDEN_RANGES = [
   [0x115f, 0x1160],
   [0x17b4, 0x17b5],
   [0x180b, 0x180f],
-  [0x200b, 0x200f],
-  [0x2028, 0x202e],
-  [0x2060, 0x206f],
+  [0x2000, 0x200f],
+  [0x2028, 0x202f],
+  [0x205f, 0x206f],
+  [0x2800, 0x2800],
+  [0x3000, 0x3000],
   [0x3164, 0x3164],
   [0xfe00, 0xfe0f],
   [0xfeff, 0xfeff],

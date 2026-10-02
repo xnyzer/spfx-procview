@@ -2,10 +2,10 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -18,6 +18,10 @@ import {
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'sync-version.mjs');
 const PROJECT_SOLUTION = join(dirname(SCRIPT), '..', 'config', 'package-solution.json');
+/** One temporary folder for all files of these tests, removed when they are done. */
+const TEMP = mkdtempSync(join(tmpdir(), 'sync-version-'));
+
+after(() => rmSync(TEMP, { recursive: true, force: true }));
 
 /**
  * A four-part solution version: the release plus a build part, e.g. 1.2.3 with build 0. Built from
@@ -41,7 +45,7 @@ function createSolution(solutionVersion, featureVersion) {
 
 /** Temporary package.json and package-solution.json with the given versions. */
 function createFiles(packageVersion, solutionVersion, featureVersion) {
-  const folder = mkdtempSync(join(tmpdir(), 'sync-version-'));
+  const folder = mkdtempSync(join(TEMP, 'case-'));
   const packageFile = join(folder, 'package.json');
   const solutionFile = join(folder, 'package-solution.json');
   writeFileSync(packageFile, JSON.stringify({ name: 'demo', version: packageVersion }));
@@ -59,6 +63,13 @@ describe('toSolutionVersion', () => {
     ['1.0', solutionVersionOf('1.0.0'), '1.0.0-beta.1', 'v1.0.0', '', undefined, 1].forEach((version) =>
       assert.throws(() => toSolutionVersion(version), /is not a release version/)
     );
+  });
+
+  it('rejects leading zeros, which npm would quietly drop', () => {
+    ['01.0.0', '1.00.0', '1.0.01'].forEach((version) =>
+      assert.throws(() => toSolutionVersion(version), /is not a release version/, version)
+    );
+    assert.deepEqual(toSolutionVersion('10.0.100').split('.'), ['10', '0', '100', '0']);
   });
 });
 

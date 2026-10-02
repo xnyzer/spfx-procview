@@ -1,6 +1,6 @@
 # Release (README "Versioning and releases"): a pushed tag vx.y.z — created by `just release
 # x.y.z` — builds the solution package and publishes it as a GitHub release. Started by hand
-# (workflow_dispatch) it is a dry run: everything but the publishing.
+# (workflow_dispatch) it is always a dry run, on a branch or a tag: everything but the publishing.
 name: Release
 
 on:
@@ -20,7 +20,7 @@ jobs:
   # Read access only: `npm ci` runs the install scripts of dependencies, so this job never holds a
   # token that may publish
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -30,7 +30,13 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+          # The whole history, so the tagged commit can be checked against origin/main
+          fetch-depth: 0
+      # No tool cache: other jobs on main save it after running dependency install scripts, so the
+      # release installs its tools fresh, checked against the checksums in mise.lock
       - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          cache: false
       - name: Read the version
         id: version
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
@@ -42,6 +48,17 @@ jobs:
         run: |
           if [ "$TAG" != "v$VERSION" ]; then
             echo "::error::Tag $TAG does not match the version $VERSION in package.json"
+            exit 1
+          fi
+      # A release is only ever published from main (audit M18): a tag pushed while main was
+      # rejected, or set on another branch, stops here
+      - name: Check that the tagged commit is on main
+        if: github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::Tag $TAG points to a commit that is not on main — push main and the tag together (git push --atomic)"
             exit 1
           fi
       - run: just setup
@@ -71,11 +88,12 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # The only job that may write: it publishes what `build` produced and runs no project code
+  # The only job that may write: it publishes what `build` produced and runs no project code. Only
+  # for a pushed tag — a run started by hand on a tag stays a dry run
   publish:
     needs: build
-    if: github.ref_type == 'tag'
-    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: write

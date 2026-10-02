@@ -10,7 +10,10 @@
 //   … --notes <name> --changelog <file>           read another CHANGELOG (tests)
 //
 // A release must be higher than the latest `vx.y.z` tag — not than package.json, which already
-// holds the next version while it is developed (1.0.0 before the first release).
+// holds the next version while it is developed (1.0.0 before the first release). The checks see
+// GitHub's state: the script fetches `origin` with its tags first, so a tag that exists only there
+// counts, and a `main` that lacks commits of `origin/main` is refused — its pushed tag would
+// publish a commit that is not on `main` (audit M18).
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -23,11 +26,16 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHANGELOG = join(ROOT, 'CHANGELOG.md');
 /** Releases are cut from here: the release workflow builds the tagged commit of this branch. */
 export const RELEASE_BRANCH = 'main';
+/** The remote whose release branch and tags a release must build on — GitHub. */
+export const RELEASE_REMOTE = 'origin';
 const UNRELEASED = 'Unreleased';
 const UNRELEASED_HEADING = `## [${UNRELEASED}]`;
-const RELEASE_TAG = /^v(\d+\.\d+\.\d+)$/;
+/** A release tag: `v` and a release version (the pattern of RELEASE_VERSION without its anchors). */
+const RELEASE_TAG = new RegExp(`^v(${RELEASE_VERSION.source.slice(1, -1)})$`);
 /** A commit email that keeps private addresses out of the history: `<id>+<login>@users.noreply.github.com`. */
 const NOREPLY_EMAIL = /^\d+\+[A-Za-z0-9-]+@users\.noreply\.github\.com$/;
+
+// --- Versions and tags --------------------------------------------------------------------
 
 /** Compares two release versions part by part: negative, zero or positive. */
 export function compareVersions(left, right) {
@@ -50,10 +58,7 @@ export function findLatestRelease(tags) {
     .pop();
 }
 
-/** Whether a commit email is a GitHub noreply address with id and login. */
-export function isNoreplyEmail(email) {
-  return NOREPLY_EMAIL.test(email);
-}
+// --- CHANGELOG ----------------------------------------------------------------------------
 
 /** The line of the heading `## [name]` — `Unreleased` or a version (`## [1.0.0] - 2026-10-02`). */
 function findSectionHeading(lines, name) {
@@ -110,26 +115,46 @@ export function moveUnreleased(changelog, version, date) {
   return [...lines.slice(0, start + 1), '', `## [${version}] - ${date}`, ...lines.slice(start + 1)].join('\n');
 }
 
-/**
- * Why a release cannot be cut, one message per reason — empty when it can. `state` holds the
- * requested version, the repository's tags, branch, uncommitted changes and commit email, and
- * what the CHANGELOG's "Unreleased" section holds.
- */
-export function findReleaseProblems(state) {
-  const { version, tags, branch, isDirty, email, unreleased } = state;
-  const problems = [];
+/** A date in the local time zone the way the CHANGELOG writes it: `YYYY-MM-DD`. */
+export function formatDate(date) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+// --- Release checks -----------------------------------------------------------------------
+
+/** Whether a commit email is a GitHub noreply address with id and login. */
+export function isNoreplyEmail(email) {
+  return NOREPLY_EMAIL.test(email);
+}
+
+/** Why `version` cannot be released next to these tags — empty when it can. */
+export function findVersionProblems(version, tags) {
   if (typeof version !== 'string' || !RELEASE_VERSION.test(version)) {
-    problems.push(`${JSON.stringify(version)} is not a release version — use x.y.z, e.g. 1.0.0`);
-  } else {
-    const latest = findLatestRelease(tags);
-    if (tags.includes(`v${version}`)) {
-      problems.push(`the tag v${version} exists already`);
-    } else if (latest !== undefined && compareVersions(version, latest) <= 0) {
-      problems.push(`${version} is not higher than the latest release ${latest}`);
-    }
+    return [`${JSON.stringify(version)} is not a release version — use x.y.z without leading zeros, e.g. 1.0.0`];
   }
+  if (tags.includes(`v${version}`)) {
+    return [`the tag v${version} exists already`];
+  }
+  const latest = findLatestRelease(tags);
+  if (latest !== undefined && compareVersions(version, latest) <= 0) {
+    return [`${version} is not higher than the latest release ${latest}`];
+  }
+  return [];
+}
+
+/** Why the repository is not ready for a release — branch, remote state, changes, commit email. */
+function findRepositoryProblems(state) {
+  const { branch, fetchError, hasRemoteBranch, isDirty, email } = state;
+  const remoteBranch = `${RELEASE_REMOTE}/${RELEASE_BRANCH}`;
+  const problems = [];
   if (branch !== RELEASE_BRANCH) {
     problems.push(`releases are cut from ${RELEASE_BRANCH}, not from ${JSON.stringify(branch)}`);
+  }
+  if (fetchError !== undefined) {
+    problems.push(`${RELEASE_REMOTE} cannot be fetched (${fetchError}) — a release needs GitHub's current state`);
+  } else if (!hasRemoteBranch) {
+    problems.push(`HEAD lacks commits of ${remoteBranch} (behind or diverged) — pull first`);
   }
   if (isDirty) {
     problems.push('the working tree has uncommitted changes — commit or stash them first');
@@ -140,45 +165,107 @@ export function findReleaseProblems(state) {
         '(<id>+<login>@users.noreply.github.com, see `git config --local user.email`)'
     );
   }
-  if (unreleased === undefined) {
-    problems.push(`CHANGELOG.md has no "${UNRELEASED_HEADING}" section`);
-  } else if (unreleased === '') {
-    problems.push(`the "${UNRELEASED_HEADING}" section of CHANGELOG.md is empty — note the changes first`);
-  }
   return problems;
 }
 
-/** A date in the local time zone the way the CHANGELOG writes it: `YYYY-MM-DD`. */
-export function formatDate(date) {
-  const pad = (value) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+/** Why the CHANGELOG cannot be released: no "Unreleased" section, or an empty one. */
+function findChangelogProblems(unreleased) {
+  if (unreleased === undefined) {
+    return [`CHANGELOG.md has no "${UNRELEASED_HEADING}" section`];
+  }
+  return unreleased === ''
+    ? [`the "${UNRELEASED_HEADING}" section of CHANGELOG.md is empty — note the changes first`]
+    : [];
 }
 
-function git(args) {
-  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
+/**
+ * Why a release cannot be cut, one message per reason — empty when it can. `state` holds the
+ * requested version, the repository's tags (after the fetch), branch, the fetch's error message
+ * (`undefined` when it worked), whether HEAD contains the remote release branch, uncommitted
+ * changes, the commit email, and what the CHANGELOG's "Unreleased" section holds.
+ */
+export function findReleaseProblems(state) {
+  return [
+    ...findVersionProblems(state.version, state.tags),
+    ...findRepositoryProblems(state),
+    ...findChangelogProblems(state.unreleased)
+  ];
+}
+
+// --- Repository state (git) ---------------------------------------------------------------
+
+/** Runs git in `cwd` and returns its trimmed output; a failing git throws with its stderr. */
+function git(args, cwd) {
+  return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: 'pipe' }).trim();
+}
+
+/** The first line git wrote to stderr — the reason a git command failed. */
+function describeGitError(error) {
+  const stderr = String(error?.stderr ?? '').trim();
+  return stderr === '' ? String(error?.message ?? error) : stderr.split('\n')[0];
+}
+
+/**
+ * Fetches the release remote with its tags into the repository at `cwd`. Returns why it failed,
+ * or `undefined` when it worked — a failed fetch refuses the release instead of checking stale
+ * state.
+ */
+export function fetchRemote(cwd = ROOT) {
+  try {
+    git(['fetch', '--quiet', '--tags', RELEASE_REMOTE], cwd);
+    return undefined;
+  } catch (error) {
+    return describeGitError(error);
+  }
+}
+
+/**
+ * Whether HEAD contains the release branch as last fetched from the remote: being ahead is fine
+ * (the atomic push sends those commits along), being behind or diverged is not.
+ */
+export function includesRemoteBranch(cwd = ROOT) {
+  try {
+    git(['merge-base', '--is-ancestor', `${RELEASE_REMOTE}/${RELEASE_BRANCH}`, 'HEAD'], cwd);
+    return true;
+  } catch {
+    // Exit code 1: not an ancestor; 128: no such branch — either way not safe to release
+    return false;
+  }
+}
+
+/** The release tags of the repository at `cwd` (`v*`). */
+export function readTags(cwd = ROOT) {
+  return git(['tag', '--list', 'v*'], cwd)
+    .split('\n')
+    .filter((tag) => tag !== '');
 }
 
 /** The commit email git would use; empty when none is set. */
 function readEmail() {
   try {
-    return git(['config', 'user.email']);
+    return git(['config', 'user.email'], ROOT);
   } catch {
+    // `git config` exits with 1 when the key is not set
     return '';
   }
 }
 
+/** The repository's state after fetching the remote, for `findReleaseProblems`. */
 function readState(version) {
+  const fetchError = fetchRemote(ROOT);
   return {
     version,
-    tags: git(['tag', '--list', 'v*'])
-      .split('\n')
-      .filter((tag) => tag !== ''),
-    branch: git(['rev-parse', '--abbrev-ref', 'HEAD']),
-    isDirty: git(['status', '--porcelain']) !== '',
+    tags: readTags(ROOT),
+    branch: git(['rev-parse', '--abbrev-ref', 'HEAD'], ROOT),
+    fetchError,
+    hasRemoteBranch: fetchError === undefined && includesRemoteBranch(ROOT),
+    isDirty: git(['status', '--porcelain'], ROOT) !== '',
     email: readEmail(),
     unreleased: readUnreleased(readFileSync(CHANGELOG, 'utf8'))
   };
 }
+
+// --- Command line -------------------------------------------------------------------------
 
 /** Prints the release notes for `--notes`; a missing or empty section fails with exit code 1. */
 function printReleaseNotes(name, changelogFile) {
@@ -201,7 +288,10 @@ function main() {
     return;
   }
   const version = process.argv[2];
-  const problems = findReleaseProblems(readState(version));
+  // A mistyped version is refused before anything is fetched or read
+  const problems = RELEASE_VERSION.test(version ?? '')
+    ? findReleaseProblems(readState(version))
+    : findVersionProblems(version, []);
   if (problems.length > 0) {
     console.error(`Release refused:\n${problems.map((problem) => `  - ${problem}`).join('\n')}`);
     process.exitCode = 1;

@@ -14,8 +14,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_JSON = join(ROOT, 'package.json');
 const SOLUTION_JSON = join(ROOT, 'config', 'package-solution.json');
 
-/** A release version: `x.y.z`, digits only — the solution version has no room for a pre-release. */
-export const RELEASE_VERSION = /^\d+\.\d+\.\d+$/;
+/**
+ * A release version: `x.y.z`, the Semantic Versioning core — digits only, no leading zeros (npm
+ * would turn `1.0.01` into `1.0.1` behind the tag's back), and no pre-release, for which the
+ * solution version has no room.
+ */
+export const RELEASE_VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 /** The four-part solution version of a release version: `x.y.z` → `x.y.z.0`. */
 export function toSolutionVersion(version) {

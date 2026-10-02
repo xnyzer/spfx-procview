@@ -4,10 +4,10 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { findForbiddenCharacters, formatCodePoint, listSourceFiles } from './source-chars-check.mjs';
@@ -15,10 +15,14 @@ import { findForbiddenCharacters, formatCodePoint, listSourceFiles } from './sou
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'source-chars-check.mjs');
 const NO_BREAK_SPACE = String.fromCodePoint(0xa0);
 const BACKSLASH = String.fromCodePoint(0x5c);
+/** One temporary folder for all files of these tests, removed when they are done. */
+const TEMP = mkdtempSync(join(tmpdir(), 'source-chars-'));
+
+after(() => rmSync(TEMP, { recursive: true, force: true }));
 
 /** A temporary folder with the given files (name → content). */
 function createFolder(files) {
-  const folder = mkdtempSync(join(tmpdir(), 'source-chars-'));
+  const folder = mkdtempSync(join(TEMP, 'case-'));
   Object.keys(files).forEach((name) => {
     mkdirSync(dirname(join(folder, name)), { recursive: true });
     writeFileSync(join(folder, name), files[name]);
@@ -41,6 +45,14 @@ describe('findForbiddenCharacters', () => {
     assert.deepEqual(
       findForbiddenCharacters(text).map(({ codePoint }) => codePoint),
       [0x07, 0xfffd, 0xe0020, 0xfe0f]
+    );
+  });
+
+  it('finds spaces that look like a plain one: en to hair space, narrow no-break, ideographic', () => {
+    const spaces = [0x2000, 0x2007, 0x2009, 0x200a, 0x202f, 0x205f, 0x2800, 0x3000];
+    assert.deepEqual(
+      findForbiddenCharacters(`'${String.fromCodePoint(...spaces)}'`).map(({ codePoint }) => codePoint),
+      spaces
     );
   });
 
