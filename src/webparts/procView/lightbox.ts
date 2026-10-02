@@ -1,4 +1,6 @@
 import { backgroundStyles } from './background';
+import { applyStyles } from './renderDiagram';
+import { createIcon } from './svgIcon';
 import { attachZoom } from './zoomView';
 import type { IZoomClassNames, IZoomLabels } from './zoomView';
 
@@ -27,26 +29,6 @@ export interface ILightbox {
   close(): void;
 }
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
-
-/** 16 × 16 "close" icon (an X). */
-function closeIcon(doc: Document): SVGElement {
-  const svg = doc.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 16 16');
-  svg.setAttribute('width', '16');
-  svg.setAttribute('height', '16');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('focusable', 'false');
-  const path = doc.createElementNS(SVG_NS, 'path');
-  path.setAttribute('d', 'M3 3l10 10M13 3L3 13');
-  path.setAttribute('fill', 'none');
-  path.setAttribute('stroke', 'currentColor');
-  path.setAttribute('stroke-width', '1.5');
-  path.setAttribute('stroke-linecap', 'round');
-  svg.appendChild(path);
-  return svg;
-}
-
 /**
  * Shows the diagram in a modal `<dialog>` — nothing but the image, a close button and zoom.
  * `showModal()` makes the page inert, keeps the focus inside, closes on Escape and renders in
@@ -71,10 +53,9 @@ export function openLightbox(doc: Document, props: ILightboxProps): ILightbox {
   image.setAttribute('decoding', 'async');
   const background = props.background;
   if (background) {
-    image.addEventListener('load', () => {
-      const styles = backgroundStyles(background, { width: image.naturalWidth, height: image.naturalHeight });
-      Object.keys(styles).forEach((property) => image.style.setProperty(property, styles[property]));
-    });
+    image.addEventListener('load', () =>
+      applyStyles(image, backgroundStyles(background, { width: image.naturalWidth, height: image.naturalHeight }))
+    );
   }
   frame.appendChild(image);
   dialog.appendChild(frame);
@@ -84,7 +65,7 @@ export function openLightbox(doc: Document, props: ILightboxProps): ILightbox {
   closeButton.className = classNames.close;
   closeButton.setAttribute('aria-label', labels.close);
   closeButton.title = labels.close;
-  closeButton.appendChild(closeIcon(doc));
+  closeButton.appendChild(createIcon(doc, 'close'));
   dialog.appendChild(closeButton);
 
   // Full screen always offers zoom: the diagram first fits the window

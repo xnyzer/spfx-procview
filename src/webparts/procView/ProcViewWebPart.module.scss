@@ -293,6 +293,11 @@
   font-size: 14px;
 }
 
+// Full-screen layout: room for the close button above the image and a margin around it — the
+// image's maximum size is the window minus exactly these paddings
+$lightbox-padding-top: 56px;
+$lightbox-padding-side: 24px;
+
 // Full-screen view (lightbox.ts): a modal <dialog> covering the window. The dialog itself is the
 // dark layer, so a click on it next to the image is the "backdrop click" that closes it.
 // It lives in <body>, outside the web part, so colours fall back to the page theme tokens.
@@ -304,8 +309,7 @@
   max-width: none;
   max-height: none;
   margin: 0;
-  // Room for the close button above the image
-  padding: 56px 24px 24px;
+  padding: $lightbox-padding-top $lightbox-padding-side $lightbox-padding-side;
   box-sizing: border-box;
   border: 0;
   background: rgba(0, 0, 0, 0.85);
@@ -341,8 +345,8 @@
   display: block;
   width: auto;
   height: auto;
-  max-width: calc(100vw - 48px);
-  max-height: calc(100vh - 80px);
+  max-width: calc(100vw - #{2 * $lightbox-padding-side});
+  max-height: calc(100vh - #{$lightbox-padding-top + $lightbox-padding-side});
 }
 
 .lightboxClose {

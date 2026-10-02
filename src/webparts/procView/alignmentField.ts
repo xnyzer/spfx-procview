@@ -1,6 +1,5 @@
 import type { TextAlign } from './renderDiagram';
-
-const SVG_NS = 'http://www.w3.org/2000/svg';
+import { SVG_NS, createIconCanvas } from './svgIcon';
 
 /** One choice of the alignment toolbar. */
 export interface IAlignmentOption {
@@ -23,12 +22,7 @@ export interface IAlignmentButtonsProps {
 
 /** 16×16 alignment icon: four lines, the short ones aligned like the text. */
 function alignIcon(doc: Document, align: TextAlign): SVGElement {
-  const svg = doc.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 16 16');
-  svg.setAttribute('width', '16');
-  svg.setAttribute('height', '16');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('focusable', 'false');
+  const svg = createIconCanvas(doc);
 
   const shortX = align === 'left' ? 1 : align === 'center' ? 3.5 : 6;
   [

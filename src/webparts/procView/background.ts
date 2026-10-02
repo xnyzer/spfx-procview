@@ -1,4 +1,5 @@
 import type { CssDeclarations } from './sizing';
+import { SVG_NS } from './svgIcon';
 import type { ISize } from './zoom';
 
 /** Default colour behind the diagram — the Signavio PNG is drawn for white paper. */
@@ -25,7 +26,7 @@ export function backgroundStyles(color: string, natural: ISize): CssDeclarations
   }
   const { width, height } = natural;
   const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>` +
+    `<svg xmlns='${SVG_NS}' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>` +
     `<rect width='${width}' height='${height}' fill='${color}'/></svg>`;
   return {
     // encodeURIComponent leaves ' unencoded; encode it too, so nothing can end the url()

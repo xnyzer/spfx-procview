@@ -12,6 +12,7 @@ import {
   zoomBy
 } from './zoom';
 import type { IPoint, IZoomGeometry, IZoomState } from './zoom';
+import { createIcon } from './svgIcon';
 
 export interface IZoomLabels {
   zoomIn: string;
@@ -55,38 +56,11 @@ export interface IZoomController {
   dispose(): void;
 }
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Wheel delta per factor e (Ctrl/Cmd + wheel): about one zoom step per wheel notch. */
 const WHEEL_SENSITIVITY = 0.0015;
 /** Pixels per wheel "line" when the browser reports lines instead of pixels. */
 const WHEEL_LINE = 16;
 const EPSILON = 0.001;
-
-type IconName = 'zoomIn' | 'zoomOut' | 'reset';
-
-/** Stroke paths of the 16 × 16 control icons: plus, minus and "fit" (four corners). */
-const ICON_PATHS: Record<IconName, string> = {
-  zoomIn: 'M3 8h10M8 3v10',
-  zoomOut: 'M3 8h10',
-  reset: 'M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4'
-};
-
-function icon(doc: Document, name: IconName): SVGElement {
-  const svg = doc.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 16 16');
-  svg.setAttribute('width', '16');
-  svg.setAttribute('height', '16');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('focusable', 'false');
-  const path = doc.createElementNS(SVG_NS, 'path');
-  path.setAttribute('d', ICON_PATHS[name]);
-  path.setAttribute('fill', 'none');
-  path.setAttribute('stroke', 'currentColor');
-  path.setAttribute('stroke-width', '1.5');
-  path.setAttribute('stroke-linecap', 'round');
-  svg.appendChild(path);
-  return svg;
-}
 
 function distance(a: IPoint, b: IPoint): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -124,13 +98,13 @@ export function attachZoom(doc: Document, props: IZoomViewProps): IZoomControlle
 
   const controls = doc.createElement('div');
   controls.className = classNames.controls;
-  const button = (name: IconName, label: string, action: () => void): HTMLButtonElement => {
+  const button = (name: 'zoomIn' | 'zoomOut' | 'reset', label: string, action: () => void): HTMLButtonElement => {
     const element = doc.createElement('button');
     element.type = 'button';
     element.className = classNames.button;
     element.setAttribute('aria-label', label);
     element.title = label;
-    element.appendChild(icon(doc, name));
+    element.appendChild(createIcon(doc, name));
     element.addEventListener('click', action);
     controls.appendChild(element);
     return element;

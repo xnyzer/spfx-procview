@@ -49,6 +49,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-016c | Lifecycle guard, Teams theme errors logged, licence check and third-party notices, full-page host and unused dependencies removed, per-instance pane field keys, docs and tooling fixes | 2026-10-02 |
 | F-016 | Audit before the first release (F-016a, F-016b, F-016c) | 2026-10-02 |
 | F-018 | Diagram alignment (centred by default) and property pane in the editors' order | 2026-10-02 |
+| F-017a | One shared SVG icon helper (`svgIcon.ts`), `renderDiagram` split into small builders, full-screen sizes as stylesheet variables | 2026-10-02 |
 
 ---
 
@@ -91,23 +92,6 @@ icons and the `renderDiagram` split first, so zoom and full screen build on them
   these files (L19b–c)
 
 **Dependencies:** F-016c
-
-#### F-017a — Shared icons and `renderDiagram` split
-
-**What:** One SVG icon helper instead of four copies, one `SVG_NS`, the lightbox reuses
-`applyStyles`; `renderDiagram` below 50 lines; coupled stylesheet values as variables; the
-wrong "set last" comment fixed — a pure refactor, no change in behaviour (M2d, L7c, L19b).
-
-**Files:** `svgIcon.ts` (new), `zoomView.ts`, `lightbox.ts`, `renderDiagram.ts`,
-`externalLink.ts`, `ProcViewWebPart.module.scss`; tests
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] No function over 50 lines in these files; one icon builder, one `SVG_NS`
-- [ ] All existing tests green without changes outside the icon code; the web part looks and
-      behaves as before (visual check)
-- [ ] `just check` green (isolated copy while the dev server runs)
 
 #### F-017b — Zoom
 

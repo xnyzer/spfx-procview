@@ -8,6 +8,48 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-017a — Shared icons and `renderDiagram` split
+
+_Part of F-017 — Zoom and full-screen fixes from the audit. Completed 2026-10-02._
+
+**What:** One SVG icon helper instead of four copies, one `SVG_NS`, the lightbox reuses
+`applyStyles`; `renderDiagram` below 50 lines; coupled stylesheet values as variables; the
+wrong "set last" comment fixed — a pure refactor, no change in behaviour (M2d, L7c, L19b).
+
+**Files:** `svgIcon.ts` and `svgIcon.test.ts` (new), `renderDiagram.ts`, `zoomView.ts`,
+`lightbox.ts`, `externalLink.ts`, `alignmentField.ts`, `background.ts`,
+`ProcViewWebPart.module.scss`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] No function over 50 lines in these files; one icon builder, one `SVG_NS` — longest in
+      `renderDiagram.ts` 27 lines (was 85); `attachZoom` and `openLightbox` are split in
+      F-017b/c as planned; `SVG_NS` only in `svgIcon.ts`
+- [x] All existing tests green without changes outside the icon code; the web part looks and
+      behaves as before (visual check) — no existing test changed; owner's visual check; the
+      compiled stylesheet keeps `56px 24px 24px`, `100vw - 48px`, `100vh - 80px`
+- [x] `just check` green (isolated copy while the dev server runs) — 576 Jest tests, 12
+      script tests
+
+**Implemented:**
+- `svgIcon.ts` — `SVG_NS`, `createIconCanvas(doc, size)` (16 × 16 grid, `aria-hidden`,
+  `focusable="false"`) and `createIcon(doc, name, size)` with the six line icons in one named
+  table (zoom in/out, fit, full screen, close, external link; round line ends except the
+  external-link icon, as before). The copies in `zoomView`, `lightbox`, `renderDiagram` and
+  `externalLink` are gone; the alignment icon draws on the shared canvas; the background SVG
+  uses `SVG_NS`.
+- `renderDiagram.ts` — split into `createImage`, `createFrame`, `createControlBar`,
+  `createCaption` and `createFullScreenButton`; `src` is now really set last, after every
+  listener including the zoom's, so the comment holds (L19b); `applyStyles` exported and
+  reused by `lightbox.ts`.
+- Stylesheet — `$lightbox-padding-top` and `$lightbox-padding-side` couple the full-screen
+  padding and the image's maximum size.
+- `svgIcon.test.ts` — attributes of the canvas and the icons (9 tests).
+
+**Decisions / deviations:** none from the plan; `background.ts` and `alignmentField.ts` were
+touched as well, so that the namespace exists only once.
+
 ### F-018 — Diagram alignment and property pane order
 
 _Completed 2026-10-02._
