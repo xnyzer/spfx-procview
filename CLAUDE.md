@@ -49,10 +49,12 @@ notices in `just check`), diagram alignment — centred by default — and the p
 the editors' order (F-018), the zoom and full-screen fixes from the audit (F-017), and the
 fixes from the control audit of 2026-10-02 (F-019: web part and pane tests on SharePoint
 stand-ins, pane focus kept, `just check` guarding source characters and deriving the licence
-notices from the build, zoom and full-screen remainders). Next: F-020 (README with screenshots
-— the owner's screenshots are in place, see the entry), then F-009 (versioning, CI release, IT
-guide with a first-use check, a control audit, release 1.0.0); F-010 waits for SPFx 1.24 (Node
-24/26, GA targeted for October 2026).
+notices from the build, zoom and full-screen remainders), and the README with screenshots and
+tables for settings, controls and messages (F-020: images in `docs/images/`, only the CI
+badge — the repository depends on no third-party website). Next: F-009 (versioning, CI
+release, an IT guide with a first-use check that replaces the README's deployment overview, a
+control audit, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October
+2026).
 
 ## Project notes (learned the hard way)
 

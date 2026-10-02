@@ -8,6 +8,113 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-020 — README with screenshots and a settings reference
+
+_Completed 2026-10-02._
+
+**Problem:** The README describes the web part in prose only: there is no picture of it, the
+settings are a bullet list, and editors and IT have to piece together what each option does,
+how zoom and full screen are operated and what a message means. The first release (F-009)
+should present the web part properly.
+
+**Idea:** Screenshots from the SPFx Local Workbench, taken by the owner and joined and cropped
+for the README, and a restructured README with tables for the settings, the viewing controls
+and the messages, plus a section for IT.
+
+**Solution sketch** (updated at prep-step, 2026-10-02; one step, no substeps — documentation
+only, and the images make no sense without the new README):
+- Screenshots in `docs/images/` (owner decisions 2026-10-02): the hero at the top is the page
+  with the diagram next to the top of the property pane, cropped after the "Size and
+  alignment" group; the complete pane (several pane shots joined into one, the pane alone)
+  sits in the settings section in a collapsible block; full screen in the viewing section, the
+  dark theme and its full screen side by side in the themes section, the editor message
+  without a link in the messages section — cropped to canvas and pane, no VS Code window, no
+  paths, metadata removed (only the colour profile kept); the large page-and-pane composite is
+  not used; the test link shows only its beginning (recorded in the decision log as an
+  exception to "no real links in the repository")
+- Image sizes: only the hero is wider than 1760 px (2204) and is scaled to 1760 px width with
+  `sips --resampleWidth 1760` — not `sips -Z`, which limits the longer side and would shrink
+  the tall pane shot (684 × 3795) to about 317 px width; the others keep their size (no
+  upscaling). The shots are Retina (2×): images narrower than the README column get
+  `<img width>` at half their pixel width (pane 342, message 559), the others fill the column.
+  After scaling, the PNG chunks are listed (only IHDR, iCCP, IDAT, IEND allowed), otherwise
+  the image is re-encoded with the dependency-free PNG script the screenshots were joined with
+  (kept outside the repository)
+- README order: title, CI badge, hero, introduction (licence Apache-2.0 and SPFx 1.23.2 as
+  plain text), features at a glance, status; a quick start for editors; a settings table
+  (group, setting, values, default, notes) with the complete pane below it; a table of the
+  zoom and full-screen controls (mouse, keyboard, touch); messages (message, who sees it,
+  cause, what to do) with the pane's field errors in short; themes and accessibility;
+  languages; Microsoft Teams (usage); a section for IT (requirements, a deployment overview —
+  App Catalog, tenant-wide, updates, Sync to Teams — noting that the full guide follows with
+  release 1.0.0, where F-009b replaces it with a link to `docs/deployment.md`; the Signavio
+  hosts for firewall and proxy allow lists; pointer to Privacy); Privacy; FAQ; the
+  template-managed "Getting started" block unchanged; Development (developer content only —
+  deployment and Teams sync move to the IT section); Documentation, License, Disclaimer
+- Every table value is taken from the code (manifest, `settings.ts`, `propertyPane.ts`,
+  `loc/en-us.js`, `messages.ts`, `zoomView.ts`, `lightbox.ts`), not from the old README
+- Only the CI badge, served by GitHub itself — no shields.io or other third-party service
+  (owner decision 2026-10-02: the repository depends on no third-party websites; links to
+  them are fine), recorded in the decision log
+- The colon bug of SPFx Local Workbench 0.2.0 and the one-condition patch (strings with a colon
+  stay strings) explained in one sentence in README "Testing locally", with an upstream issue
+  linked if one exists; `CLAUDE.md` already notes that the owner's installation is patched and
+  that an extension update undoes it (done in `df4edfc`)
+- `.gitattributes`: `*.png binary`
+- No new dependencies — the images are joined with Node built-ins, not an image library
+
+**Files:** `README.md`, `docs/images/procview-hero.png`, `procview-pane.png`,
+`procview-full-screen.png`, `procview-dark-theme.png`, `procview-dark-full-screen.png`,
+`procview-no-link.png` (new), `REQUIREMENTS.md` (decision log), `.gitattributes`
+
+**Dependencies:** F-019 (done); before F-009, so the first release shows the new README
+
+**Acceptance criteria:**
+- [x] Six images in `docs/images/`: the hero 1760 px wide, the others at their original size;
+      PNG chunks only IHDR, iCCP, IDAT, IEND; no VS Code window, no paths — chunk listing of
+      all six (hero 1760 × 1190), every image viewed
+- [x] Every row of the settings, controls and messages tables matches the code (defaults,
+      values, keys, message texts) — checked against the manifest, `settings.ts`,
+      `propertyPane.ts`, `sizing.ts`, `loc/en-us.js`, `messages.ts`, `zoomView.ts`,
+      `lightbox.ts` and the stylesheet (full screen at most at natural size, zoom always on)
+- [x] Only the CI badge; the README loads no image or script from a third-party service —
+      every image source listed: the GitHub CI badge and `docs/images/`
+- [x] The template-managed "Getting started" block is unchanged; the workbench patch is
+      explained in one sentence — block diffed against `HEAD`, identical
+- [x] Decision log: the test-link exception and "no third-party websites in the repository"
+- [x] `sh scripts/privacy-lint.sh --all` clean; `just check` green (isolated copy while the
+      dev server runs) — 681 Jest tests, 26 script tests
+
+**Implemented:**
+- `docs/images/` — six PNGs, about 780 KB together: the hero (1760 × 1190, scaled from 2204 px
+  wide), the complete pane (684 × 3795), full screen (1688 × 1100), dark theme (1658 × 1090),
+  dark full screen (1686 × 1096) and the editor message without a link (1118 × 654).
+- `README.md` — CI badge, hero, introduction with licence and SPFx version as text, features
+  at a glance; the former "Using the web part" split into a quick start, a settings table (17
+  rows) with the complete pane in a `<details>` block, a table of the zoom and full-screen
+  controls, and a messages table with the pane's field errors; themes with both dark shots
+  side by side; "Microsoft Teams" (usage) and "For IT" (requirements, deployment overview,
+  the seven Signavio hosts with regions, the image and hub URL patterns) moved out of
+  "Development"; an FAQ with nine questions. "Packaging and deployment" became "Packaging"
+  (plus a note on `docs/images/`), "Testing locally" explains the workbench patch, "Upgrading
+  SPFx" step 2 names the SPFx version in the README.
+- `REQUIREMENTS.md` — a product decision (the test-link exception) and a technical decision
+  (no third-party websites).
+- `.gitattributes` — `*.png binary`.
+
+**Decisions / deviations:**
+- The owner chose only the CI badge over shields.io badges for licence and SPFx version: the
+  repository must not depend on third-party websites.
+- `sips` added `cICP` and `eXIf` chunks to the scaled hero; it was re-encoded with the local
+  PNG script, as planned for that case.
+- No upstream issue for the colon bug exists in the extension's repository (checked
+  2026-10-02), so nothing is linked; the README names the patched condition of version 0.2.0.
+- The pane shot ends with SharePoint's own "Visibility" group; the README says so below the
+  settings table.
+- Small additions beyond the sketch: the SPFx version in the upgrade checklist (instead of a
+  badge to update) and the note that Teams cannot be simulated locally moved to "Testing
+  locally".
+
 ### F-019 — Fixes from the control audit before the first release
 
 _Completed 2026-10-02 (F-019a, F-019b, F-019c)._

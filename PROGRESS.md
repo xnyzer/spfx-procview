@@ -57,82 +57,11 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-019b | Pane fields keep focus when SharePoint renders them again; node-forge in ADR-0002, Dependabot alerts dismissed; raw no-break spaces escaped and a character check; licence check from the build | 2026-10-02 |
 | F-019c | Zoom: back to the fitted view below the headroom, focus kept in the frame, drag guard on the image, pens like mice; full screen: no broken image, guarded close only, no orphaned dialog, page behind does not scroll; shared image setup | 2026-10-02 |
 | F-019 | Fixes from the control audit before the first release (F-019a, F-019b, F-019c) | 2026-10-02 |
+| F-020 | README with screenshots: settings, controls and messages tables, an IT section with the Signavio hosts, an FAQ; only the CI badge | 2026-10-02 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-020 — README with screenshots and a settings reference
-
-**Status:** PLANNED
-
-**Problem:** The README describes the web part in prose only: there is no picture of it, the
-settings are a bullet list, and editors and IT have to piece together what each option does,
-how zoom and full screen are operated and what a message means. The first release (F-009)
-should present the web part properly.
-
-**Idea:** Screenshots from the SPFx Local Workbench, taken by the owner and joined and cropped
-for the README, and a restructured README with tables for the settings, the viewing controls
-and the messages, plus a section for IT.
-
-**Solution sketch** (updated at prep-step, 2026-10-02; one step, no substeps — documentation
-only, and the images make no sense without the new README):
-- Screenshots in `docs/images/` (owner decisions 2026-10-02): the hero at the top is the page
-  with the diagram next to the top of the property pane, cropped after the "Size and
-  alignment" group; the complete pane (several pane shots joined into one, the pane alone)
-  sits in the settings section in a collapsible block; full screen in the viewing section, the
-  dark theme and its full screen side by side in the themes section, the editor message
-  without a link in the messages section — cropped to canvas and pane, no VS Code window, no
-  paths, metadata removed (only the colour profile kept); `procview-page-and-pane.png` is not
-  used; the test link shows only its beginning (recorded in the decision log as an exception
-  to "no real links in the repository")
-- Image sizes: only the hero is wider than 1760 px (2204) and is scaled to 1760 px width with
-  `sips --resampleWidth 1760` — not `sips -Z`, which limits the longer side and would shrink
-  the tall pane shot (684 × 3795) to about 317 px width; the others keep their size (no
-  upscaling). The shots are Retina (2×): images narrower than the README column get
-  `<img width>` at half their pixel width (pane 342, message 559), the others fill the column.
-  After scaling, the PNG chunks are listed (only IHDR, iCCP, IDAT, IEND allowed), otherwise
-  the image is re-encoded with the local `png.mjs`
-- README order: title, CI badge, hero, introduction (licence Apache-2.0 and SPFx 1.23.2 as
-  plain text), features at a glance, status; a quick start for editors; a settings table
-  (group, setting, values, default, notes) with the complete pane below it; a table of the
-  zoom and full-screen controls (mouse, keyboard, touch); messages (message, who sees it,
-  cause, what to do) with the pane's field errors in short; themes and accessibility;
-  languages; Microsoft Teams (usage); a section for IT (requirements, a deployment overview —
-  App Catalog, tenant-wide, updates, Sync to Teams — noting that the full guide follows with
-  release 1.0.0, where F-009b replaces it with a link to `docs/deployment.md`; the Signavio
-  hosts for firewall and proxy allow lists; pointer to Privacy); Privacy; FAQ; the
-  template-managed "Getting started" block unchanged; Development (developer content only —
-  deployment and Teams sync move to the IT section); Documentation, License, Disclaimer
-- Every table value is taken from the code (manifest, `settings.ts`, `propertyPane.ts`,
-  `loc/en-us.js`, `messages.ts`, `zoomView.ts`, `lightbox.ts`), not from the old README
-- Only the CI badge, served by GitHub itself — no shields.io or other third-party service
-  (owner decision 2026-10-02: the repository depends on no third-party websites; links to
-  them are fine), recorded in the decision log
-- The colon bug of SPFx Local Workbench 0.2.0 and the one-condition patch (strings with a colon
-  stay strings) explained in one sentence in README "Testing locally", with an upstream issue
-  linked if one exists; `CLAUDE.md` already notes that the owner's installation is patched and
-  that an extension update undoes it (done in `df4edfc`)
-- `.gitattributes`: `*.png binary`
-- No new dependencies — the images are joined with Node built-ins, not an image library
-
-**Files:** `README.md`, `docs/images/procview-hero.png`, `procview-pane.png`,
-`procview-full-screen.png`, `procview-dark-theme.png`, `procview-dark-full-screen.png`,
-`procview-no-link.png` (new), `REQUIREMENTS.md` (decision log), `.gitattributes`
-
-**Dependencies:** F-019 (done); before F-009, so the first release shows the new README
-
-**Acceptance criteria:**
-- [ ] Six images in `docs/images/`: the hero 1760 px wide, the others at their original size;
-      PNG chunks only IHDR, iCCP, IDAT, IEND; no VS Code window, no paths
-- [ ] Every row of the settings, controls and messages tables matches the code (defaults,
-      values, keys, message texts)
-- [ ] Only the CI badge; the README loads no image or script from a third-party service
-- [ ] The template-managed "Getting started" block is unchanged; the workbench patch is
-      explained in one sentence
-- [ ] Decision log: the test-link exception and "no third-party websites in the repository"
-- [ ] `sh scripts/privacy-lint.sh --all` clean; `just check` green (isolated copy while the
-      dev server runs)
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
@@ -184,7 +113,8 @@ property pane.
 - [ ] `just check` fails when `package-solution.json` does not match `package.json`
 - [ ] `just release` refuses a dirty tree or an invalid version; in a scratch copy it sets the
       version everywhere, moves the CHANGELOG section, commits and tags (no push)
-- [ ] The property pane shows the version below the repository link (four languages, tests)
+- [ ] The property pane shows the version below the repository link (four languages, tests);
+      the README settings table (F-020) names it in the "About" row
 - [ ] `just check` green (isolated copy while the dev server runs)
 
 #### F-009b — Release workflow, IT deployment guide, first release
@@ -214,6 +144,14 @@ property pane.
       recipe), checking that the findings of the 2026-10-02 control audit stay resolved; the
       current local `AUDIT-RESULTS.md` is kept before the run overwrites it; findings that block
       the release are fixed before it
+- [ ] README brought up to date for the release (the F-020 README still describes the state
+      before it): "Status" says that release 1.0.0 is out and where to download it; "For IT"
+      links to `docs/deployment.md` instead of the deployment overview and its note "a
+      step-by-step guide … follows with release 1.0.0"; the "Package" and "Updates" bullets
+      describe the GitHub release (`.sppkg`, checksum) and how versions increase instead of
+      "follow with F-009". Committed before `just release 1.0.0`, so the tagged README
+      already describes the release; once the workflow has published `v1.0.0`, the README
+      links (release page, deployment guide) are checked on GitHub
 - [ ] First release: `just release 1.0.0`, owner approves the push of commit and tag, the
       workflow publishes release `v1.0.0` with the package
 - [ ] `just check` green
@@ -260,5 +198,5 @@ F-016 Audit before the first release (DONE)
 F-017 Zoom and full-screen fixes from the audit (DONE)
 F-018 Diagram alignment and property pane order (DONE)
 F-019 Fixes from the control audit before the first release (DONE)
-F-020 README with screenshots and a settings reference (PLANNED)
+F-020 README with screenshots and a settings reference (DONE)
 -->
