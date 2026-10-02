@@ -56,7 +56,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-017 — Zoom and full-screen fixes from the audit
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** The audit (F-016a) found that zoom and full screen misbehave in edge cases and
 for keyboard users, and that their code breaks the length and parameter limits: a double-click
@@ -67,12 +67,18 @@ background setting off the transparent diagram is unreadable on the dark full-sc
 **Idea:** One pass over `zoom.ts`, `zoomView.ts`, `lightbox.ts` and the zoom/full-screen parts
 of `renderDiagram.ts` and the stylesheet: fix the behaviour, then split the long functions.
 
-**Solution sketch:**
+**Solution sketch** (updated at prep-step, 2026-10-02; size: large, three substeps — shared
+icons and the `renderDiagram` split first, so zoom and full screen build on them):
 - Full screen always shows a colour behind the PNG — the configured one, otherwise white; the
   background setting then only affects the page (owner decision 2026-10-01) (M9)
 - Ignore backdrop clicks that belong to the opening click (double-click, held Enter) (M6)
-- Keep the focus when a zoom button becomes unavailable (`aria-disabled` or move the focus)
-  (M7); focus rings that stay visible on the dark layer in every theme (M8)
+- Keep the focus when a zoom button becomes unavailable: `aria-disabled` instead of
+  `disabled` — the button stays focusable, is announced as unavailable and does nothing (M7);
+  focus rings that stay visible on the dark layer in every theme — a fixed two-tone ring,
+  registered as a colour exception (M8)
+- Full-screen colour from `settings.ts` (`fullScreenBackground`): the chosen colour even with
+  the background switch off, otherwise white (M9); the full-screen error state reuses the
+  existing text `MessageLoadFailedTitle`
 - Pointer handling: primary mouse button only, end on `buttons === 0`, `lostpointercapture`
   (M10); no native image drag while zoomable (M11)
 - Split `attachZoom` (211 lines), `openLightbox` and `renderDiagram`; options objects instead
@@ -85,6 +91,70 @@ of `renderDiagram.ts` and the stylesheet: fix the behaviour, then split the long
   these files (L19b–c)
 
 **Dependencies:** F-016c
+
+#### F-017a — Shared icons and `renderDiagram` split
+
+**What:** One SVG icon helper instead of four copies, one `SVG_NS`, the lightbox reuses
+`applyStyles`; `renderDiagram` below 50 lines; coupled stylesheet values as variables; the
+wrong "set last" comment fixed — a pure refactor, no change in behaviour (M2d, L7c, L19b).
+
+**Files:** `svgIcon.ts` (new), `zoomView.ts`, `lightbox.ts`, `renderDiagram.ts`,
+`externalLink.ts`, `ProcViewWebPart.module.scss`; tests
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] No function over 50 lines in these files; one icon builder, one `SVG_NS`
+- [ ] All existing tests green without changes outside the icon code; the web part looks and
+      behaves as before (visual check)
+- [ ] `just check` green (isolated copy while the dev server runs)
+
+#### F-017b — Zoom
+
+**What:** `attachZoom` split into controls, pointer, wheel, keyboard and resize handling;
+options objects in `zoom.ts` (M2b, M3); focus kept when a button becomes unavailable (M7);
+primary mouse button only, end on `buttons === 0` and `lostpointercapture` (M10); no native
+image drag (M11); keys via `switch` (L3a); `update`/`reset` removed (L6b); one epsilon (L7b);
+pointer capture without try/catch (L9a); wheel page mode (L11); NaN guards (L12); one
+measurement per event, attributes written only on change (L13); doc comments and names (L19c).
+
+**Files:** `zoom.ts`, `zoomView.ts`, `zoom.test.ts`, `zoomView.test.ts`,
+`ProcViewWebPart.module.scss`
+
+**Dependencies:** F-017a
+
+**Acceptance criteria:**
+- [ ] Tests for every item: right/middle button ignored, a lost `pointerup` does not leave the
+      view panning, focus stays on the reset button at scale 1, no drag start, `deltaMode` 2,
+      NaN and inherited key names change nothing
+- [ ] No function over 50 lines, no more than three parameters in these files
+- [ ] Visual check: zoom with buttons, Ctrl/Cmd + wheel, drag and keys works as before
+      (two-finger pinch stays on the SharePoint test-site list)
+- [ ] `just check` green
+
+#### F-017c — Full screen
+
+**What:** Always a colour behind the diagram in full screen (M9); a double-click or held Enter
+no longer closes it right after opening — a short named guard time (M6); two-tone focus rings
+visible on the dark layer in every theme (M8); `openLightbox` split (M2c); the `showModal`
+fallback removed (L6c); an error state with the existing load-failed text, an `onClose`
+callback that clears the web part's reference and returns the focus to the current
+full-screen button, `dvw`/`dvh` with `vw`/`vh` fallback, `touch-action: none` (L13); the dark
+layer's fixed colours registered as an exception, a fallback before `color-mix` (L14).
+
+**Files:** `lightbox.ts`, `lightbox.test.ts`, `settings.ts`, `settings.test.ts`,
+`injection.test.ts`, `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`,
+`.claude/convention-overrides.md`, `README.md`
+
+**Dependencies:** F-017b
+
+**Acceptance criteria:**
+- [ ] Tests: full-screen colour with the background switch off, a second click right after
+      opening does not close, the error state shows the text, `onClose` fires once on every
+      way of closing
+- [ ] Visual check: double-click, keyboard (Enter, Tab, Escape), focus rings in a light and a
+      dark theme, background switched off, a broken image link in full screen
+- [ ] No function over 50 lines in these files; `just check` green
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
@@ -195,6 +265,6 @@ F-013 Link to the GitHub repository in the property pane (DONE)
 F-014 Own Teams app icons instead of the generator placeholders (DONE)
 F-015 Diagram background (setting) (DONE)
 F-016 Audit before the first release (DONE)
-F-017 Zoom and full-screen fixes from the audit
+F-017 Zoom and full-screen fixes from the audit (PLANNED)
 F-018 Diagram alignment and property pane order (DONE)
 -->
