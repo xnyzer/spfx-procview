@@ -70,6 +70,7 @@ define([], function () {
     AltTextDescription: 'Describe el diagrama para los lectores de pantalla. Vacío: «Diagrama de procesos».',
     AboutGroupName: 'Acerca de',
     RepositoryLinkText: 'Código fuente y documentación en GitHub',
+    VersionText: 'Versión {0}',
 
     LinkErrorEmpty: 'Pegar el enlace de la pestaña «Simple image» del diagrama.',
     LinkErrorUnsupported:

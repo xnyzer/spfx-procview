@@ -8,6 +8,80 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-009a — One version, version display, release recipe (local)
+
+_Completed 2026-10-02. Part of F-009 (versioning, release via CI + IT deployment guide), which
+stays open with F-009b._
+
+**What:** Version sync script and check, `just release` with its script, `CHANGELOG.md`
+(1.0.0 features under "Unreleased", "Added" only), version in the property pane, README
+"Versioning and releases". About 450–550 lines with tests and docs — not split further: a
+split would rename F-009b, which the decision log refers to.
+
+**Files:** `scripts/sync-version.mjs`, `scripts/sync-version.test.mjs`, `scripts/release.mjs`,
+`scripts/release.test.mjs`, `CHANGELOG.md` (new); `justfile`, `config/package-solution.json`
+(only if the sync changes it), `aboutField.ts`, `aboutField.test.ts`, `propertyPane.ts`,
+`propertyPane.test.ts`, `ProcViewWebPart.ts`, `spfxTestDoubles.ts`, `loc/*.js`,
+`loc/mystrings.d.ts`, `linkErrors.test.ts` (new key `VersionText`); `README.md`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] `just check` fails when `package-solution.json` does not match `package.json` (script
+      tests and a run on a changed copy) — `sync-version.test.mjs`; in the scratch copy a
+      changed solution version made `--check` exit with 1 and name the field
+- [x] `just release` refuses a dirty tree, a version that is not `x.y.z`, a version not higher
+      than the latest `v*` tag, an existing tag, an empty "Unreleased" section and a commit
+      email that is not a GitHub noreply address (tests); without any tag it accepts 1.0.0 —
+      `release.test.mjs`, and each refusal tried in the scratch copy, plus another branch and
+      a version with shell commands in it
+- [x] In a scratch copy, `just release` sets the version everywhere, moves the CHANGELOG
+      section, commits `chore(release): x.y.z` with the `Co-Authored-By` trailer and tags
+      `vx.y.z` — no push — `just release 1.0.0`: commit by the noreply address with the
+      trailer, annotated tag `v1.0.0`, clean tree; preparing 1.1.0 afterwards set
+      `package.json`, the lock file and both solution versions
+- [x] The property pane shows the version below the repository link (four languages, tests);
+      without a usable manifest version the line is left out (test); the README settings table
+      (F-020) names it in the "About" row — `aboutField.test.ts`, `propertyPane.test.ts`,
+      `ProcViewWebPart.test.ts`; the owner's visual check in the local workbench shows the line
+      (its stand-in context provides the manifest)
+- [x] `just check` green (isolated copy while the dev server runs) — 689 Jest tests, 59 script
+      tests
+
+**Implemented:**
+- `scripts/sync-version.mjs` — `toSolutionVersion` (`x.y.z` → `x.y.z.0`, only `x.y.z`
+  accepted), `listSolutionVersions`, `findMismatches`, `setSolutionVersions` (JSON round trip —
+  the project file comes back byte for byte), `syncVersion`; command line with `--check` and,
+  for tests, `--package` / `--solution`. `just check` runs `--check`.
+- `scripts/release.mjs` — `compareVersions`, `findLatestRelease` (highest `vx.y.z` tag),
+  `isNoreplyEmail`, `readUnreleased`, `moveUnreleased`, `findReleaseProblems` (all reasons at
+  once), `formatDate`; the command line checks, then runs `npm version x.y.z
+  --no-git-tag-version --allow-same-version`, the sync and the CHANGELOG move.
+- `justfile` — recipe `release version`: the script (version passed with `quote()`), `just
+  check`, commit `chore(release): x.y.z` with the `Co-Authored-By: Claude` trailer, annotated
+  tag `vx.y.z`, then the push command printed.
+- `CHANGELOG.md` — "Keep a Changelog" format; "Unreleased" lists the 1.0.0 features under
+  "Added" (13 entries, accessibility and privacy added at the owner's request).
+- Property pane — `readVersion` in `aboutField.ts` (only `x.y.z`), the version line below the
+  repository link (`.aboutVersion`), `version` in `IPaneSource`, formatted with the new text
+  `VersionText` ("Version {0}", Spanish "Versión {0}"); `ProcViewWebPart` reads
+  `this.context.manifest`, which a stand-in host may lack. Test doubles carry a manifest.
+- `ProcViewWebPart.ts` — the `dataVersion` rule documented at the getter.
+- `README.md` — "About" row with the version, section "Versioning and releases",
+  `CHANGELOG.md` in the documentation list.
+
+**Decisions / deviations:**
+- A release must be higher than the latest `v*` tag, not than `package.json` (decision at
+  prep-step): `package.json` said 1.0.0 without any tag, so the first release is 1.0.0.
+- Beyond the plan: the release script also refuses a branch other than `main` — the release
+  workflow builds the tagged commit; the sync script got `--package` / `--solution` so its
+  command line can be tested on wrong files.
+- privacy-lint reads four-part versions such as the solution version as IP addresses. The lint
+  stays as strict as it is; the tests build such values from their parts, with a comment why.
+  Docs write them as `x.y.z.0` (also for F-009b's deployment guide).
+- `ProcViewWebPart.ts` (344 lines) and its test (338) were above the 300-line target before
+  and grew slightly; no split in this step.
+
 ### F-020 — README with screenshots and a settings reference
 
 _Completed 2026-10-02._

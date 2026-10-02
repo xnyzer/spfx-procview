@@ -196,3 +196,27 @@ describe('propertyPaneConfiguration — SharePoint renders the pane again after 
     expect(input.value).toBe('#0e5a73');
   });
 });
+
+describe('propertyPaneConfiguration — about', () => {
+  function renderAbout(version: string | undefined): HTMLElement {
+    const configuration = propertyPaneConfiguration({
+      properties: {},
+      instanceId: 'webpart-1',
+      naturalSizeText: 'size',
+      version
+    });
+    const groups = configuration.pages[0].groups as unknown as IGroupDouble[];
+    const about = groups[groups.length - 1].groupFields[0];
+    return renderCustomField(about).element;
+  }
+
+  it('shows the version below the repository link', () => {
+    const element = renderAbout('1.2.3');
+    expect(element.textContent).toContain('RepositoryLinkText');
+    expect(element.textContent).toContain('VersionText 1.2.3');
+  });
+
+  it('shows no version line without a version', () => {
+    expect(renderAbout(undefined).textContent).not.toContain('VersionText');
+  });
+});

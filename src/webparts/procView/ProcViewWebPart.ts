@@ -7,6 +7,7 @@ import styles from './ProcViewWebPart.module.scss';
 import * as strings from 'ProcViewWebPartStrings';
 import { parseDiagramLink } from '../../providers/registry';
 import type { IDiagramLink, LinkParseResult } from '../../providers/types';
+import { readVersion } from './aboutField';
 import { assertNever } from './assertNever';
 import { format, outcomeFor, resolveMessage, resolveState } from './messages';
 import type { ILoadError, IMessageModel } from './messages';
@@ -148,6 +149,12 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     applyVariables(this.domElement.style, teamsThemeVariables(this._teamsTheme) ?? themeVariables(this._siteTheme));
   }
 
+  /**
+   * Version of the stored settings, not of the release: it stays 1.0 as long as every stored
+   * value keeps its meaning — new settings bring their own code fallback, so no page needs a
+   * migration. Raise it only when the meaning of a stored value changes (README "Versioning
+   * and releases").
+   */
   protected get dataVersion(): Version {
     return Version.parse('1.0');
   }
@@ -269,8 +276,15 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       // (SharePoint's returns the same value), and one id for all web parts kept the custom
       // fields showing the previous web part's value
       instanceId: this.context.instanceId,
-      naturalSizeText: this._naturalSizeText()
+      naturalSizeText: this._naturalSizeText(),
+      version: this._readVersion()
     });
+  }
+
+  /** The release version from the manifest; a host without one (a stand-in) shows none. */
+  private _readVersion(): string | undefined {
+    const manifest: { version?: unknown } | undefined = this.context.manifest;
+    return readVersion(manifest?.version);
   }
 
   /** Re-evaluates the pane when a setting with conditional fields is switched. */

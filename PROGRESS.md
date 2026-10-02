@@ -58,6 +58,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-019c | Zoom: back to the fitted view below the headroom, focus kept in the frame, drag guard on the image, pens like mice; full screen: no broken image, guarded close only, no orphaned dialog, page behind does not scroll; shared image setup | 2026-10-02 |
 | F-019 | Fixes from the control audit before the first release (F-019a, F-019b, F-019c) | 2026-10-02 |
 | F-020 | README with screenshots: settings, controls and messages tables, an IT section with the Signavio hosts, an FAQ; only the CI badge | 2026-10-02 |
+| F-009a | One version from package.json (sync and check), `just release` with a tested release script, CHANGELOG with the 1.0.0 features, version in the property pane | 2026-10-02 |
 
 ---
 
@@ -118,38 +119,11 @@ medium, two substeps):
 pane order), F-017 (zoom and full-screen fixes from the audit), F-019 (fixes from the control
 audit), F-020 (README with screenshots)
 
-#### F-009a — One version, version display, release recipe (local)
-
-**What:** Version sync script and check, `just release` with its script, `CHANGELOG.md`
-(1.0.0 features under "Unreleased", "Added" only), version in the property pane, README
-"Versioning and releases". About 450–550 lines with tests and docs — not split further: a
-split would rename F-009b, which the decision log refers to.
-
-**Files:** `scripts/sync-version.mjs`, `scripts/sync-version.test.mjs`, `scripts/release.mjs`,
-`scripts/release.test.mjs`, `CHANGELOG.md` (new); `justfile`, `config/package-solution.json`
-(only if the sync changes it), `aboutField.ts`, `aboutField.test.ts`, `propertyPane.ts`,
-`propertyPane.test.ts`, `ProcViewWebPart.ts`, `spfxTestDoubles.ts`, `loc/*.js`,
-`loc/mystrings.d.ts`, `linkErrors.test.ts` (new key `VersionText`); `README.md`
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] `just check` fails when `package-solution.json` does not match `package.json` (script
-      tests and a run on a changed copy)
-- [ ] `just release` refuses a dirty tree, a version that is not `x.y.z`, a version not higher
-      than the latest `v*` tag, an existing tag, an empty "Unreleased" section and a commit
-      email that is not a GitHub noreply address (tests); without any tag it accepts 1.0.0
-- [ ] In a scratch copy, `just release` sets the version everywhere, moves the CHANGELOG
-      section, commits `chore(release): x.y.z` with the `Co-Authored-By` trailer and tags
-      `vx.y.z` — no push
-- [ ] The property pane shows the version below the repository link (four languages, tests);
-      without a usable manifest version the line is left out (test); the README settings table
-      (F-020) names it in the "About" row
-- [ ] `just check` green (isolated copy while the dev server runs)
-
 #### F-009b — Release workflow, IT deployment guide, first release
 
 **What:** `.github/workflows/release.yml`, `docs/deployment.md`, README update, release 1.0.0.
+From F-009a: the release notes come from the CHANGELOG section `## [x.y.z] - date`; docs write
+four-part versions as `x.y.z.0` — privacy-lint reads written-out ones as IP addresses.
 
 **Files:** `.github/workflows/release.yml`, `docs/deployment.md` (new), `README.md`
 

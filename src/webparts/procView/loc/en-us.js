@@ -66,6 +66,7 @@ define([], function () {
     AltTextDescription: 'Describes the diagram for screen readers. Empty: "Process diagram".',
     AboutGroupName: 'About',
     RepositoryLinkText: 'Source code and documentation on GitHub',
+    VersionText: 'Version {0}',
 
     LinkErrorEmpty: 'Paste the diagram\'s "Simple image" link.',
     LinkErrorUnsupported:

@@ -36,7 +36,7 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
 requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-020 in `PROGRESS.md`). All planned
-features are done (681 Jest tests, 26 script tests): Signavio link validation and provider
+features are done (689 Jest tests, 59 script tests): Signavio link validation and provider
 contract (F-001), configuration pane, sizing and caption (F-002), Collaboration Hub link
 (F-003), empty and error states (F-004), section theme colours (F-005), zoom and pan — "Offer
 zoom", default off (F-006), full-screen view — "Offer full screen", default on (F-007), Teams
@@ -51,10 +51,12 @@ fixes from the control audit of 2026-10-02 (F-019: web part and pane tests on Sh
 stand-ins, pane focus kept, `just check` guarding source characters and deriving the licence
 notices from the build, zoom and full-screen remainders), and the README with screenshots and
 tables for settings, controls and messages (F-020: images in `docs/images/`, only the CI
-badge — the repository depends on no third-party website). Next: F-009 (versioning, CI
-release, an IT guide with a first-use check that replaces the README's deployment overview, a
-control audit, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October
-2026).
+badge — the repository depends on no third-party website). F-009a is done: one version in
+`package.json` (`scripts/sync-version.mjs`, checked in `just check`), `just release x.y.z`
+(`scripts/release.mjs`; higher than the latest `v*` tag, so the first release is 1.0.0),
+`CHANGELOG.md`, the version in the property pane. Next: F-009b (release workflow, an IT guide
+with a first-use check that replaces the README's deployment overview, a control audit,
+release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
 
 ## Project notes (learned the hard way)
 

@@ -22,6 +22,7 @@ import { renderAlignmentButtons } from './alignmentField';
 import { renderColorField } from './colorField';
 import { customPaneField } from './customPaneField';
 import { LINK_ERROR_KEYS } from './linkErrors';
+import { format } from './messages';
 import { readPaneSettings } from './settings';
 import type { AlignProperty, IPaneSettings, IProcViewWebPartProps } from './settings';
 import { dimensionErrorText, parseDimension } from './sizing';
@@ -42,6 +43,8 @@ export interface IPaneSource {
   instanceId: string;
   /** Read-only info on the loaded image ("maximum size"). */
   naturalSizeText: string;
+  /** The web part's version (`x.y.z`, from `readVersion`); no version line without it. */
+  version?: string;
 }
 
 /** What the field builders work from: the web part's source and its checked settings. */
@@ -246,7 +249,7 @@ function colorField(pane: IPane): IPropertyPaneField<IPropertyPaneCustomFieldPro
   });
 }
 
-/** Repository link — read-only (aboutField.ts). */
+/** Repository link and version — read-only (aboutField.ts). */
 function aboutField(pane: IPane): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
   return customPaneField(pane.instanceId, 'aboutInfo', {
     value: undefined,
@@ -254,7 +257,13 @@ function aboutField(pane: IPane): IPropertyPaneField<IPropertyPaneCustomFieldPro
       element: renderAboutField(document, {
         linkText: strings.RepositoryLinkText,
         newTabHint: strings.NewTabHint,
-        classNames: { root: styles.aboutField, anchor: styles.hubAnchor, srOnly: styles.srOnly }
+        versionText: pane.version ? format(strings.VersionText, [pane.version]) : undefined,
+        classNames: {
+          root: styles.aboutField,
+          anchor: styles.hubAnchor,
+          srOnly: styles.srOnly,
+          version: styles.aboutVersion
+        }
       }),
       // Nothing stored — the link stays as it is
       showValue: () => undefined

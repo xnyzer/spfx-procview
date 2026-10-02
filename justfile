@@ -39,6 +39,7 @@ format:
 check:
     npx --no-install prettier --check --log-level warn {{prettier_globs}}
     node scripts/source-chars-check.mjs
+    node scripts/sync-version.mjs --check
     just lint
     just test
     node scripts/teams-icons.mjs --check
@@ -51,3 +52,15 @@ build:
 # Regenerate the Microsoft Teams app icons in teams/ from scripts/teams-icons.mjs
 icons:
     node scripts/teams-icons.mjs
+
+# Cut a release, e.g. `just release 1.0.0` (README "Versioning and releases"): the script refuses
+# what cannot be released and sets the version and CHANGELOG; then the full gate, the release
+# commit and the tag. It never pushes. Stop the dev server first — `just check` cleans its folders.
+# The first line checks the version as x.y.z, so the later lines only ever see digits and dots.
+release version:
+    node scripts/release.mjs {{quote(version)}}
+    just check
+    git add package.json package-lock.json config/package-solution.json CHANGELOG.md
+    git commit --quiet -m "chore(release): {{version}}" -m "Co-Authored-By: Claude <noreply@anthropic.com>"
+    git tag -a "v{{version}}" -m "Release {{version}}"
+    @echo "Release {{version}} committed and tagged as v{{version}} — push both: git push origin main v{{version}}"

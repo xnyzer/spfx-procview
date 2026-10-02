@@ -61,6 +61,7 @@ declare interface IProcViewWebPartStrings {
   AltTextDescription: string;
   AboutGroupName: string;
   RepositoryLinkText: string;
+  VersionText: string;
 
   LinkErrorEmpty: string;
   LinkErrorUnsupported: string;

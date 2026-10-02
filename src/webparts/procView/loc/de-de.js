@@ -70,6 +70,7 @@ define([], function () {
     AltTextDescription: 'Beschreibt das Diagramm für Screenreader. Leer: „Prozessdiagramm“.',
     AboutGroupName: 'Info',
     RepositoryLinkText: 'Quellcode und Dokumentation auf GitHub',
+    VersionText: 'Version {0}',
 
     LinkErrorEmpty: 'Den Link zum PNG-Bild von der Registerkarte „Einfaches Bild“ einfügen.',
     LinkErrorUnsupported:

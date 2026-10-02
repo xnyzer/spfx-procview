@@ -82,7 +82,7 @@ also applies to web parts saved before the setting existed.
 | Viewing | Offer full screen | On, off | On | A button on the diagram that opens it alone on a dark layer |
 | Viewing | Background behind the diagram | On, off | On | A colour exactly behind the diagram — Signavio images are transparent and hard to read on dark or coloured sections. Applies in full screen too; switched off, the diagram stays transparent there as well |
 | Viewing | Background color | The browser's colour picker | White | Shown while the background is on |
-| About | Source code and documentation on GitHub | Link | — | Opens this repository |
+| About | Source code and documentation on GitHub | Link | — | Opens this repository; the web part's version (e.g. "Version 1.0.0") is shown below it |
 
 Width or height larger than the maximum size enlarge the image beyond its natural size,
 and it becomes blurry. The group **Visibility** ("Show in mobile and email view") at the end
@@ -371,6 +371,30 @@ a site you may edit — typically a test site provided by IT:
 - **README images:** `docs/images/` holds the screenshots of this README, taken in the local
   workbench; they carry no metadata except the colour profile.
 
+### Versioning and releases
+
+- **One version:** `package.json` holds it (`x.y.z`, Semantic Versioning).
+  `scripts/sync-version.mjs` writes it into `config/package-solution.json` as `x.y.z.0`, for
+  the solution and its feature; `just check` fails when the two differ. The property pane shows
+  the version under "About".
+- **Changes** are noted under "Unreleased" in [CHANGELOG.md](CHANGELOG.md) as they are made.
+- **Cutting a release:** stop the dev server (`just check` cleans the folders it serves from),
+  then run `just release x.y.z` on a clean `main`. `scripts/release.mjs` refuses a version that
+  is not `x.y.z` or not higher than the latest `vx.y.z` tag, an existing tag, another branch,
+  uncommitted changes, an empty "Unreleased" section and a commit email that is not a GitHub
+  noreply address. It then sets the version (`npm version` for `package.json` and its lock, the
+  sync for the solution) and moves "Unreleased" under `## [x.y.z] - date`. The recipe runs
+  `just check`, commits `chore(release): x.y.z` and tags `vx.y.z`; it does not push, it prints
+  the push command. If `just check` fails, nothing is committed — `git restore .` undoes the
+  changes.
+- **Higher than the last release:** the App Catalog only treats a package as an update when its
+  version is higher, so a release is compared with the latest tag, not with `package.json`. The
+  first release is 1.0.0, the version `package.json` has had during development.
+- **`dataVersion`** (`ProcViewWebPart.ts`) is the version of the stored settings, not of the
+  release. It stays 1.0 as long as every stored value keeps its meaning — new settings bring a
+  code fallback for pages saved before them. Raise it only when the meaning of a stored value
+  changes, together with the code that converts the old values.
+
 ### Upgrading SPFx
 
 SPFx releases dictate their toolchain (TypeScript, ESLint, Heft, webpack) and the supported
@@ -393,6 +417,7 @@ releases on its Dependency Dashboard and never bumps the toolchain on its own
 
 - `REQUIREMENTS.md` — intent (transitional; dissolved into `PROGRESS.md`)
 - `PROGRESS.md` — roadmap and task list; `PROGRESS-ARCHIVE.md` — finished tasks with details
+- `CHANGELOG.md` — changes per release
 - `docs/adr/` — architecture decisions (ADR-0001: SPFx platform licences and toolchain advisories;
   ADR-0002: the `node-forge` toolchain advisory)
 - `CODING-STANDARDS.md` — binding coding rules

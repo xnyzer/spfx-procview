@@ -307,3 +307,32 @@ describe('ProcViewWebPart — property pane', () => {
     expect(webPart.context.propertyPane.refresh).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('ProcViewWebPart — version in the property pane', () => {
+  function readAboutText(webPart: IWebPartHarness): string {
+    const about = collectPaneFields(webPart).find((field) => field.targetProperty === 'aboutInfo');
+    const element = document.createElement('div');
+    const onRender = about?.properties.onRender as (
+      element: HTMLElement,
+      context: unknown,
+      onChange: () => void
+    ) => void;
+    onRender(element, undefined, () => undefined);
+    return element.textContent ?? '';
+  }
+
+  it('shows the version from the manifest', async () => {
+    const webPart = await start({ imageLink: LINK_A });
+    expect(readAboutText(webPart)).toContain('VersionText 1.2.3');
+  });
+
+  it('shows no version when the host provides no manifest or no release version', async () => {
+    const withoutManifest = await start({});
+    withoutManifest.context.manifest = undefined;
+    expect(readAboutText(withoutManifest)).not.toContain('VersionText');
+
+    const unbuilt = await start({});
+    unbuilt.context.manifest = { version: '*' };
+    expect(readAboutText(unbuilt)).not.toContain('VersionText');
+  });
+});

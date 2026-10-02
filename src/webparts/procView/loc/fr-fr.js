@@ -74,6 +74,7 @@ define([], function () {
       'Décrit le diagramme pour les lecteurs d’écran. Vide\u00a0: «\u00a0Diagramme de processus\u00a0».',
     AboutGroupName: 'À propos',
     RepositoryLinkText: 'Code source et documentation sur GitHub',
+    VersionText: 'Version {0}',
 
     LinkErrorEmpty: 'Coller le lien de l’onglet «\u00a0Image simple\u00a0» du diagramme.',
     LinkErrorUnsupported:

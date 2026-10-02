@@ -54,7 +54,8 @@ const TEXTS_WITH_PLACEHOLDERS: Record<string, string> = {
   NaturalSizeKnown: 'NaturalSizeKnown {0} x {1}',
   MessageBlockedTitle: 'MessageBlockedTitle {0}',
   MessageBlockedBody: 'MessageBlockedBody {0}',
-  DimensionErrorTooLarge: 'DimensionErrorTooLarge {0}'
+  DimensionErrorTooLarge: 'DimensionErrorTooLarge {0}',
+  VersionText: 'VersionText {0}'
 };
 
 /** Every text reads as its own key; `__esModule` keeps `import * as strings` from wrapping it. */
@@ -68,6 +69,8 @@ export const stringsDouble = new Proxy(
 /** The web part context as far as the web part uses it; the pane calls are recorded. */
 export interface IContextDouble {
   instanceId: string;
+  /** The component manifest; a test can take it away, as a stand-in host might not have one. */
+  manifest?: { version?: unknown };
   serviceScope: object;
   sdks: { microsoftTeams?: { teamsJs: ITeamsJs } };
   propertyPane: {
@@ -85,6 +88,7 @@ class BaseClientSideWebPartDouble {
   public displayMode: number = DISPLAY_MODE.Edit;
   public readonly context: IContextDouble = {
     instanceId: `webpart-${++instanceCount}`,
+    manifest: { version: '1.2.3' },
     serviceScope: {},
     sdks: {},
     propertyPane: { open: jest.fn(), refresh: jest.fn(), isPropertyPaneOpen: jest.fn(() => false) }

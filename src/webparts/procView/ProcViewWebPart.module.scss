@@ -301,6 +301,12 @@
   font-size: 14px;
 }
 
+// The version on its own line below the repository link
+.aboutVersion {
+  display: block;
+  margin-top: 8px;
+}
+
 // Full-screen layout: room for the close button above the image and a margin around it — the
 // image's maximum size is the window minus exactly these paddings
 $lightbox-padding-top: 56px;
