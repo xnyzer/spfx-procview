@@ -83,8 +83,8 @@ settings, then the web part, pane and settings remainders, then zoom and full sc
 ids (M18–M20, L47–L64) refer to the local `AUDIT-RESULTS.md` of 2026-10-02 (release control
 audit).
 
-**Solution sketch** (from the triage with the owner, 2026-10-02; F-021a updated at prep-step,
-2026-10-02):
+**Solution sketch** (from the triage with the owner, 2026-10-02; F-021a and F-021b updated at
+their prep-steps, 2026-10-02):
 - **F-021a — release path, tooling, docs, GitHub settings:** the release only from a commit on
   `main` — `git push --atomic` in the recipe's push command and in the README, `release.mjs`
   fetches `origin` and refuses a `main` that is behind or has diverged and a tag that exists
@@ -99,12 +99,13 @@ audit).
   the first run of `publish` watched consciously in F-009c (L53). Owner decision: Claude
   switches the GitHub settings on with `gh api`, each change only after the owner's approval,
   and reads the state back
-- **F-021b — web part, pane and settings:** stored values that are not booleans or known options
-  normalised, so pane and page never disagree, and the test doubles apply SharePoint's "stored
-  value wins" (L55); a test that compares the manifest defaults with the code fallbacks (L56);
-  `imageLink` read through `settings.ts` (L57); a failed `showModal()` reported instead of
-  escaping uncaught (L61); renames in the files touched (L63: `moveFocus`, `zoomClassNames`,
-  `externalLink`)
+- **F-021b — web part, pane and settings:** stored values the page cannot read — toggles that
+  are not booleans, an unknown hub link position, texts that are not strings — normalised in
+  `onAfterDeserialize` to what the page reads, so pane and page never disagree, and the test
+  doubles apply SharePoint's "stored value wins" (L55); a test that compares the manifest
+  defaults with the code fallbacks (L56); `imageLink` read through `settings.ts` (L57); a failed
+  `showModal()` logged instead of escaping uncaught (L61); renames (L63: `shouldMoveFocus`,
+  `pickZoomClassNames`, `createExternalLink`)
 - **F-021c — zoom and full screen:** tests that pin the zoom teardown — the web part disposes
   the zoom on re-render and dispose, `ZoomView.dispose` removes every listener, a stub
   `ResizeObserver` for the resize path, the order of `showDialog` and zoom (L54); the frame
@@ -118,6 +119,68 @@ Owner decisions (2026-10-02): all findings of the release control audit are fixe
 release 1.0.0, in their own feature before F-009c.
 
 **Dependencies:** F-019, F-020, F-009a, F-009b (done)
+
+#### F-021b — Web part, pane and settings
+
+**What:** Pane and page never disagree on a stored value, the manifest defaults are pinned by a
+test, every property is read in `settings.ts`, a failed full-screen dialog is logged, and the
+remaining names of the release control audit in these files (L55, L56, L57, L61, L63).
+
+- **Stored values (L55):** SharePoint shows the stored value of a toggle whenever it is not
+  `undefined`/`null`, and the stored value of a choice group whenever it is not
+  `undefined`/`null`/empty — `checked:` only fills in missing values (SPFx 1.23.2,
+  `PropertyPaneGroup`). A value the page cannot read (`showHubLink: "true"`, `offerZoom: 1`,
+  `hubLinkPosition: "<img src=x>"`, a page written by a provisioning template) therefore looks
+  different in pane and page. New `normalizeStoredSettings` in `settings.ts`, applied in
+  `onAfterDeserialize` — the hook SPFx provides to fix the property bag after reading it
+  (`BaseWebPart`): every value becomes what the page reads from it — a toggle that is not a
+  boolean becomes the page's boolean (`isOn`/`isOnByDefault`), an unknown hub link position
+  `below`; texts that are not strings (e.g. `width: 600` as a number) are removed, as the page
+  reads them as empty (extension agreed at prep-step: same mismatch, the text field would show
+  "600"). `undefined`/`null` stay — `checked:` and the code fallbacks cover them; alignments
+  and the colour stay — their custom fields already show the checked value. The stand-ins call
+  `onAfterDeserialize` in `startWebPart` as SharePoint does, and new helpers tell what
+  SharePoint would show for a toggle or choice group (stored value before `checked:`); the pane
+  test that asserted option flags SharePoint ignores checks what the pane shows instead
+- **Manifest defaults (L56):** `manifestDefaults.test.ts` reads the manifest (copied next to the
+  compiled tests) with TypeScript's JSONC parser (`parseConfigFileTextToJson` — the manifest has
+  comments and a `https://` inside a string) and checks that its initial values read back as the
+  code fallbacks (`readPaneSettings`, `readSettings` with and without them) and that it lists
+  exactly the nine properties with fallbacks — so a typo in a key fails too
+- **`imageLink` (L57):** `readDiagramLink(props)` in `settings.ts`; `render()` and the natural
+  size text use it instead of the registry directly
+- **Full screen (L61):** `_openFullScreen` catches a failed `showModal()` (rethrown by
+  `openLightbox` after removing the dialog) and reports it with `Log.error`; the stand-in gets
+  `Log.error`
+- **Renames (L63):** `moveFocus` → `shouldMoveFocus` (`alignmentField.ts`), `zoomClassNames` →
+  `pickZoomClassNames` (`ProcViewWebPart.ts`, like `pickLinkClassNames`), `externalLink` →
+  `createExternalLink` (`externalLink.ts` and its callers `aboutField.ts`, `renderDiagram.ts`,
+  `renderMessage.ts`)
+- **Docs:** a technical decision in REQUIREMENTS; the CLAUDE.md note on defaults names the new
+  test
+
+**Files:** `settings.ts`, `settings.test.ts`, `ProcViewWebPart.ts`, `ProcViewWebPart.test.ts`,
+`spfxTestDoubles.ts`, `propertyPane.test.ts`, `injection.test.ts`, `manifestDefaults.test.ts`
+(new), `alignmentField.ts`, `externalLink.ts`, `aboutField.ts`, `renderDiagram.ts`,
+`renderMessage.ts` (all in `src/webparts/procView/`), `REQUIREMENTS.md`, `CLAUDE.md`
+
+**Dependencies:** F-021a (done)
+
+**Acceptance criteria:**
+- [ ] Hostile stored values (`"true"`, `1`, `"<img src=x>"`, a number in a text field) show the
+      same state in pane and page — through `startWebPart` (with `onAfterDeserialize`) and the
+      helpers for what SharePoint shows; `normalizeStoredSettings` unit tests, also that
+      `undefined`/`null`, valid values, alignments and the colour stay as they are
+- [ ] `manifestDefaults.test.ts` fails for a changed value and for a misspelled key in the
+      manifest (mutation runs)
+- [ ] `imageLink` is read only through `settings.ts` (no `parseDiagramLink(this.properties…)`
+      left in the web part)
+- [ ] A throwing `showModal()` leaves no uncaught error and no dialog, and is reported with
+      `Log.error` (test)
+- [ ] Renames done, no old name left (`moveFocus`, `zoomClassNames`, `externalLink(`)
+- [ ] Owner's short visual check in the local workbench: pane, hub link and full screen look and
+      work as before
+- [ ] `just check` green
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
