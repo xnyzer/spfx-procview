@@ -75,24 +75,44 @@ App Catalog only offers an update when the solution version increases — today 
 and tags the release, and a GitHub Actions workflow that builds the package on version
 tags and attaches it to a GitHub release; a deployment guide for IT.
 
-**Solution sketch** (updated at prep-step, 2026-10-01; size: medium, two substeps):
+**Solution sketch** (updated at prep-step, 2026-10-01 and for F-009a on 2026-10-02; size:
+medium, two substeps):
 - Version only in `package.json`; `package-solution.json` (solution + feature) gets `x.y.z.0`
-  from a dependency-free script (`scripts/sync-version.mjs`), `--check` in `just check`
+  from a dependency-free script (`scripts/sync-version.mjs`): without arguments it replaces
+  only the version values (the file's formatting stays), `--check` parses the file and compares
+  solution and feature versions — it runs in `just check`
 - Release recipe instead of an `npm version` hook (that would create its own commit/tag):
-  `just release x.y.z` — clean tree required; `npm version x.y.z --no-git-tag-version`
-  (package.json + lock), sync, CHANGELOG "Unreleased" → `x.y.z` with date, `just check`, commit
-  `chore(release): x.y.z`, tag `vx.y.z`; it **does not push** — it prints the push command
+  `just release x.y.z` — the logic sits in a tested, dependency-free script
+  (`scripts/release.mjs`, pure functions plus a command line, `node --test`), the recipe stays
+  thin: `node scripts/release.mjs x.y.z` (checks; `npm version x.y.z --no-git-tag-version
+  --allow-same-version` for package.json + lock; sync; CHANGELOG "Unreleased" → `x.y.z` with
+  date), `just check`, commit `chore(release): x.y.z` ending with the `Co-Authored-By: Claude`
+  trailer (owner decision 2026-10-02: Claude built the release tooling, that stays mentioned),
+  tag `vx.y.z`; it **does not push** — it prints the push command
+- The version must be higher than the **latest `v*` tag**, not than `package.json` (decision
+  2026-10-02): `package.json` already says 1.0.0 and there is no tag yet, so the first release
+  is 1.0.0, and every later release counts up from the last one — the App Catalog only compares
+  released packages. The script also refuses a dirty tree, a version that is not `x.y.z`, an
+  existing tag, an empty "Unreleased" section and a commit email that is not a GitHub noreply
+  address
 - `dataVersion` stays 1.0: every new setting has a code fallback, no stored value ever needed a
-  migration; bump only when the meaning of stored values changes (documented)
+  migration; bump only when the meaning of stored values changes — documented at the getter
+  and in README "Versioning and releases" (new, below Development; also: stop the dev server
+  before `just release`, its `just check` cleans the build folders)
 - Version in the property pane below the repository link ("About", e.g. "Version 1.0.0"),
-  from the web part manifest (`version: "*"` = package.json)
+  from `this.context.manifest.version` (`version: "*"` in the manifest = package.json); shown
+  only when it looks like `x.y.z`, otherwise the line is left out (whether the local workbench
+  provides the manifest is confirmed in the owner's visual check)
+- `CHANGELOG.md` in the "Keep a Changelog" format: `## [Unreleased]`, `## [x.y.z] - YYYY-MM-DD`,
+  sections Added / Changed / Fixed, no compare links; F-009b takes the release notes from it
 - Release workflow on tags `v*`: tag must equal the version, `just setup` + `just build`,
   GitHub release with the `.sppkg`, a SHA-256 checksum and the CHANGELOG section as notes
 - Owner decisions (2026-10-01): first release **1.0.0**; cutting it is the last step of F-009b
 - Owner decision (2026-10-02): a control audit in a new session comes right before cutting the
   release (F-009b)
-- The first CHANGELOG notes visible changes for pages built with earlier test packages:
-  narrow diagrams are centred by default (F-018)
+- The first CHANGELOG entry (1.0.0) lists the features under "Added" only — no "Changed" notes
+  for earlier test packages (owner decision 2026-10-02: the first release lists what it
+  offers; a single small change does not belong in it)
 
 **Dependencies:** F-002, F-016 (audit before the first release), F-018 (diagram alignment,
 pane order), F-017 (zoom and full-screen fixes from the audit), F-019 (fixes from the control
@@ -100,21 +120,31 @@ audit), F-020 (README with screenshots)
 
 #### F-009a — One version, version display, release recipe (local)
 
-**What:** Version sync script and check, `just release`, `CHANGELOG.md`, version in the
-property pane.
+**What:** Version sync script and check, `just release` with its script, `CHANGELOG.md`
+(1.0.0 features under "Unreleased", "Added" only), version in the property pane, README
+"Versioning and releases". About 450–550 lines with tests and docs — not split further: a
+split would rename F-009b, which the decision log refers to.
 
-**Files:** `scripts/sync-version.mjs` (new), `justfile`, `config/package-solution.json`,
-`CHANGELOG.md` (new), `aboutField.ts`, `aboutField.test.ts`, `ProcViewWebPart.ts`,
-`loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts`; `README.md`
+**Files:** `scripts/sync-version.mjs`, `scripts/sync-version.test.mjs`, `scripts/release.mjs`,
+`scripts/release.test.mjs`, `CHANGELOG.md` (new); `justfile`, `config/package-solution.json`
+(only if the sync changes it), `aboutField.ts`, `aboutField.test.ts`, `propertyPane.ts`,
+`propertyPane.test.ts`, `ProcViewWebPart.ts`, `spfxTestDoubles.ts`, `loc/*.js`,
+`loc/mystrings.d.ts`, `linkErrors.test.ts` (new key `VersionText`); `README.md`
 
 **Dependencies:** —
 
 **Acceptance criteria:**
-- [ ] `just check` fails when `package-solution.json` does not match `package.json`
-- [ ] `just release` refuses a dirty tree or an invalid version; in a scratch copy it sets the
-      version everywhere, moves the CHANGELOG section, commits and tags (no push)
+- [ ] `just check` fails when `package-solution.json` does not match `package.json` (script
+      tests and a run on a changed copy)
+- [ ] `just release` refuses a dirty tree, a version that is not `x.y.z`, a version not higher
+      than the latest `v*` tag, an existing tag, an empty "Unreleased" section and a commit
+      email that is not a GitHub noreply address (tests); without any tag it accepts 1.0.0
+- [ ] In a scratch copy, `just release` sets the version everywhere, moves the CHANGELOG
+      section, commits `chore(release): x.y.z` with the `Co-Authored-By` trailer and tags
+      `vx.y.z` — no push
 - [ ] The property pane shows the version below the repository link (four languages, tests);
-      the README settings table (F-020) names it in the "About" row
+      without a usable manifest version the line is left out (test); the README settings table
+      (F-020) names it in the "About" row
 - [ ] `just check` green (isolated copy while the dev server runs)
 
 #### F-009b — Release workflow, IT deployment guide, first release
