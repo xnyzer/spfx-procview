@@ -186,16 +186,17 @@ translate them with SharePoint's multilingual pages if needed.
 package asks for no API permissions and needs no sign-in to SAP Signavio; the readers'
 browsers load the diagram directly from the Signavio host of the link.
 
-**Deployment overview** — a step-by-step guide with a first-use check follows with release
-1.0.0:
+**Deployment:** the step-by-step guide for IT is [docs/deployment.md](docs/deployment.md) —
+download and checksum verification, first deployment, Microsoft Teams, updates, removal,
+network and privacy, and a check on the first page. In short:
 
 - **Package:** `spfx-procview.sppkg` — built with `just build` (see
   [Development](#development-sharepoint-framework)); from release 1.0.0 on, every GitHub
   release carries it.
 - **Deploy:** upload the package to the tenant (or a site collection) App Catalog. The
   solution uses `skipFeatureDeployment`, so it can be made available to all sites at once.
-- **Teams:** select the package in the tenant App Catalog and choose **Sync to Teams**; the
-  app then shows up in Teams under the organisation's apps.
+- **Teams:** select **Add to Teams** while uploading, or later for the app on the **Manage
+  apps** page; the app then shows up in Teams under the organisation's apps.
 - **Updates:** the App Catalog only treats a package as an update when its version is
   higher — versioning and release packages follow with F-009.
 
@@ -387,6 +388,17 @@ a site you may edit — typically a test site provided by IT:
   `just check`, commits `chore(release): x.y.z` and tags `vx.y.z`; it does not push, it prints
   the push command. If `just check` fails, nothing is committed — `git restore .` undoes the
   changes.
+- **Publishing:** pushing the tag (`git push origin main vx.y.z`) starts the release workflow
+  (`.github/workflows/release.yml`). Its `build` job, with read access only, checks that the tag
+  matches `package.json`, runs `just check` and `just build`, and collects the package, its
+  SHA-256 checksum, `THIRD-PARTY-NOTICES.md` and the release notes — the version's CHANGELOG
+  section (`node scripts/release.mjs --notes x.y.z`). The `publish` job, the only one that may
+  write, then creates the GitHub release with these files using `gh`; it runs no project code,
+  so the token that may publish never meets `npm ci` and the install scripts of dependencies.
+  If publishing fails, re-run the failed job for the same tag — no new tag is needed.
+- **Dry run:** start the workflow by hand ("Run workflow" under Actions, or
+  `gh workflow run release.yml`) — it does everything but publish, with the "Unreleased"
+  changes as notes, and keeps the files as a workflow artifact for seven days.
 - **Higher than the last release:** the App Catalog only treats a package as an update when its
   version is higher, so a release is compared with the latest tag, not with `package.json`. The
   first release is 1.0.0, the version `package.json` has had during development.

@@ -8,6 +8,87 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-009b — Release workflow and IT deployment guide
+
+_Completed 2026-10-02, except the dry run on GitHub, which needs this step pushed first (see
+the criterion). Part of F-009, which stays open with F-009c._
+
+**What:** `.github/workflows/release.yml` in two jobs plus a dry run, release notes from the
+CHANGELOG, `docs/deployment.md`, README "For IT" and "Versioning and releases", CodeQL for the
+workflow files. About 400 lines. The release itself and the README's release statements follow
+in F-009c, so `main` never claims a release that does not exist yet.
+From F-009a: the release notes come from the CHANGELOG section `## [x.y.z] - date`; docs write
+four-part versions as `x.y.z.0` — privacy-lint reads written-out ones as IP addresses.
+
+**Files:** `.github/workflows/release.yml`, `docs/deployment.md` (new); `scripts/release.mjs`,
+`scripts/release.test.mjs` (`--notes x.y.z`), `.github/workflows/codeql.yml`, `README.md`
+
+**Dependencies:** F-009a
+
+**Acceptance criteria:**
+- [x] Workflow: runs on `v*` tags and, as a dry run, via `workflow_dispatch`; job `build` with
+      read access only — fails if a tag does not match the version, runs `just setup`, `just
+      check` and `just build`, writes `spfx-procview.sppkg.sha256` and the release notes
+      (`node scripts/release.mjs --notes x.y.z`, fails when the section is missing) and uploads
+      them as a workflow artifact; job `publish` only on tags, the only one with
+      `contents: write`, creates the GitHub release with `gh` and attaches `.sppkg`, `.sha256`
+      and `THIRD-PARTY-NOTICES.md` (F-016c); the package keeps its file name in every release
+      (App Catalog updates replace it — checked against Microsoft's documentation); actions
+      pinned by SHA, including GitHub's `upload-artifact` / `download-artifact` — the YAML
+      parses; the collect step ran locally on a production build in the scratch copy (package,
+      checksum that verifies, notices, notes); Microsoft Learn: a new package with the same file
+      name is confirmed with "Replace It", the "App Version" column shows it
+- [x] `release.mjs --notes x.y.z` prints that version's CHANGELOG section and exits with 1 when
+      there is none (tests) — `readSection`, `readReleaseNotes`, command tests on a temporary
+      CHANGELOG
+- [x] CodeQL analyses the workflow files too (language `actions`; availability checked) —
+      generally available since 2025-04-22 (GitHub changelog)
+- [x] `docs/deployment.md`: App Catalog upload and tenant-wide deployment, updating, Teams,
+      removal, the "shared links are effectively public" rule, Signavio domains for
+      firewall/proxy, where to see the version (App Catalog, property pane), checksum
+      verification (Windows and macOS/Linux), third-party notices; the hub link target as a
+      known limitation (REQUIREMENTS open question, control audit L46); a short first-use check
+      on the first SharePoint page, including that the keyboard focus stays in the property
+      pane's alignment toolbars and colour field after a change (F-019b, M15 — no SharePoint
+      test environment during development), the version line in the pane and, on a touch
+      device, that a pinch in full screen zooms a zoomable diagram and magnifies the page
+      otherwise, without scrolling the page behind (F-019c, L36). App Catalog and Teams labels
+      ("Sync to Teams" or its successor) checked against Microsoft's current documentation —
+      the README follows if they changed — labels from "Manage apps using the Apps site"
+      (Microsoft Learn, updated 2026-07-01): "Sync to Teams" is now "Add to Teams", fixed in
+      the README; the macOS/Linux checksum command ran, the PowerShell one could not be run here
+- [x] README: "For IT" links to `docs/deployment.md`; "Versioning and releases" describes the
+      release workflow and its dry run
+- [ ] Dry run on GitHub green after the owner approves the push of F-009b and the start of the
+      workflow — open at completion: it can only run once the workflow is on `main`
+- [x] `just check` green (isolated copy while the dev server runs) — 689 Jest tests, 67 script
+      tests
+
+**Implemented:**
+- `.github/workflows/release.yml` — triggers `push: tags: ['v*']` and `workflow_dispatch`;
+  `build` (read access, checkout without persisted credentials): version from `package.json`,
+  tag check, `just setup`, `just check`, `just build`, then the package, `sha256sum`,
+  `THIRD-PARTY-NOTICES.md` and the notes (the version's section on a tag, "Unreleased" in the
+  dry run, plus a link to the deployment guide) uploaded as the artifact `release-files` for
+  seven days; `publish` (`contents: write`, tags only): download, `gh release create --verify-tag`
+  with the title "spfx-procview x.y.z". No cancelling of running release runs.
+- `scripts/release.mjs` — `readSection` (a version or "Unreleased"), `readReleaseNotes` (a
+  missing section fails; an empty one only for a release), `--notes <x.y.z|Unreleased>` and,
+  for tests, `--changelog <file>`.
+- `.github/workflows/codeql.yml` — matrix entry `actions`.
+- `docs/deployment.md` — at a glance, download and verification, first deployment, Teams,
+  updates, version, disable or remove, network, privacy, third-party notices, known
+  limitations, first-use check.
+- `README.md` — "For IT" points to the guide, "Add to Teams", "Versioning and releases" with
+  publishing and the dry run.
+
+**Decisions / deviations:**
+- Beyond the plan: the release notes end with a link to the deployment guide; `--changelog`
+  keeps the command tests away from the project CHANGELOG — a test on it would have failed
+  inside `just release`, whose `just check` runs while "Unreleased" is empty.
+- Teams: the README's "Sync to Teams" was outdated; Microsoft's label is "Add to Teams", also
+  offered directly in the upload panel.
+
 ### F-009a — One version, version display, release recipe (local)
 
 _Completed 2026-10-02. Part of F-009 (versioning, release via CI + IT deployment guide), which

@@ -36,7 +36,7 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
 requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-020 in `PROGRESS.md`). All planned
-features are done (689 Jest tests, 59 script tests): Signavio link validation and provider
+features are done (689 Jest tests, 67 script tests): Signavio link validation and provider
 contract (F-001), configuration pane, sizing and caption (F-002), Collaboration Hub link
 (F-003), empty and error states (F-004), section theme colours (F-005), zoom and pan — "Offer
 zoom", default off (F-006), full-screen view — "Offer full screen", default on (F-007), Teams
@@ -54,10 +54,11 @@ tables for settings, controls and messages (F-020: images in `docs/images/`, onl
 badge — the repository depends on no third-party website). F-009a is done: one version in
 `package.json` (`scripts/sync-version.mjs`, checked in `just check`), `just release x.y.z`
 (`scripts/release.mjs`; higher than the latest `v*` tag, so the first release is 1.0.0),
-`CHANGELOG.md`, the version in the property pane. Next: F-009b (release workflow — a read-only
-build job, a publish job with write access only on tags, a dry run — and an IT guide with a
-first-use check that replaces the README's deployment overview), then F-009c (control audit
-in a new session, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for
+`CHANGELOG.md`, the version in the property pane. F-009b is done: the release workflow
+(`.github/workflows/release.yml` — a read-only build job, a publish job with write access only
+on tags, a dry run via "Run workflow"), CodeQL for the workflow files and the IT guide
+`docs/deployment.md` with a first-use check. Next: F-009c (the dry run first, then the control
+audit in a new session, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for
 October 2026).
 
 ## Project notes (learned the hard way)

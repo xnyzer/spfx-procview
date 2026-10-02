@@ -4,7 +4,10 @@
 // "Unreleased" section into the release's section. The recipe then runs `just check`, commits and
 // tags — nothing here commits, tags or pushes.
 //
-//   node scripts/release.mjs x.y.z
+//   node scripts/release.mjs x.y.z                prepare release x.y.z (`just release`)
+//   node scripts/release.mjs --notes x.y.z        print its CHANGELOG section (release workflow)
+//   node scripts/release.mjs --notes Unreleased   print the unreleased changes (its dry run)
+//   … --notes <name> --changelog <file>           read another CHANGELOG (tests)
 //
 // A release must be higher than the latest `vx.y.z` tag — not than package.json, which already
 // holds the next version while it is developed (1.0.0 before the first release).
@@ -20,7 +23,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHANGELOG = join(ROOT, 'CHANGELOG.md');
 /** Releases are cut from here: the release workflow builds the tagged commit of this branch. */
 export const RELEASE_BRANCH = 'main';
-const UNRELEASED_HEADING = '## [Unreleased]';
+const UNRELEASED = 'Unreleased';
+const UNRELEASED_HEADING = `## [${UNRELEASED}]`;
 const RELEASE_TAG = /^v(\d+\.\d+\.\d+)$/;
 /** A commit email that keeps private addresses out of the history: `<id>+<login>@users.noreply.github.com`. */
 const NOREPLY_EMAIL = /^\d+\+[A-Za-z0-9-]+@users\.noreply\.github\.com$/;
@@ -51,14 +55,16 @@ export function isNoreplyEmail(email) {
   return NOREPLY_EMAIL.test(email);
 }
 
-function findUnreleasedHeading(lines) {
-  return lines.findIndex((line) => line.trim() === UNRELEASED_HEADING);
+/** The line of the heading `## [name]` — `Unreleased` or a version (`## [1.0.0] - 2026-10-02`). */
+function findSectionHeading(lines, name) {
+  const heading = `## [${name}]`;
+  return lines.findIndex((line) => line.trim() === heading || line.startsWith(`${heading} `));
 }
 
-/** What "Unreleased" holds (without its heading, trimmed), or `undefined` without such a section. */
-export function readUnreleased(changelog) {
+/** What the section `## [name]` holds (without its heading, trimmed), or `undefined` without it. */
+export function readSection(changelog, name) {
   const lines = changelog.split('\n');
-  const start = findUnreleasedHeading(lines);
+  const start = findSectionHeading(lines, name);
   if (start < 0) {
     return undefined;
   }
@@ -67,13 +73,37 @@ export function readUnreleased(changelog) {
   return (end < 0 ? rest : rest.slice(0, end)).join('\n').trim();
 }
 
+/** What "Unreleased" holds, or `undefined` without such a section. */
+export function readUnreleased(changelog) {
+  return readSection(changelog, UNRELEASED);
+}
+
+/**
+ * The release notes of a version, or the unreleased changes for the release workflow's dry run.
+ * Throws when there is no such section, or when a release's section is empty.
+ */
+export function readReleaseNotes(changelog, name) {
+  const isRelease = typeof name === 'string' && RELEASE_VERSION.test(name);
+  if (!isRelease && name !== UNRELEASED) {
+    throw new Error(`${JSON.stringify(name)} is neither a release version (x.y.z) nor ${UNRELEASED}`);
+  }
+  const notes = readSection(changelog, name);
+  if (notes === undefined) {
+    throw new Error(`CHANGELOG.md has no "## [${name}]" section`);
+  }
+  if (isRelease && notes === '') {
+    throw new Error(`the "## [${name}]" section of CHANGELOG.md is empty`);
+  }
+  return notes;
+}
+
 /**
  * The changelog with the entries of "Unreleased" under `## [x.y.z] - date`; "Unreleased" stays on
  * top, empty, for the next changes.
  */
 export function moveUnreleased(changelog, version, date) {
   const lines = changelog.split('\n');
-  const start = findUnreleasedHeading(lines);
+  const start = findSectionHeading(lines, UNRELEASED);
   if (start < 0) {
     throw new Error(`CHANGELOG.md has no "${UNRELEASED_HEADING}" section`);
   }
@@ -150,7 +180,26 @@ function readState(version) {
   };
 }
 
+/** Prints the release notes for `--notes`; a missing or empty section fails with exit code 1. */
+function printReleaseNotes(name, changelogFile) {
+  try {
+    process.stdout.write(`${readReleaseNotes(readFileSync(changelogFile, 'utf8'), name)}\n`);
+  } catch (error) {
+    console.error(`Release notes failed: ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  }
+}
+
+function readOption(argv, name) {
+  const index = argv.indexOf(name);
+  return index >= 0 ? argv[index + 1] : undefined;
+}
+
 function main() {
+  if (process.argv[2] === '--notes') {
+    printReleaseNotes(process.argv[3], readOption(process.argv, '--changelog') ?? CHANGELOG);
+    return;
+  }
   const version = process.argv[2];
   const problems = findReleaseProblems(readState(version));
   if (problems.length > 0) {

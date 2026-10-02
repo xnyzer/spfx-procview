@@ -3,6 +3,8 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +17,8 @@ import {
   formatDate,
   isNoreplyEmail,
   moveUnreleased,
+  readReleaseNotes,
+  readSection,
   readUnreleased
 } from './release.mjs';
 
@@ -171,7 +175,71 @@ describe('formatDate', () => {
   });
 });
 
+describe('readSection', () => {
+  it('reads a release by its version and the unreleased changes', () => {
+    assert.equal(readSection(CHANGELOG, '1.0.0'), '### Added\n\n- First release');
+    assert.equal(readSection(CHANGELOG, 'Unreleased'), '### Added\n\n- Zoom');
+  });
+
+  it('finds nothing for a missing version and does not take a prefix for it', () => {
+    assert.equal(readSection(CHANGELOG, '2.0.0'), undefined);
+    assert.equal(readSection(CHANGELOG, '1.0'), undefined);
+    assert.equal(readSection(`## [${SOLUTION_VERSION}] - 2026-10-01\n\n- Build\n`, '1.1.0'), undefined);
+  });
+});
+
+describe('readReleaseNotes', () => {
+  it('returns the section of a release and the unreleased changes', () => {
+    assert.equal(readReleaseNotes(CHANGELOG, '1.0.0'), '### Added\n\n- First release');
+    assert.equal(readReleaseNotes(CHANGELOG, 'Unreleased'), '### Added\n\n- Zoom');
+  });
+
+  it('accepts an empty "Unreleased" for the dry run, but no empty release', () => {
+    const changelog = '## [Unreleased]\n\n## [1.1.0] - 2026-10-05\n\n## [1.0.0] - 2026-10-01\n\n- First\n';
+    assert.equal(readReleaseNotes(changelog, 'Unreleased'), '');
+    assert.throws(() => readReleaseNotes(changelog, '1.1.0'), /section of CHANGELOG\.md is empty/);
+  });
+
+  it('fails for a missing section and for names that are neither a version nor "Unreleased"', () => {
+    assert.throws(() => readReleaseNotes(CHANGELOG, '2.0.0'), /has no "## \[2\.0\.0\]" section/);
+    ['1.0', 'v1.0.0', 'unreleased', '', undefined].forEach((name) =>
+      assert.throws(() => readReleaseNotes(CHANGELOG, name), /neither a release version/)
+    );
+  });
+});
+
 describe('release.mjs as a command', () => {
+  /** A temporary CHANGELOG.md with the test content above. */
+  function createChangelog() {
+    const file = join(mkdtempSync(join(tmpdir(), 'release-notes-')), 'CHANGELOG.md');
+    writeFileSync(file, CHANGELOG);
+    return file;
+  }
+
+  function runNotes(name) {
+    return execFileSync(process.execPath, [SCRIPT, '--notes', name, '--changelog', createChangelog()], {
+      stdio: 'pipe',
+      encoding: 'utf8'
+    });
+  }
+
+  it('prints the notes of a release and the unreleased changes for --notes', () => {
+    assert.equal(runNotes('1.0.0'), '### Added\n\n- First release\n');
+    assert.equal(runNotes('Unreleased'), '### Added\n\n- Zoom\n');
+  });
+
+  it('fails with exit code 1 for --notes of a version the CHANGELOG does not have', () => {
+    assert.throws(
+      () => runNotes('2.0.0'),
+      (error) => error.status === 1 && /has no "## \[2\.0\.0\]" section/.test(String(error.stderr))
+    );
+  });
+
+  it('reads the project CHANGELOG by default', () => {
+    // Its "Unreleased" section may be empty right after a release — only the exit code counts
+    execFileSync(process.execPath, [SCRIPT, '--notes', 'Unreleased'], { stdio: 'pipe' });
+  });
+
   it('refuses an invalid version with exit code 1 before changing anything', () => {
     assert.throws(
       () => execFileSync(process.execPath, [SCRIPT, '1.0'], { stdio: 'pipe' }),
