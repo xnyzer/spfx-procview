@@ -54,9 +54,11 @@ tables for settings, controls and messages (F-020: images in `docs/images/`, onl
 badge — the repository depends on no third-party website). F-009a is done: one version in
 `package.json` (`scripts/sync-version.mjs`, checked in `just check`), `just release x.y.z`
 (`scripts/release.mjs`; higher than the latest `v*` tag, so the first release is 1.0.0),
-`CHANGELOG.md`, the version in the property pane. Next: F-009b (release workflow, an IT guide
-with a first-use check that replaces the README's deployment overview, a control audit,
-release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
+`CHANGELOG.md`, the version in the property pane. Next: F-009b (release workflow — a read-only
+build job, a publish job with write access only on tags, a dry run — and an IT guide with a
+first-use check that replaces the README's deployment overview), then F-009c (control audit
+in a new session, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for
+October 2026).
 
 ## Project notes (learned the hard way)
 

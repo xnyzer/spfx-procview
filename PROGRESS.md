@@ -76,8 +76,8 @@ App Catalog only offers an update when the solution version increases — today 
 and tags the release, and a GitHub Actions workflow that builds the package on version
 tags and attaches it to a GitHub release; a deployment guide for IT.
 
-**Solution sketch** (updated at prep-step, 2026-10-01 and for F-009a on 2026-10-02; size:
-medium, two substeps):
+**Solution sketch** (updated at prep-step, 2026-10-01, and on 2026-10-02 for F-009a and for
+F-009b, which was split into F-009b and F-009c; size: medium to large, three substeps):
 - Version only in `package.json`; `package-solution.json` (solution + feature) gets `x.y.z.0`
   from a dependency-free script (`scripts/sync-version.mjs`): without arguments it replaces
   only the version values (the file's formatting stays), `--check` parses the file and compares
@@ -107,10 +107,19 @@ medium, two substeps):
 - `CHANGELOG.md` in the "Keep a Changelog" format: `## [Unreleased]`, `## [x.y.z] - YYYY-MM-DD`,
   sections Added / Changed / Fixed, no compare links; F-009b takes the release notes from it
 - Release workflow on tags `v*`: tag must equal the version, `just setup` + `just build`,
-  GitHub release with the `.sppkg`, a SHA-256 checksum and the CHANGELOG section as notes
-- Owner decisions (2026-10-01): first release **1.0.0**; cutting it is the last step of F-009b
+  GitHub release with the `.sppkg`, a SHA-256 checksum and the CHANGELOG section as notes.
+  Owner decisions at prep-step F-009b (2026-10-02): two jobs — `build` with read access only
+  (setup, check, build, checksum, notes, uploaded as a workflow artifact) and `publish` with
+  `contents: write`, only on tags, creating the release with GitHub's own `gh` CLI (no
+  third-party action) — so the token that may publish never runs `npm ci` and the install
+  scripts of dependencies; a dry run via `workflow_dispatch` that does everything but publish;
+  CodeQL also analyses the workflow files (language `actions`)
+- Owner decisions (2026-10-01): first release **1.0.0**; cutting it is the last step of F-009
+  (now F-009c)
 - Owner decision (2026-10-02): a control audit in a new session comes right before cutting the
-  release (F-009b)
+  release — F-009b was split at that boundary (2026-10-02): F-009b builds the workflow and the
+  IT guide, F-009c runs the audit and cuts the release; the decision log's references to the
+  IT guide in F-009b stay true
 - The first CHANGELOG entry (1.0.0) lists the features under "Added" only — no "Changed" notes
   for earlier test packages (owner decision 2026-10-02: the first release lists what it
   offers; a single small change does not belong in it)
@@ -119,45 +128,77 @@ medium, two substeps):
 pane order), F-017 (zoom and full-screen fixes from the audit), F-019 (fixes from the control
 audit), F-020 (README with screenshots)
 
-#### F-009b — Release workflow, IT deployment guide, first release
+#### F-009b — Release workflow and IT deployment guide
 
-**What:** `.github/workflows/release.yml`, `docs/deployment.md`, README update, release 1.0.0.
+**What:** `.github/workflows/release.yml` in two jobs plus a dry run, release notes from the
+CHANGELOG, `docs/deployment.md`, README "For IT" and "Versioning and releases", CodeQL for the
+workflow files. About 400 lines. The release itself and the README's release statements follow
+in F-009c, so `main` never claims a release that does not exist yet.
 From F-009a: the release notes come from the CHANGELOG section `## [x.y.z] - date`; docs write
 four-part versions as `x.y.z.0` — privacy-lint reads written-out ones as IP addresses.
 
-**Files:** `.github/workflows/release.yml`, `docs/deployment.md` (new), `README.md`
+**Files:** `.github/workflows/release.yml`, `docs/deployment.md` (new); `scripts/release.mjs`,
+`scripts/release.test.mjs` (`--notes x.y.z`), `.github/workflows/codeql.yml`, `README.md`
 
 **Dependencies:** F-009a
 
 **Acceptance criteria:**
-- [ ] Workflow: runs on `v*` tags only, fails if the tag does not match the version, builds
-      and publishes a GitHub release with `.sppkg`, `.sha256`, `THIRD-PARTY-NOTICES.md` (F-016c)
-      and the CHANGELOG notes; actions pinned by SHA, minimal permissions (`contents: write`
-      only for the release job)
-- [ ] `docs/deployment.md`: App Catalog upload and tenant-wide deployment, updating, Teams
-      sync, removal, the "shared links are effectively public" rule, Signavio domains for
-      firewall/proxy, where to see the version, checksum verification, third-party notices;
-      the hub link target as a known limitation (REQUIREMENTS open question, control audit
-      L46); a short first-use check on the first SharePoint page, including that the keyboard
-      focus stays in the property pane's alignment toolbars and colour field after a change
-      (F-019b, M15 — no SharePoint test environment during development) and, on a touch device,
-      that a pinch in full screen zooms a zoomable diagram and magnifies the page otherwise,
-      without scrolling the page behind (F-019c, L36)
+- [ ] Workflow: runs on `v*` tags and, as a dry run, via `workflow_dispatch`; job `build` with
+      read access only — fails if a tag does not match the version, runs `just setup`, `just
+      check` and `just build`, writes `spfx-procview.sppkg.sha256` and the release notes
+      (`node scripts/release.mjs --notes x.y.z`, fails when the section is missing) and uploads
+      them as a workflow artifact; job `publish` only on tags, the only one with
+      `contents: write`, creates the GitHub release with `gh` and attaches `.sppkg`, `.sha256`
+      and `THIRD-PARTY-NOTICES.md` (F-016c); the package keeps its file name in every release
+      (App Catalog updates replace it — checked against Microsoft's documentation); actions
+      pinned by SHA, including GitHub's `upload-artifact` / `download-artifact`
+- [ ] `release.mjs --notes x.y.z` prints that version's CHANGELOG section and exits with 1 when
+      there is none (tests)
+- [ ] CodeQL analyses the workflow files too (language `actions`; availability checked)
+- [ ] `docs/deployment.md`: App Catalog upload and tenant-wide deployment, updating, Teams,
+      removal, the "shared links are effectively public" rule, Signavio domains for
+      firewall/proxy, where to see the version (App Catalog, property pane), checksum
+      verification (Windows and macOS/Linux), third-party notices; the hub link target as a
+      known limitation (REQUIREMENTS open question, control audit L46); a short first-use check
+      on the first SharePoint page, including that the keyboard focus stays in the property
+      pane's alignment toolbars and colour field after a change (F-019b, M15 — no SharePoint
+      test environment during development), the version line in the pane and, on a touch
+      device, that a pinch in full screen zooms a zoomable diagram and magnifies the page
+      otherwise, without scrolling the page behind (F-019c, L36). App Catalog and Teams labels
+      ("Sync to Teams" or its successor) checked against Microsoft's current documentation —
+      the README follows if they changed
+- [ ] README: "For IT" links to `docs/deployment.md`; "Versioning and releases" describes the
+      release workflow and its dry run
+- [ ] Dry run on GitHub green after the owner approves the push of F-009b and the start of the
+      workflow
+- [ ] `just check` green (isolated copy while the dev server runs)
+
+#### F-009c — Control audit and release 1.0.0
+
+**What:** The control audit before the first release in a new session, fixes for what blocks
+the release, the README's release statements, `just release 1.0.0` and the published release.
+
+**Files:** `AUDIT-RESULTS.md` (local, gitignored), whatever the audit's fixes touch,
+`README.md`; the release commit (`package.json`, `package-lock.json`,
+`config/package-solution.json`, `CHANGELOG.md`)
+
+**Dependencies:** F-009b
+
+**Acceptance criteria:**
 - [ ] Control audit before the release, in a new session: `/audit-code` focused on the changes
       since `914d7c3` (F-019 and F-009 — above all the release workflow and the release
       recipe), checking that the findings of the 2026-10-02 control audit stay resolved; the
       current local `AUDIT-RESULTS.md` is kept before the run overwrites it; findings that block
       the release are fixed before it
 - [ ] README brought up to date for the release (the F-020 README still describes the state
-      before it): "Status" says that release 1.0.0 is out and where to download it; "For IT"
-      links to `docs/deployment.md` instead of the deployment overview and its note "a
-      step-by-step guide … follows with release 1.0.0"; the "Package" and "Updates" bullets
-      describe the GitHub release (`.sppkg`, checksum) and how versions increase instead of
-      "follow with F-009". Committed before `just release 1.0.0`, so the tagged README
-      already describes the release; once the workflow has published `v1.0.0`, the README
-      links (release page, deployment guide) are checked on GitHub
-- [ ] First release: `just release 1.0.0`, owner approves the push of commit and tag, the
-      workflow publishes release `v1.0.0` with the package
+      before it): "Status" says that release 1.0.0 is out and where to download it; the
+      "Package" and "Updates" bullets describe the GitHub release (`.sppkg`, checksum) and how
+      versions increase instead of "follow with F-009". Committed before `just release 1.0.0`,
+      so the tagged README already describes the release; once the workflow has published
+      `v1.0.0`, the README links (release page, deployment guide) are checked on GitHub
+- [ ] First release: `just release 1.0.0` with the dev server stopped, owner approves the push
+      of commit and tag, the workflow publishes release `v1.0.0` with `.sppkg`, `.sha256` and
+      `THIRD-PARTY-NOTICES.md`; the downloaded package matches its checksum
 - [ ] `just check` green
 
 ### F-010 — SPFx upgrade before Node 22 end of life
