@@ -65,6 +65,124 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ## Open tasks — work top to bottom
 
+### F-021 — Fixes from the release control audit before 1.0.0
+
+**Status:** PLANNED
+
+**Problem:** The release control audit of 2026-10-02 (F-009c, after F-019, F-020, F-009a and
+F-009b) found the earlier fixes in place but new issues around the release: a release can be
+published from a commit that is not on `main` (the printed push of `main` and tag is not
+atomic — the tag reaches GitHub even when `main` is rejected), a published release and its
+checksum can still be replaced, and SECURITY.md's private reporting channel is switched off on
+GitHub — plus 18 low findings in the release workflow, the scripts, the web part, zoom and full
+screen, some of them remainders of partly fixed audit findings.
+
+**Idea:** One pass in three substeps, as in F-019: first the release path with the GitHub
+settings, then the web part, pane and settings remainders, then zoom and full screen. Finding
+ids (M18–M20, L47–L64) refer to the local `AUDIT-RESULTS.md` of 2026-10-02 (release control
+audit).
+
+**Solution sketch** (from the triage with the owner, 2026-10-02; F-021a updated at prep-step,
+2026-10-02):
+- **F-021a — release path, tooling, docs, GitHub settings:** the release only from a commit on
+  `main` — `git push --atomic` in the recipe's push command and in the README, `release.mjs`
+  fetches `origin` and refuses a `main` that is behind or has diverged and a tag that exists
+  remotely, the build job checks that the tagged commit is an ancestor of `origin/main` (M18);
+  immutable releases on GitHub before `v1.0.0` (assets and tag locked, a signed release
+  attestation), the IT guide says what the checksum proves and shows `gh release verify-asset`
+  (M19); private vulnerability reporting switched on (M20); `publish` only on the `push` event
+  (L47); no tool cache in the release build (L48); a pinned runner image and the SHA-pinning
+  requirement for actions (L49); release versions without leading zeros (L50); space-like
+  characters in the source character check (L51); pane screenshot with the version line,
+  absolute links in `THIRD-PARTY-NOTICES.md` (L52); temp folders of the script tests removed,
+  the first run of `publish` watched consciously in F-009c (L53). Owner decision: Claude
+  switches the GitHub settings on with `gh api`, each change only after the owner's approval,
+  and reads the state back
+- **F-021b — web part, pane and settings:** stored values that are not booleans or known options
+  normalised, so pane and page never disagree, and the test doubles apply SharePoint's "stored
+  value wins" (L55); a test that compares the manifest defaults with the code fallbacks (L56);
+  `imageLink` read through `settings.ts` (L57); a failed `showModal()` reported instead of
+  escaping uncaught (L61); renames in the files touched (L63: `moveFocus`, `zoomClassNames`,
+  `externalLink`)
+- **F-021c — zoom and full screen:** tests that pin the zoom teardown — the web part disposes
+  the zoom on re-render and dispose, `ZoomView.dispose` removes every listener, a stub
+  `ResizeObserver` for the resize path, the order of `showDialog` and zoom (L54); the frame
+  that holds the fallback focus keeps a role, a name and a visible focus, and window blur does
+  not drop it (L58); no stale mouse or pen pointers at scale 1 (L59); scrolling behind full
+  screen checked in Firefox and Safari, comment or `touch-action` corrected (L60); the test file
+  split and section comments in the SCSS, away from the 500-line limit (L62); naming and an
+  exhaustive `_onControl` (L63); comments (L64)
+
+Owner decisions (2026-10-02): all findings of the release control audit are fixed before
+release 1.0.0, in their own feature before F-009c.
+
+**Dependencies:** F-019, F-020, F-009a, F-009b (done)
+
+#### F-021a — Release path, tooling, docs, GitHub settings
+
+**What:** The release can only be cut from and published for a commit on `main`, published
+releases cannot be changed any more, the reporting channel of SECURITY.md works, and the low
+findings of the release workflow, the scripts and the release docs (M18–M20, L47–L53). Built in
+three blocks with `just check` after each: scripts and recipe, workflows, then GitHub settings
+and docs.
+
+- **Scripts and recipe:** `release.mjs` fetches `origin` with its tags before checking (no
+  release without the network — a check that silently drops out would be worse) and refuses a
+  `main` that is behind `origin/main` or has diverged from it — being ahead is fine (e.g. the
+  F-009c README commit); a tag that exists only on GitHub is then found by the existing tag
+  check. The recipe prints `git push --atomic origin main vx.y.z` (M18). Release versions and
+  release tags follow the SemVer core without leading zeros (L50). The source character check
+  also refuses U+2000–U+200A, U+202F, U+205F, U+2800 and U+3000 (L51; none in the source today).
+  The four script test files remove their temp folders (L53)
+- **Workflows:** the release build checks out the full history and stops when the tagged commit
+  is not an ancestor of `origin/main` (M18); `publish` runs only for a pushed tag, so a manual
+  run on a tag is a dry run too (L47); no mise tool cache in the release build (L48);
+  `runs-on: ubuntu-24.04` in all three workflows (L49)
+- **GitHub settings** (`gh api`, each only after the owner's approval, read back afterwards):
+  immutable releases (M19), private vulnerability reporting (M20), the requirement to pin
+  actions to a full commit SHA (L49)
+- **Docs:** README "Versioning and releases" — atomic push, the `main` checks, immutable
+  releases (a published tag name can never be used again, even after deleting its release: a
+  broken release is replaced by the next patch version), a failed publish (delete a leftover
+  draft, then re-run the job); IT guide — the checksum proves an intact download, `gh release
+  verify-asset` that the file comes from the release (M19); absolute links in
+  `THIRD-PARTY-NOTICES.md` (L52); the pane screenshot with the version line — the owner takes the
+  end of the pane in the local workbench, Claude composes it with the private screenshot tools
+  (L52); a technical decision in REQUIREMENTS
+- Decided at prep-step (2026-10-02, following Claude's recommendations): **no `v*` tag
+  ruleset** — immutable releases lock the tag of every published release; a ruleset would only
+  protect a tag without a release (after a failed build), which is exactly the one that must be
+  deletable, and the owner as admin could bypass it anyway. **`publish` stays one `gh release
+  create`** — with assets it creates a draft, uploads and then publishes (gh manual), so the
+  immutability applies only to the complete release. **No trial run of `publish`** — a test
+  release here would use up its tag name for good, a throwaway repository would be one more
+  public repository; F-009c watches the first real run instead
+
+**Files:** `scripts/release.mjs`, `scripts/release.test.mjs`, `scripts/sync-version.mjs`,
+`scripts/sync-version.test.mjs`, `scripts/source-chars-check.mjs`,
+`scripts/source-chars-check.test.mjs`, `scripts/licence-check.test.mjs`, `justfile`,
+`.github/workflows/release.yml`, `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`,
+`README.md`, `docs/deployment.md`, `THIRD-PARTY-NOTICES.md`, `docs/images/procview-pane.png`,
+`REQUIREMENTS.md`; GitHub repository settings
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] `release.mjs` refuses a `main` behind or diverged from `origin/main` and a failed fetch;
+      tests for both and for "ahead is fine"
+- [ ] Leading zeros (`1.0.01`, `01.0.0`) refused for versions and ignored for tags; tests
+- [ ] The source character check reports the new characters; tests; the source stays clean
+- [ ] The script tests leave no temp folders behind
+- [ ] The recipe and README print `git push --atomic origin main vx.y.z`
+- [ ] Release workflow: ancestry check on tag runs, `publish` only on `push`, no tool cache;
+      all workflows on `ubuntu-24.04`; a dry run on GitHub is green with `publish` skipped;
+      CI and CodeQL green
+- [ ] Immutable releases, private vulnerability reporting and the SHA-pinning requirement read
+      back as on via `gh api`
+- [ ] README, IT guide, `THIRD-PARTY-NOTICES.md` and REQUIREMENTS updated; the pane screenshot
+      shows "Version 1.0.0"
+- [ ] `just check` green
+
 ### F-009 — Versioning, release via CI + IT deployment guide
 
 **Status:** PLANNED
@@ -127,7 +245,7 @@ F-009b, which was split into F-009b and F-009c; size: medium to large, three sub
 
 **Dependencies:** F-002, F-016 (audit before the first release), F-018 (diagram alignment,
 pane order), F-017 (zoom and full-screen fixes from the audit), F-019 (fixes from the control
-audit), F-020 (README with screenshots)
+audit), F-020 (README with screenshots), F-021 (fixes from the release control audit)
 
 #### F-009c — Control audit and release 1.0.0
 
@@ -138,7 +256,9 @@ the release, the README's release statements, `just release 1.0.0` and the publi
 `README.md`; the release commit (`package.json`, `package-lock.json`,
 `config/package-solution.json`, `CHANGELOG.md`)
 
-**Dependencies:** F-009b (its dry run on GitHub is green)
+**Dependencies:** F-009b (its dry run on GitHub is green), F-021 (the fixes from this audit —
+the audit ran on 2026-10-02: 0 critical, 0 high, 3 medium, 18 low; owner decision: all of them
+before the release)
 
 **Acceptance criteria:**
 - [ ] Control audit before the release, in a new session: `/audit-code` focused on the changes
@@ -154,7 +274,9 @@ the release, the README's release statements, `just release 1.0.0` and the publi
       `v1.0.0`, the README links (release page, deployment guide) are checked on GitHub
 - [ ] First release: `just release 1.0.0` with the dev server stopped, owner approves the push
       of commit and tag, the workflow publishes release `v1.0.0` with `.sppkg`, `.sha256` and
-      `THIRD-PARTY-NOTICES.md`; the downloaded package matches its checksum
+      `THIRD-PARTY-NOTICES.md` — the first run of its `publish` job, watched as it runs (F-021a);
+      the downloaded package matches its checksum and `gh release verify-asset v1.0.0` confirms
+      it
 - [ ] `just check` green
 
 ### F-010 — SPFx upgrade before Node 22 end of life
@@ -179,7 +301,7 @@ Node 26 support — audit F-016a, L24)
 ---
 
 <!-- FEATURE-INDEX
-next-feature: F-021
+next-feature: F-022
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
@@ -200,4 +322,5 @@ F-017 Zoom and full-screen fixes from the audit (DONE)
 F-018 Diagram alignment and property pane order (DONE)
 F-019 Fixes from the control audit before the first release (DONE)
 F-020 README with screenshots and a settings reference (DONE)
+F-021 Fixes from the release control audit before 1.0.0 (PLANNED)
 -->
