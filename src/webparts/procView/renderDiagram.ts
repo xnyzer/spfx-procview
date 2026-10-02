@@ -1,6 +1,6 @@
 import type { IDiagramLink } from '../../providers/types';
-import type { CssDeclarations, IDiagramStyles } from './sizing';
-import { backgroundStyles } from './background';
+import type { IDiagramStyles } from './sizing';
+import { applyStyles, createDiagramImage } from './diagramImage';
 import { externalLink } from './externalLink';
 import type { IExternalLink } from './externalLink';
 import { createIcon } from './svgIcon';
@@ -104,7 +104,7 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
     const paragraph = doc.createElement('p');
     paragraph.className = view.classNames.hubLink;
     paragraph.style.setProperty('text-align', view.hubLink.align);
-    paragraph.appendChild(externalLink(doc, view.hubLink, linkClassNames(view.classNames)));
+    paragraph.appendChild(externalLink(doc, view.hubLink, pickLinkClassNames(view.classNames)));
     root.appendChild(paragraph);
   }
   // Set last, so every load/error listener (also the zoom's) is in place before the request starts
@@ -114,22 +114,13 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
 
 /** The image with its sizing styles and listeners — without `src` yet. */
 function createImage(doc: Document, view: IDiagramView): HTMLImageElement {
-  const image = doc.createElement('img');
-  image.className = view.classNames.image;
-  image.alt = view.altText;
-  // The process tool must not learn which SharePoint page embeds the diagram
-  image.setAttribute('referrerpolicy', 'no-referrer');
+  const image = createDiagramImage(doc, {
+    className: view.classNames.image,
+    altText: view.altText,
+    background: view.background
+  });
   image.setAttribute('loading', 'lazy');
-  image.setAttribute('decoding', 'async');
   applyStyles(image, view.style.image);
-
-  const background = view.background;
-  if (background) {
-    // The natural size is known only now; the colour then covers exactly the painted PNG
-    image.addEventListener('load', () =>
-      applyStyles(image, backgroundStyles(background, { width: image.naturalWidth, height: image.naturalHeight }))
-    );
-  }
   const onImageLoad = view.onImageLoad;
   if (onImageLoad) {
     image.addEventListener('load', () => onImageLoad(image.naturalWidth, image.naturalHeight));
@@ -151,7 +142,7 @@ function createFrame(doc: Document, view: IDiagramView, image: HTMLImageElement)
   applyStyles(frame, view.style.frame);
   frame.appendChild(image);
   if (view.hubLink?.position === 'overlay') {
-    const overlay = externalLink(doc, view.hubLink, linkClassNames(view.classNames));
+    const overlay = externalLink(doc, view.hubLink, pickLinkClassNames(view.classNames));
     overlay.className = `${view.classNames.hubAnchor} ${view.classNames.hubOverlay}`;
     frame.appendChild(overlay);
   }
@@ -194,15 +185,8 @@ function createCaption(doc: Document, view: IDiagramView): HTMLElement {
   return caption;
 }
 
-function linkClassNames(classNames: IDiagramView['classNames']): { anchor: string; srOnly: string } {
+function pickLinkClassNames(classNames: IDiagramView['classNames']): { anchor: string; srOnly: string } {
   return { anchor: classNames.hubAnchor, srOnly: classNames.srOnly };
-}
-
-/** Sets CSS declarations on an element via `style.setProperty` (never as a markup string). */
-export function applyStyles(element: HTMLElement, declarations: CssDeclarations): void {
-  Object.keys(declarations).forEach((property) => {
-    element.style.setProperty(property, declarations[property]);
-  });
 }
 
 /** The full-screen button with its icon (two arrows pointing outwards). */

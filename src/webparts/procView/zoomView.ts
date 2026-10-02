@@ -6,7 +6,7 @@ import {
   canZoom,
   clamp,
   isZoomed,
-  maxScale,
+  computeMaxScale,
   pan,
   pinch,
   toTransform,
@@ -14,6 +14,8 @@ import {
 } from './zoom';
 import type { IPoint, IZoomGeometry, IZoomState } from './zoom';
 import { createIcon } from './svgIcon';
+
+// --- Types --------------------------------------------------------------------------------
 
 /** Accessible names of the zoom controls and the zoomable area. */
 export interface IZoomLabels {
@@ -56,6 +58,8 @@ export interface IZoomController {
   state(): IZoomState;
   dispose(): void;
 }
+
+// --- Constants and helpers ----------------------------------------------------------------
 
 /** Exponent per wheel pixel: the zoom factor is e^(−delta × this) — 100 px (one Chrome notch) ≈ 1.16×. */
 const WHEEL_SENSITIVITY = 0.0015;
@@ -101,12 +105,17 @@ function setAvailable(button: HTMLButtonElement, isAvailable: boolean): void {
   }
 }
 
-function isAvailable(button: HTMLButtonElement): boolean {
+function isButtonAvailable(button: HTMLButtonElement): boolean {
   return button.getAttribute('aria-disabled') !== 'true';
 }
 
+/** Mice and pens report which buttons are pressed — touch points do not. */
+function reportsButtons(event: PointerEvent): boolean {
+  return event.pointerType === 'mouse' || event.pointerType === 'pen';
+}
+
 /** Wheel movement in pixels, whatever unit the browser reports. */
-function wheelPixels(event: WheelEvent, pageHeight: number): number {
+function measureWheelPixels(event: WheelEvent, pageHeight: number): number {
   switch (event.deltaMode) {
     case DOM_DELTA_LINE:
       return event.deltaY * WHEEL_LINE;
@@ -116,6 +125,8 @@ function wheelPixels(event: WheelEvent, pageHeight: number): number {
       return event.deltaY;
   }
 }
+
+// --- The zoom view ------------------------------------------------------------------------
 
 /** Zoom and pan on one image; created by `attachZoom`, which describes the behaviour. */
 class ZoomView {
@@ -128,6 +139,8 @@ class ZoomView {
   private readonly _wasDraggable: boolean;
   private _isZoomable: boolean | undefined;
   private _resizeObserver: ResizeObserver | undefined;
+
+  // --- Setup and teardown -----------------------------------------------------------------
 
   public constructor(
     private readonly _doc: Document,
@@ -142,8 +155,6 @@ class ZoomView {
     };
     (_props.host ?? _props.viewport).appendChild(this._controls);
     this._wasDraggable = _props.image.draggable;
-    // The browser's own image drag would cancel panning after a few pixels
-    _props.image.draggable = false;
     _props.image.style.setProperty('transform-origin', '0 0');
     this._addListeners();
     this._render(this._measure());
@@ -179,6 +190,8 @@ class ZoomView {
     return button;
   }
 
+  // --- State and rendering ----------------------------------------------------------------
+
   private _measure(): IZoomGeometry {
     const { image, measure } = this._props;
     return measure
@@ -204,28 +217,60 @@ class ZoomView {
     viewport.classList.toggle(classNames.zoomed, isZoomedIn);
     setAvailable(this._buttons.zoomOut, isZoomedIn);
     setAvailable(this._buttons.reset, isZoomedIn);
-    setAvailable(this._buttons.zoomIn, this._state.scale < maxScale(geometry) - ZOOM_EPSILON);
+    setAvailable(this._buttons.zoomIn, this._state.scale < computeMaxScale(geometry) - ZOOM_EPSILON);
     if (isZoomable !== this._isZoomable) {
       this._isZoomable = isZoomable;
       this._renderZoomable(isZoomable);
     }
   }
 
-  /** Offers zooming (classes, controls, a focusable labelled viewport) or takes it away. */
+  /**
+   * Offers zooming (classes, controls, a focusable labelled viewport, no native image drag) or
+   * takes it away — keeping a focus that was on the controls or the viewport in the frame.
+   */
   private _renderZoomable(isZoomable: boolean): void {
-    const { viewport, labels, classNames } = this._props;
+    const { viewport, image, labels, classNames } = this._props;
     viewport.classList.toggle(classNames.zoomable, isZoomable);
-    this._controls.hidden = !isZoomable;
+    // The browser's own image drag would cancel panning after a few pixels
+    image.draggable = isZoomable ? false : this._wasDraggable;
     if (isZoomable) {
       viewport.tabIndex = 0;
       viewport.setAttribute('role', 'group');
       viewport.setAttribute('aria-label', labels.viewport);
     } else {
+      const hadFocus = this._hasFocus();
       viewport.removeAttribute('tabindex');
       viewport.removeAttribute('role');
       viewport.removeAttribute('aria-label');
+      if (hadFocus) {
+        this._keepFocusInFrame();
+      }
     }
+    this._controls.hidden = !isZoomable;
   }
+
+  /** Whether the keyboard focus is on the zoom controls or the zoomable viewport. */
+  private _hasFocus(): boolean {
+    const active = this._doc.activeElement;
+    return !!active && (active === this._props.viewport || this._controls.contains(active));
+  }
+
+  /**
+   * The focused control or viewport stops being focusable — the frame takes the focus (without
+   * becoming a tab stop) instead of letting it fall to the page, until the focus moves on.
+   */
+  private _keepFocusInFrame(): void {
+    const { viewport } = this._props;
+    viewport.tabIndex = -1;
+    viewport.addEventListener('blur', this._onFrameBlur, { once: true });
+    viewport.focus({ preventScroll: true });
+  }
+
+  private readonly _onFrameBlur = (): void => {
+    if (!this._isZoomable) {
+      this._props.viewport.removeAttribute('tabindex');
+    }
+  };
 
   /** Viewport coordinates of a client point. */
   private _toViewportPoint(clientX: number, clientY: number): IPoint {
@@ -233,8 +278,10 @@ class ZoomView {
     return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
+  // --- Controls and wheel -----------------------------------------------------------------
+
   private _onControl(name: ControlName, button: HTMLButtonElement): void {
-    if (!isAvailable(button)) {
+    if (!isButtonAvailable(button)) {
       return;
     }
     const geometry = this._measure();
@@ -251,14 +298,16 @@ class ZoomView {
       return;
     }
     event.preventDefault();
-    const factor = Math.exp(-wheelPixels(event, geometry.viewport.height) * WHEEL_SENSITIVITY);
+    const factor = Math.exp(-measureWheelPixels(event, geometry.viewport.height) * WHEEL_SENSITIVITY);
     const focal = this._toViewportPoint(event.clientX, event.clientY);
     this._set(zoomBy(this._state, geometry, { factor, focal }), geometry);
   };
 
+  // --- Pointer gestures -------------------------------------------------------------------
+
   private readonly _onPointerDown = (event: PointerEvent): void => {
-    const isOtherMouseButton = event.pointerType === 'mouse' && event.button !== PRIMARY_BUTTON;
-    if (isOtherMouseButton || isOnControl(event) || this._pointers.size >= 2 || !canZoom(this._measure())) {
+    const isOtherButton = reportsButtons(event) && event.button !== PRIMARY_BUTTON;
+    if (isOtherButton || isOnControl(event) || this._pointers.size >= 2 || !canZoom(this._measure())) {
       return;
     }
     const point = this._toViewportPoint(event.clientX, event.clientY);
@@ -276,7 +325,7 @@ class ZoomView {
     }
     if (this._pointers.size === 2 || isZoomed(this._state)) {
       event.preventDefault();
-      // Keeps the gesture when the pointer leaves the frame (not every engine has it)
+      // Keeps the gesture when the pointer leaves the frame (`?.`: jsdom has no pointer capture)
       this._props.viewport.setPointerCapture?.(event.pointerId);
     }
   };
@@ -285,8 +334,8 @@ class ZoomView {
     if (!this._pointers.has(event.pointerId)) {
       return;
     }
-    // The button was released where we could not see it (e.g. over a context menu)
-    if (event.pointerType === 'mouse' && event.buttons === 0) {
+    // The button was released where we could not see it (e.g. over a context menu, a lifted pen)
+    if (reportsButtons(event) && event.buttons === 0) {
       this._onPointerEnd(event);
       return;
     }
@@ -321,12 +370,14 @@ class ZoomView {
     this._lastPan = remaining && isZoomed(this._state) ? remaining : undefined;
   };
 
+  // --- Keys -------------------------------------------------------------------------------
+
   private readonly _onKeyDown = (event: KeyboardEvent): void => {
     const geometry = this._measure();
     if (event.ctrlKey || event.metaKey || event.altKey || !canZoom(geometry)) {
       return;
     }
-    const next = this._keyAction(event.key, geometry);
+    const next = this._findKeyAction(event.key, geometry);
     if (next) {
       event.preventDefault();
       this._set(next, geometry);
@@ -338,7 +389,7 @@ class ZoomView {
    * while zoomed — otherwise they keep scrolling the page; they move the view, so the image
    * moves the opposite way. A `switch`, so key names such as `constructor` match nothing.
    */
-  private _keyAction(key: string, geometry: IZoomGeometry): IZoomState | undefined {
+  private _findKeyAction(key: string, geometry: IZoomGeometry): IZoomState | undefined {
     const step = { x: geometry.viewport.width * PAN_STEP, y: geometry.viewport.height * PAN_STEP };
     const canMove = isZoomed(this._state);
     switch (key) {
@@ -362,7 +413,14 @@ class ZoomView {
     }
   }
 
-  private readonly _onDragStart = (event: Event): void => event.preventDefault();
+  // --- Drag, geometry and listeners -------------------------------------------------------
+
+  /** Only the zoomable image: links and buttons in the frame stay draggable. */
+  private readonly _onDragStart = (event: Event): void => {
+    if (this._isZoomable) {
+      event.preventDefault();
+    }
+  };
 
   /** The geometry may have changed: image loaded, column resized. */
   private readonly _onGeometryChange = (): void => {
@@ -378,7 +436,7 @@ class ZoomView {
     viewport.addEventListener('pointercancel', this._onPointerEnd);
     viewport.addEventListener('lostpointercapture', this._onPointerEnd);
     viewport.addEventListener('keydown', this._onKeyDown);
-    viewport.addEventListener('dragstart', this._onDragStart);
+    image.addEventListener('dragstart', this._onDragStart);
     image.addEventListener('load', this._onGeometryChange);
     // A changed column width (window resize, tablet rotation) changes the limits
     const view = this._doc.defaultView;
@@ -399,12 +457,15 @@ class ZoomView {
     viewport.removeEventListener('pointercancel', this._onPointerEnd);
     viewport.removeEventListener('lostpointercapture', this._onPointerEnd);
     viewport.removeEventListener('keydown', this._onKeyDown);
-    viewport.removeEventListener('dragstart', this._onDragStart);
+    viewport.removeEventListener('blur', this._onFrameBlur);
+    image.removeEventListener('dragstart', this._onDragStart);
     image.removeEventListener('load', this._onGeometryChange);
     this._resizeObserver?.disconnect();
     this._doc.defaultView?.removeEventListener('resize', this._onGeometryChange);
   }
 }
+
+// --- Entry point --------------------------------------------------------------------------
 
 /**
  * Adds zoom and pan to a diagram: controls (−, +, fit) in the host (by default the viewport),

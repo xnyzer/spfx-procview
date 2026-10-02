@@ -37,7 +37,8 @@ export const ACCENT_VARIABLE = '--themePrimary';
 
 /**
  * Colour syntax a theme value may use: hex, `rgb()`/`rgba()`/`hsl()`/`hsla()` with plain numbers,
- * or a keyword such as `transparent`. The variables feed `background:` declarations, which also
+ * or a single word made of letters (a keyword such as `transparent` — a bare word cannot load
+ * anything, so any word passes). The variables feed `background:` declarations, which also
  * accept images — anything else (`url(…)`, `image-set(…)`, `;`) is dropped, so a theme value can
  * never make the browser load something.
  */

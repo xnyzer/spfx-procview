@@ -325,8 +325,10 @@ $lightbox-padding-side: 24px;
   border: 0;
   background: rgba(0, 0, 0, 0.85);
   overflow: hidden;
-  // Gestures on the dark layer must not zoom the page behind it (the frame's own classes decide inside)
-  touch-action: none;
+  // The page behind never scrolls along, by touch or wheel. Gestures stay with the browser — a
+  // pinch magnifies — except on a zoomable frame, whose classes hand them to the diagram (owner
+  // decision 2026-10-02)
+  overscroll-behavior: contain;
 
   :focus-visible {
     outline: 2px solid #ffffff;
@@ -364,8 +366,8 @@ $lightbox-padding-side: 24px;
   display: block;
   width: auto;
   height: auto;
-  // The visible window: dvw/dvh leave out a page scrollbar and mobile toolbars; vw/vh before
-  // them for browsers without dynamic viewport units
+  // The visible window: dvh leaves out the toolbars of mobile browsers (dvw equals vw); vw/vh
+  // first for browsers without dynamic viewport units
   max-width: calc(100vw - #{2 * $lightbox-padding-side});
   max-width: calc(100dvw - #{2 * $lightbox-padding-side});
   max-height: calc(100vh - #{$lightbox-padding-top + $lightbox-padding-side});

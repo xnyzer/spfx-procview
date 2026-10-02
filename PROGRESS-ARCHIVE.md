@@ -8,6 +8,135 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-019 — Fixes from the control audit before the first release
+
+_Completed 2026-10-02 (F-019a, F-019b, F-019c)._
+
+**Problem:** The control audit of 2026-10-02 (after F-016, F-017 and F-018) confirmed most audit
+fixes but found new issues: a zoomed diagram can stay half-zoomed and unclipped after a resize,
+the alignment toolbars in the property pane lose the keyboard focus after every change in
+SharePoint, the web part and pane wiring is untested (the lifecycle fixes of F-016c can be
+reverted without a red test), and a new toolchain advisory (`node-forge`) is not recorded in
+ADR-0001 — plus 21 low findings, some of them remainders of partly fixed audit findings.
+
+**Idea:** One pass in three substeps, as in F-016 and F-017: first pin the web part and the pane
+with tests, then the pane focus with tooling and docs, then zoom and full screen. Finding ids
+(M14–M17, L26–L46) refer to the local `AUDIT-RESULTS.md` of 2026-10-02.
+
+**Solution sketch** (from the triage with the owner, 2026-10-02; F-019a updated at prep-step the
+same day — F-019b and F-019c get their own prep-step after F-019a, since b builds on the pane
+tests of a):
+- **F-019a — web part and pane tests, lifecycle and settings remainders (done 2026-10-02):** tests on the real
+  `ProcViewWebPart.ts` and `propertyPane.ts` through shared SPFx test doubles (the real SPFx
+  packages do not load under Jest) instead of the copied wiring in `injection.test.ts` — stale
+  and after-dispose events, hostile settings through `render()`, pane order, conditional
+  fields and defaults (M16); a stored load error counts only while the same link stays
+  entered (L32, owner decision) — `render()` drops an error of another link, so a late policy
+  violation can no longer upgrade a stale one (L29); a throwing Teams theme callback is
+  reported through `onError` instead of left as an unhandled rejection (L30); more invisible
+  characters count as empty text (L31); exhaustive `render()` switch (L37); the pixel limit
+  without digit grouping, as the field accepts it (L38); the pane reads the stored values
+  through `readPaneSettings()` in `settings.ts` (L39); the full-screen button reports itself
+  via `onAttach`, so the focus returns by reference, not by its label (L40); a real assertion
+  for the colour field (L41)
+- **F-019b — pane focus, tooling, docs (updated at prep-step, done 2026-10-02):** SharePoint
+  fetches the pane configuration again after every change and calls `onRender` of each custom
+  field again; `customPaneField` keeps the content per host element and only shows the new
+  value, so the alignment toolbars and the colour input keep the keyboard focus (M15 — no
+  SharePoint test environment, so the runtime check moves to the first-use check of the F-009b
+  IT guide); the `node-forge` advisory GHSA-86w9-cpqp-85rv (dev only, not reachable) recorded in
+  ADR-0002 (extends ADR-0001), both open Dependabot alerts (`node-forge`, `uuid`) dismissed as
+  tolerable risk with that reference (M17, owner approved); raw no-break spaces written as `\u`
+  escapes (L44, owner decision) and a dependency-free check in `just check` that fails on raw
+  invisible or control characters in the source (owner decision); the licence check takes the
+  bundled packages from the build's source map and checks the notices both ways (L45); doc drift
+  — README status, decision table order, FEATURE-INDEX marker, the hub link target question
+  points to the F-009b IT guide (L46); the README's template-managed "Getting started" block
+  stays as it is — icons and licences are described as part of `just check` elsewhere
+- **F-019c — zoom and full screen (updated at prep-step, 2026-10-02):** `clamp` in `zoom.ts`
+  falls back to the configured size whenever the headroom is too small to zoom, for every path
+  (M14); when the zoom controls disappear while focused, the frame takes the focus with
+  `tabindex="-1"` (L26); the broken image is removed in the full-screen error state (L27);
+  only the close button ignores held Enter/space (L28); `showModal()` before the zoom is
+  attached, a failure removes the dialog and is passed on (L33); no native drag only for the
+  image while zoomable (L34); pens handled like mice (L35); the dark layer drops
+  `touch-action: none` for `overscroll-behavior: contain`, so the frame's classes decide and
+  the browser's pinch magnification stays available while the diagram cannot be zoomed (L36,
+  owner decision; checked on a touch device in the F-009b first-use check); tests for these
+  (L41); wrong comments (L42); section comments in `zoomView.ts`, the image setup of page and
+  full screen shared in `diagramImage.ts` with `applyStyles`, `performance.now()` for the
+  close guard, renames only in files touched anyway (L43)
+
+**Dependencies:** F-016, F-017, F-018 (done)
+
+**Result:** every finding of the control audit is resolved — 4 medium, 21 low, plus the
+remainders of the partly fixed F-016a findings (M4, M7, M12, L4, L13, L19c). The web part and
+the property pane are tested on SharePoint stand-ins, so the lifecycle fixes can no longer be
+reverted unnoticed; `just check` also guards the source characters and derives the licence
+notices from the build. Jest tests 681 (was 603), script tests 26 (was 12). Runtime checks
+without a test environment (pane focus in SharePoint, pinch in full screen on a touch device)
+are part of the F-009b first-use check.
+
+### F-019c — Zoom and full-screen remainders
+
+_Part of F-019 — Fixes from the control audit before the first release. Completed 2026-10-02._
+
+**What:** The zoom and full-screen remainders of the control audit (M14, L26, L27, L28, L33,
+L34, L35, L36, L41, L42, L43), each behaviour change with a test that failed before the fix.
+
+**Files:** `zoom.ts`, `zoomView.ts`, `lightbox.ts`, `renderDiagram.ts`, `diagramImage.ts` (new),
+`ProcViewWebPart.module.scss`, `svgIcon.ts`, `theme.ts`; `zoom.test.ts`, `zoomView.test.ts`,
+`lightbox.test.ts`
+
+**Dependencies:** F-019b
+
+**Acceptance criteria:**
+- [x] M14: after a resize into the 1.00–1.05 headroom band the zoom is back at the configured
+      size — no transform, no `zoomed` class — `zoom.test.ts`, `zoomView.test.ts` (both failed
+      before the fix)
+- [x] L26: when the zoom controls disappear while one of them is focused, the focus stays in
+      the frame; a focus elsewhere stays where it is (test failed before)
+- [x] L27, L28, L33: the error state has no image; held Enter is ignored only on the close
+      button; a failing `showModal()` leaves no dialog behind and passes the error on (tests
+      failed before — the orphaned dialog even broke a following `onClose` test)
+- [x] L34, L35: `dragstart` is cancelled only on the image and only while zoomable; a pen's
+      barrel button does not pan and a lifted pen ends the drag (tests failed before)
+- [x] L36: the dark layer has `overscroll-behavior: contain` instead of `touch-action: none`;
+      the touch-device check is part of the F-009b first-use check
+- [x] L41–L43: dispose in the middle of a gesture and a second dispose tested; five comments
+      corrected; section comments in `zoomView.ts`; page and full screen build the image with
+      `diagramImage.ts`; the close guard uses `performance.now()`; renames done, no old name
+      left
+- [x] `just check` green — 681 Jest tests (was 670), 26 script tests; longest function
+      `openLightbox` 42 lines, longest file `zoomView.test.ts` 498 lines
+
+**Implemented:**
+- `zoom.ts` — `clamp` returns the configured size whenever `canZoom` is false; `maxScale` is
+  `computeMaxScale`.
+- `zoomView.ts` — `_renderZoomable` sets `draggable` only while zoomable and keeps a focus on
+  the controls or the viewport in the frame (`tabindex="-1"`, dropped again on blur); the
+  `dragstart` guard sits on the image and acts only while zoomable; `reportsButtons` treats
+  pens like mice for the primary button and a lost release; section comments; renames
+  (`measureWheelPixels`, `isButtonAvailable`, `_findKeyAction`).
+- `lightbox.ts` — `showDialog` appends and shows the dialog and removes it again if
+  `showModal()` throws; the zoom is attached only afterwards (a `const`), the closing is wired
+  after that; the broken image is removed on error; the held-key guard sits on the close
+  button; the close guard uses `performance.now()`.
+- `diagramImage.ts` — `createDiagramImage` (class, alt text, no referrer, async decoding,
+  background colour once the natural size is known) and `applyStyles`, used by `renderDiagram.ts`
+  and `lightbox.ts`; the lightbox no longer depends on the page renderer.
+- `renderDiagram.ts` — builds its image with `createDiagramImage`; `pickLinkClassNames`.
+- Stylesheet — `overscroll-behavior: contain` on the dark layer, comments on gestures and on
+  `dvh`/`dvw` corrected; `svgIcon.ts` and `theme.ts` — doc comments corrected.
+
+**Decisions / deviations:**
+- `openLightbox` is ordered more strictly than planned: `showModal()` first, then the zoom,
+  then the closing — nothing is attached to a dialog that never opened.
+- `renderDiagram.test.ts` needed no change: the page, full-screen and injection tests cover the
+  move to `diagramImage.ts`.
+- `zoomView.test.ts` is at 498 lines, just under the hard limit — the next zoom change should
+  move the pointer tests into a file of their own.
+
 ### F-019b — Pane focus, tooling, docs
 
 _Part of F-019 — Fixes from the control audit before the first release. Completed 2026-10-02._

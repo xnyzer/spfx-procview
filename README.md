@@ -16,9 +16,8 @@ designed so that further process tools can be supported later.
 In development: all planned features are implemented — display and sizing, caption,
 Collaboration Hub link, empty and error states, texts in English, German, French and
 Spanish, theme colours per section, zoom and pan, full-screen view, a background behind the
-diagram, and Microsoft Teams tabs. There is **no release yet**: the fixes from the control
-audit (F-019) and the first release 1.0.0 with versioning, CI release and an IT deployment
-guide (F-009) follow.
+diagram, and Microsoft Teams tabs. There is **no release yet**: the first release 1.0.0 with
+versioning, CI release and an IT deployment guide (F-009) follows.
 See `PROGRESS.md` for the roadmap.
 
 ## Using the web part (for page editors)

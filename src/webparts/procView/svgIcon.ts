@@ -11,9 +11,10 @@ export const SVG_NS = 'http://www.w3.org/2000/svg';
 const ICON_GRID = 16;
 const STROKE_WIDTH = '1.5';
 
-/** The line icons and their stroke path on the 16 × 16 grid. */
+/** The names of the web part's line icons. */
 export type IconName = 'zoomIn' | 'zoomOut' | 'reset' | 'fullScreen' | 'close' | 'externalLink';
 
+/** Each line icon: its stroke path on the 16 × 16 grid and whether the line ends are round. */
 const ICONS: Record<IconName, { path: string; hasRoundCaps: boolean }> = {
   // Plus, minus and "fit" (four corners)
   zoomIn: { path: 'M3 8h10M8 3v10', hasRoundCaps: true },

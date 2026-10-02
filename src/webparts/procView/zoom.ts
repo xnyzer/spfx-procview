@@ -91,14 +91,14 @@ function getPaintedArea(geometry: IZoomGeometry): IPaintedArea | undefined {
 }
 
 /** Largest scale: the image at its natural size (never below 1). */
-export function maxScale(geometry: IZoomGeometry): number {
+export function computeMaxScale(geometry: IZoomGeometry): number {
   const painted = getPaintedArea(geometry);
   return painted ? Math.max(1, geometry.natural.width / painted.width) : 1;
 }
 
 /** Whether zooming makes sense — the image is shown noticeably smaller than its natural size. */
 export function canZoom(geometry: IZoomGeometry): boolean {
-  return maxScale(geometry) >= MIN_HEADROOM;
+  return computeMaxScale(geometry) >= MIN_HEADROOM;
 }
 
 function clampAxis(offset: number, scale: number, axis: IAxis): number {
@@ -117,14 +117,15 @@ function clampAxis(offset: number, scale: number, axis: IAxis): number {
 /**
  * Brings scale and offset into range: 1 … natural size, the image never leaves the viewport.
  * A scale or offset that is not a finite number falls back to the configured size and the
- * top-left corner, so a broken input can never leave the state at NaN.
+ * top-left corner, so a broken input can never leave the state at NaN. Below the zoom headroom
+ * (`canZoom`) it is always the configured size — e.g. when the frame grew while zoomed.
  */
 export function clamp(state: IZoomState, geometry: IZoomGeometry): IZoomState {
   const painted = getPaintedArea(geometry);
-  if (!painted) {
+  if (!painted || !canZoom(geometry)) {
     return INITIAL_STATE;
   }
-  const scale = Math.min(Math.max(Number.isFinite(state.scale) ? state.scale : 1, 1), maxScale(geometry));
+  const scale = Math.min(Math.max(Number.isFinite(state.scale) ? state.scale : 1, 1), computeMaxScale(geometry));
   return {
     scale,
     x: clampAxis(state.x, scale, { start: painted.left, length: painted.width, viewport: geometry.viewport.width }),
@@ -137,7 +138,7 @@ export function zoomTo(state: IZoomState, geometry: IZoomGeometry, target: IZoom
   if (!Number.isFinite(target.scale)) {
     return clamp(state, geometry);
   }
-  const scale = Math.min(Math.max(target.scale, 1), maxScale(geometry));
+  const scale = Math.min(Math.max(target.scale, 1), computeMaxScale(geometry));
   const ratio = scale / state.scale;
   const { focal } = target;
   return clamp({ scale, x: focal.x - (focal.x - state.x) * ratio, y: focal.y - (focal.y - state.y) * ratio }, geometry);

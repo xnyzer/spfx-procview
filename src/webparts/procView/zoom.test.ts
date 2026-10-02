@@ -1,4 +1,15 @@
-import { INITIAL_STATE, canZoom, clamp, isZoomed, maxScale, pan, pinch, toTransform, zoomBy, zoomTo } from './zoom';
+import {
+  INITIAL_STATE,
+  canZoom,
+  clamp,
+  isZoomed,
+  computeMaxScale,
+  pan,
+  pinch,
+  toTransform,
+  zoomBy,
+  zoomTo
+} from './zoom';
 import type { IPinch, IPoint, IZoomGeometry, IZoomState } from './zoom';
 
 /** Image element shows the diagram at a quarter of its natural size, no letterbox. */
@@ -8,15 +19,22 @@ const CONTAIN: IZoomGeometry = { viewport: { width: 500, height: 500 }, natural:
 /** Diagram shown larger than its natural size — nothing to zoom. */
 const SMALL: IZoomGeometry = { viewport: { width: 500, height: 250 }, natural: { width: 400, height: 200 } };
 
-describe('maxScale / canZoom', () => {
+describe('clamp — too little headroom to zoom (audit M14)', () => {
+  it('falls back to the configured size, however the state got there', () => {
+    const nearlyNatural = { viewport: { width: 1960, height: 980 }, natural: { width: 2000, height: 1000 } };
+    expect(clamp({ scale: 1.02, x: -40, y: -20 }, nearlyNatural)).toEqual(INITIAL_STATE);
+  });
+});
+
+describe('computeMaxScale / canZoom', () => {
   it('allows zooming up to the natural size', () => {
-    expect(maxScale(FILL)).toBe(4);
-    expect(maxScale(CONTAIN)).toBe(4);
+    expect(computeMaxScale(FILL)).toBe(4);
+    expect(computeMaxScale(CONTAIN)).toBe(4);
     expect(canZoom(FILL)).toBe(true);
   });
 
   it('offers no zoom when the diagram is already shown at or above its natural size', () => {
-    expect(maxScale(SMALL)).toBe(1);
+    expect(computeMaxScale(SMALL)).toBe(1);
     expect(canZoom(SMALL)).toBe(false);
     expect(canZoom({ viewport: { width: 500, height: 250 }, natural: { width: 510, height: 255 } })).toBe(false);
   });

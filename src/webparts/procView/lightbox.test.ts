@@ -47,7 +47,7 @@ afterAll(() => {
 
 let opener: HTMLButtonElement;
 let lightbox: ILightbox | undefined;
-/** The test clock (`Date.now`) — clicks that close only count after the guard time. */
+/** The test clock (`performance.now`) — clicks that close only count after the guard time. */
 let now = 0;
 let clock: jest.SpyInstance<number, []> | undefined;
 
@@ -58,7 +58,7 @@ function later(): void {
 
 beforeEach(() => {
   now = 1000000;
-  clock = jest.spyOn(Date, 'now').mockImplementation(() => now);
+  clock = jest.spyOn(performance, 'now').mockImplementation(() => now);
   showModal.mockClear();
   closeDialog.mockClear();
   opener = document.createElement('button');
@@ -228,12 +228,33 @@ describe('openLightbox — no close right after opening', () => {
   });
 });
 
+describe('openLightbox — held keys on the zoom buttons (audit L28)', () => {
+  it('lets a held Enter repeat on the zoom buttons — only "close" ignores it', () => {
+    const dialog = open();
+    const zoomIn = dialog.querySelector('button[aria-label="Zoom in"]') as HTMLButtonElement;
+    const repeat = new KeyboardEvent('keydown', { key: 'Enter', repeat: true, bubbles: true, cancelable: true });
+    zoomIn.dispatchEvent(repeat);
+    expect(repeat.defaultPrevented).toBe(false);
+  });
+});
+
+describe('openLightbox — showModal fails (audit L33)', () => {
+  it('leaves no dialog behind and passes the error on', () => {
+    showModal.mockImplementationOnce(() => {
+      throw new Error('not allowed');
+    });
+    expect(() => openLightbox(document, PROPS)).toThrow('not allowed');
+    expect(document.querySelector('dialog')).toBeNull();
+  });
+});
+
 describe('openLightbox — error state', () => {
   it('shows the load-failed text instead of a broken image', () => {
     const dialog = open();
     const image = dialog.querySelector('img') as HTMLImageElement;
     image.dispatchEvent(new Event('error'));
-    expect(image.hidden).toBe(true);
+    // Removed, not hidden: no broken-image icon, no alt text on the dark layer (audit L27)
+    expect(dialog.querySelector('img')).toBeNull();
     const message = dialog.querySelector('.lightboxMessage');
     expect(message?.textContent).toBe('The diagram could not be loaded');
     expect(message?.getAttribute('role')).toBe('alert');

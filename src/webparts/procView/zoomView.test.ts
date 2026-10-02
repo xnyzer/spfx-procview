@@ -312,7 +312,7 @@ describe('attachZoom — focus and unavailable controls', () => {
 });
 
 describe('attachZoom — mouse buttons, lost pointers and native drag', () => {
-  function zoomedFixture(): IFixture {
+  function setupZoomed(): IFixture {
     const zoomed = setup();
     key(zoomed.viewport, '+');
     key(zoomed.viewport, '+');
@@ -320,7 +320,7 @@ describe('attachZoom — mouse buttons, lost pointers and native drag', () => {
   }
 
   it('pans only with the primary mouse button (right and middle open menus or autoscroll)', () => {
-    const { image, zoom } = zoomedFixture();
+    const { image, zoom } = setupZoomed();
     const before = zoom.state();
     // [button, buttons bit]: middle (1 → 4) and right (2 → 2)
     [
@@ -335,7 +335,7 @@ describe('attachZoom — mouse buttons, lost pointers and native drag', () => {
   });
 
   it('ends the drag when the mouse button turns out to be released (lost pointerup)', () => {
-    const { image, zoom } = zoomedFixture();
+    const { image, zoom } = setupZoomed();
     pointer(image, 'pointerdown', { id: 1, x: 200, y: 100, pointerType: 'mouse', buttons: 1 });
     pointer(image, 'pointermove', { id: 1, x: 190, y: 100, pointerType: 'mouse', buttons: 1 });
     const afterDrag = zoom.state();
@@ -346,7 +346,7 @@ describe('attachZoom — mouse buttons, lost pointers and native drag', () => {
   });
 
   it('ends the gesture when the pointer capture is lost', () => {
-    const { viewport, image, zoom } = zoomedFixture();
+    const { viewport, image, zoom } = setupZoomed();
     pointer(image, 'pointerdown', { id: 1, x: 200, y: 100 });
     pointer(viewport, 'lostpointercapture', { id: 1, x: 200, y: 100 });
     const before = zoom.state();
@@ -392,4 +392,107 @@ describe('attachZoom — wheel units and unexpected keys', () => {
       expect(zoom.state()).toEqual({ scale: 1, x: 0, y: 0 });
     }
   );
+});
+
+describe('attachZoom — a resize below the zoom headroom (audit M14)', () => {
+  it('goes back to the configured size when the frame grows close to the natural size', () => {
+    const { viewport, image, zoom, setGeometry } = setup();
+    for (let press = 0; press < 10; press++) {
+      key(viewport, '+');
+    }
+    expect(zoom.state().scale).toBe(4);
+    // The column widened: the image now shows at 98 % of its natural size
+    setGeometry({ viewport: { width: 1960, height: 980 }, natural: { width: 2000, height: 1000 } });
+    image.dispatchEvent(new Event('load'));
+    expect(zoom.state()).toEqual({ scale: 1, x: 0, y: 0 });
+    expect(image.style.transform).toBe('');
+    expect(viewport.classList.contains('zoomed')).toBe(false);
+  });
+});
+
+describe('attachZoom — the focus when the controls disappear (audit L26)', () => {
+  it('keeps the focus in the frame when a focused control disappears', () => {
+    const { viewport, image, buttons, setGeometry } = setup();
+    buttons().zoomIn.focus();
+    setGeometry(FULL_SIZE);
+    image.dispatchEvent(new Event('load'));
+    expect(document.activeElement).toBe(viewport);
+    expect(viewport.getAttribute('tabindex')).toBe('-1');
+    viewport.blur();
+    expect(viewport.hasAttribute('tabindex')).toBe(false);
+  });
+
+  it('leaves a focus elsewhere where it is', () => {
+    const { image, setGeometry } = setup();
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    outside.focus();
+    setGeometry(FULL_SIZE);
+    image.dispatchEvent(new Event('load'));
+    expect(document.activeElement).toBe(outside);
+    outside.remove();
+  });
+});
+
+describe('attachZoom — native drag only for the zoomable image (audit L34)', () => {
+  function startDrag(target: Element): Event {
+    const drag = new Event('dragstart', { bubbles: true, cancelable: true });
+    target.dispatchEvent(drag);
+    return drag;
+  }
+
+  it('lets links in the frame be dragged', () => {
+    const { viewport } = setup();
+    const link = document.createElement('a');
+    link.href = 'https://example.com/';
+    viewport.appendChild(link);
+    expect(startDrag(link).defaultPrevented).toBe(false);
+  });
+
+  it('leaves the image draggable while there is nothing to zoom', () => {
+    const { image } = setup(FULL_SIZE);
+    expect(image.draggable).toBe(true);
+    expect(startDrag(image).defaultPrevented).toBe(false);
+  });
+});
+
+describe('attachZoom — pens (audit L35)', () => {
+  function setupZoomed(): IFixture {
+    const zoomed = setup();
+    key(zoomed.viewport, '+');
+    key(zoomed.viewport, '+');
+    return zoomed;
+  }
+
+  it('does not pan with the barrel button of a pen', () => {
+    const { image, zoom } = setupZoomed();
+    const before = zoom.state();
+    pointer(image, 'pointerdown', { id: 7, x: 200, y: 100, pointerType: 'pen', button: 2, buttons: 2 });
+    pointer(image, 'pointermove', { id: 7, x: 150, y: 50, pointerType: 'pen', buttons: 2 });
+    expect(zoom.state()).toEqual(before);
+  });
+
+  it('ends the drag of a pen lifted where the frame could not see it', () => {
+    const { image, zoom } = setupZoomed();
+    pointer(image, 'pointerdown', { id: 8, x: 200, y: 100, pointerType: 'pen', buttons: 1 });
+    pointer(image, 'pointermove', { id: 8, x: 190, y: 100, pointerType: 'pen', buttons: 1 });
+    const afterDrag = zoom.state();
+    // The pen hovers again (no button pressed) — its pointerup never reached the frame
+    pointer(image, 'pointermove', { id: 8, x: 100, y: 100, pointerType: 'pen', buttons: 0 });
+    pointer(image, 'pointermove', { id: 8, x: 50, y: 100, pointerType: 'pen', buttons: 1 });
+    expect(zoom.state()).toEqual(afterDrag);
+  });
+});
+
+describe('attachZoom — dispose during a gesture (audit L41)', () => {
+  it('ignores the rest of the gesture and tolerates a second dispose', () => {
+    const { viewport, image, zoom } = setup();
+    key(viewport, '+');
+    pointer(image, 'pointerdown', { id: 1, x: 200, y: 100, pointerType: 'mouse', buttons: 1 });
+    zoom.dispose();
+    pointer(image, 'pointermove', { id: 1, x: 100, y: 50, pointerType: 'mouse', buttons: 1 });
+    expect(image.style.transform).toBe('');
+    expect(() => zoom.dispose()).not.toThrow();
+    expect(viewport.querySelector('button')).toBeNull();
+  });
 });
