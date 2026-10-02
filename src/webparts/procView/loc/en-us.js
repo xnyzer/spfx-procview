@@ -44,12 +44,13 @@ define([], function () {
     MessageBlockedBody:
       'A security policy of this site prevents loading the diagram from {0}. Ask your SharePoint administrator to allow this domain.',
     ConfigureButton: 'Configure',
-    SizeGroupName: 'Size',
+    SizeGroupName: 'Size and alignment',
     WidthLabel: 'Width',
     WidthDescription:
       'Pixels (e.g. 800), percent of the column (e.g. 50%), or empty for automatic. Never wider than the column.',
     HeightLabel: 'Height',
     HeightDescription: 'Pixels (e.g. 600) or empty for automatic. The diagram keeps its proportions.',
+    DiagramAlignLabel: 'Alignment',
     ViewingGroupName: 'Viewing',
     OfferZoomLabel: 'Offer zoom',
     OfferFullScreenLabel: 'Offer full screen',
@@ -61,7 +62,6 @@ define([], function () {
     ZoomOut: 'Zoom out',
     ZoomReset: 'Fit to frame',
     ZoomViewportLabel: 'Zoomable diagram: + and − zoom, arrow keys move, 0 fits it to the frame',
-    AccessibilityGroupName: 'Accessibility',
     AltTextLabel: 'Alternative text',
     AltTextDescription: 'Describes the diagram for screen readers. Empty: "Process diagram".',
     AboutGroupName: 'About',

@@ -44,6 +44,7 @@
       // Initial values — they must match the fallbacks in the code (settings.ts) so the
       // property pane shows the defaults as selected
       "properties": {
+        "diagramAlign": "center",
         "captionAlign": "center",
         "showHubLink": false,
         "hubLinkPosition": "below",

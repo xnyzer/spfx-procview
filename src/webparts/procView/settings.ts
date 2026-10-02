@@ -19,6 +19,8 @@ export interface IProcViewWebPartProps {
   width?: string;
   /** px or empty/`auto`. */
   height?: string;
+  /** Position of a diagram narrower than its column: `left`, `center` (default) or `right`. */
+  diagramAlign?: string;
   /** Alternative text of the image; empty → generic text. */
   altText?: string;
   /** Visible caption below the diagram; empty → none. */
@@ -46,11 +48,15 @@ export interface IProcViewWebPartProps {
 /** The settings as they really arrive: page data can hold any type in any field. */
 export type UntrustedProps = { readonly [K in keyof IProcViewWebPartProps]?: unknown };
 
-/** Settings with a text alignment. */
-export type AlignProperty = 'captionAlign' | 'hubLinkAlign';
+/** Settings with an alignment. */
+export type AlignProperty = 'diagramAlign' | 'captionAlign' | 'hubLinkAlign';
 
-/** Default alignment per setting: the caption is centred, the hub link sits on the right. */
-const ALIGN_DEFAULTS: Record<AlignProperty, TextAlign> = { captionAlign: 'center', hubLinkAlign: 'right' };
+/** Default alignment per setting: diagram and caption are centred, the hub link sits on the right. */
+const ALIGN_DEFAULTS: Record<AlignProperty, TextAlign> = {
+  diagramAlign: 'center',
+  captionAlign: 'center',
+  hubLinkAlign: 'right'
+};
 
 const AUTO: Dimension = { kind: 'auto' };
 
@@ -162,7 +168,11 @@ export function readSettings(
 ): ISettings {
   return {
     diagram: {
-      style: diagramStyles(readDimension(props.width, 'width'), readDimension(props.height, 'height')),
+      style: diagramStyles(
+        readDimension(props.width, 'width'),
+        readDimension(props.height, 'height'),
+        readAlign(props, 'diagramAlign')
+      ),
       altText: readText(props.altText) || strings.DefaultAltText,
       caption: readText(props.caption),
       captionAlign: readAlign(props, 'captionAlign'),

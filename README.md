@@ -27,16 +27,17 @@ See `PROGRESS.md` for the roadmap.
    the **"Simple image"** tab — not the embed code. The image updates automatically when
    the diagram changes in Signavio.
 2. **Add "Process diagram (ProcView)"** to a SharePoint page (group "Planning and process")
-   and paste the link into **Diagram → Image link** in the property pane. The pane shows the
-   diagram's maximum (natural) size once it has loaded.
-3. **Settings:**
+   and paste the link into **Diagram → Image link** in the property pane. Below it, the
+   **alternative text** describes the diagram for screen readers (default "Process diagram").
+3. **Settings** (in the order of the property pane):
+   - **Size and alignment** — the diagram's maximum (natural) size once it has loaded; width
+     in pixels, percent of the column (e.g. `50%`) or empty for automatic; height in pixels or
+     empty. The diagram is never wider than its column and never distorted. A diagram
+     narrower than its column is centred by default — or aligned left or right.
    - **Caption** — optional text below the diagram; alignment left / center / right.
    - **Collaboration Hub link** — switch on to show a link to the interactive diagram
      (readers need access to SAP Signavio); link text (default "Open in Signavio"); position
      below the diagram (with its own alignment) or on the diagram, bottom right.
-   - **Size** — width in pixels, percent of the column (e.g. `50%`) or empty for automatic;
-     height in pixels or empty. The diagram is never wider than its column and never
-     distorted.
    - **Viewing** — **Offer zoom** (off by default) lets readers zoom into large diagrams:
      buttons top right on the diagram (−, +, fit), Ctrl/Cmd + mouse wheel, two-finger pinch on
      touch screens, drag to move while zoomed, and keys (+, −, 0, arrow keys); zooming goes up
@@ -47,7 +48,6 @@ See `PROGRESS.md` for the roadmap.
      **Background behind the diagram** (on by default, white) puts a colour exactly behind
      the diagram — Signavio images are transparent and hard to read on dark or coloured
      sections; pick another colour or switch it off. It applies in full screen as well.
-   - **Accessibility** — alternative text for screen readers (default "Process diagram").
    - **About** — link to this repository (source code, documentation, issues).
 4. **When something is wrong:** editors see what to fix (no link yet, a wrong link such as
    the embed code, or why the image could not be loaded — e.g. revoked sharing, or a

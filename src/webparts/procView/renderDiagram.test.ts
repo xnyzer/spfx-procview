@@ -15,7 +15,7 @@ const LINK: IDiagramLink = {
 function view(overrides: Partial<IDiagramView> = {}): IDiagramView {
   return {
     link: LINK,
-    style: diagramStyles({ kind: 'percent', value: 50 }, { kind: 'px', value: 600 }),
+    style: diagramStyles({ kind: 'percent', value: 50 }, { kind: 'px', value: 600 }, 'center'),
     altText: 'Order process',
     caption: '',
     captionAlign: 'center',
@@ -69,6 +69,8 @@ describe('renderDiagram — valid link', () => {
     const frame = image?.parentElement as HTMLElement;
     expect(frame.style.getPropertyValue('width')).toBe('50%');
     expect(frame.style.getPropertyValue('max-width')).toBe('100%');
+    expect(frame.style.getPropertyValue('margin-left')).toBe('auto');
+    expect(frame.style.getPropertyValue('margin-right')).toBe('auto');
     expect(image?.style.getPropertyValue('width')).toBe('100%');
     expect(image?.style.getPropertyValue('height')).toBe('600px');
     expect(image?.style.getPropertyValue('max-width')).toBe('100%');

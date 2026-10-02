@@ -46,14 +46,19 @@ export interface IPaneSource {
   naturalSizeText: string;
 }
 
-/** The whole property pane: one page with the groups in the order editors work through them. */
+/**
+ * The whole property pane: one page with the groups in the order editors work through them —
+ * the diagram and its description, its size and position, the texts around it, what readers
+ * can do with it, and the about info last.
+ */
 export function propertyPaneConfiguration(source: IPaneSource): IPropertyPaneConfiguration {
   return {
     pages: [
       {
         header: { description: strings.PropertyPaneDescription },
         groups: [
-          diagramGroup(source),
+          diagramGroup(),
+          sizeGroup(source),
           {
             groupName: strings.CaptionGroupName,
             groupFields: [
@@ -65,14 +70,7 @@ export function propertyPaneConfiguration(source: IPaneSource): IPropertyPaneCon
             ]
           },
           { groupName: strings.HubLinkGroupName, groupFields: hubLinkFields(source) },
-          sizeGroup(),
           viewingGroup(source),
-          {
-            groupName: strings.AccessibilityGroupName,
-            groupFields: [
-              PropertyPaneTextField('altText', { label: strings.AltTextLabel, description: strings.AltTextDescription })
-            ]
-          },
           { groupName: strings.AboutGroupName, groupFields: [aboutField(source)] }
         ]
       }
@@ -80,8 +78,8 @@ export function propertyPaneConfiguration(source: IPaneSource): IPropertyPaneCon
   };
 }
 
-/** Image link and, read-only, the natural size of the loaded image. */
-function diagramGroup(source: IPaneSource): IPropertyPaneGroup {
+/** Image link and the alternative text that describes the image. */
+function diagramGroup(): IPropertyPaneGroup {
   return {
     groupName: strings.DiagramGroupName,
     groupFields: [
@@ -92,8 +90,7 @@ function diagramGroup(source: IPaneSource): IPropertyPaneGroup {
         onGetErrorMessage: validateLink,
         deferredValidationTime: LINK_VALIDATION_DELAY_MS
       }),
-      // Read-only info — the target is a label id, not a stored property
-      PropertyPaneLabel('naturalSizeInfo', { text: source.naturalSizeText })
+      PropertyPaneTextField('altText', { label: strings.AltTextLabel, description: strings.AltTextDescription })
     ]
   };
 }
@@ -131,10 +128,13 @@ function hubLinkFields(source: IPaneSource): IPropertyPaneField<unknown>[] {
   return fields;
 }
 
-function sizeGroup(): IPropertyPaneGroup {
+/** The natural size as orientation, then width, height and the position in the column. */
+function sizeGroup(source: IPaneSource): IPropertyPaneGroup {
   return {
     groupName: strings.SizeGroupName,
     groupFields: [
+      // Read-only info — the target is a label id, not a stored property
+      PropertyPaneLabel('naturalSizeInfo', { text: source.naturalSizeText }),
       PropertyPaneTextField('width', {
         label: strings.WidthLabel,
         description: strings.WidthDescription,
@@ -148,7 +148,8 @@ function sizeGroup(): IPropertyPaneGroup {
         placeholder: 'auto',
         onGetErrorMessage: (value: string) => validateDimension(value, 'height'),
         deferredValidationTime: DIMENSION_VALIDATION_DELAY_MS
-      })
+      }),
+      alignField(source, 'diagramAlign', strings.DiagramAlignLabel)
     ]
   };
 }

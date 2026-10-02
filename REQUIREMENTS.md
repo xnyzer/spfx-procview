@@ -35,6 +35,7 @@
      (a percentage height is meaningless — the column has no fixed height),
    - read-only info: the image's maximum (natural) size, read from the loaded image
      (`naturalWidth × naturalHeight`),
+   - alignment of a diagram narrower than its column: left / centre (default) / right,
    - toggle "Offer zoom" (enables feature 6 — added to the pane together with it),
    - toggle "Show Collaboration Hub link" (enables feature 3 — added together with it),
    - optional alternative text (accessibility; a generic label is used when empty),
@@ -134,6 +135,8 @@ Dated entries; never rewrite history — supersede with a newer entry instead.
 | 2026-10-01 | Teams (F-008): the web part is offered as a channel tab only — `TeamsPersonalApp` removed from `supportedHosts`; in Teams it follows the Teams theme (dark and high contrast override the colour variables with fixed palettes) | Personal Teams apps show no property pane, so no link could be entered (owner decision); SPFx passes the SharePoint site theme in Teams, not the Teams theme |
 | 2026-10-01 | Full screen always shows a colour behind the diagram — the configured background colour, otherwise white; the setting "Background behind the diagram" only switches the page (refines the F-015 entry; implemented in F-017) | Audit F-016a (M9): with the setting off, the transparent PNG drawn for white paper was unreadable on the dark full-screen layer (owner decision) |
 | 2026-10-01 | The host `SharePointFullPage` is removed from `supportedHosts`; the web part is offered on pages and as a Teams channel tab only (implemented in F-016c) | Audit F-016a (L15): the full-page app host was neither documented nor tested; only tested hosts are offered, as with the personal Teams app (owner decision) |
+| 2026-10-02 | Diagram alignment (F-018): setting left / centre / right, **centred by default** (manifest value and code fallback — web parts saved before move from left to centred), same icon toolbar as the caption; it positions only a diagram narrower than its column, caption and hub link keep their own alignment | The code never positioned the diagram, so its place depended on the surrounding layout — in the local workbench narrow diagrams jumped from centre to left when another web part was added (owner decision) |
+| 2026-10-02 | Property pane order (F-018): **Diagram** (image link, alternative text) → **Size and alignment** (maximum-size info, width, height, alignment) → **Caption** → **Collaboration Hub link** → **Viewing** → **About**; the group "Accessibility" goes away | The pane had grown feature by feature: the size sat far from the link and the alternative text came last, where it is easily missed; the new order follows how editors work (owner decision) |
 
 ### Technical decisions
 

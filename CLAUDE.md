@@ -36,7 +36,7 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
 requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-018 in `PROGRESS.md`). All planned
-features are done (562 Jest tests, 12 script tests): Signavio link validation and provider
+features are done (567 Jest tests, 12 script tests): Signavio link validation and provider
 contract (F-001), configuration pane, sizing and caption (F-002), Collaboration Hub link
 (F-003), empty and error states (F-004), section theme colours (F-005), zoom and pan — "Offer
 zoom", default off (F-006), full-screen view — "Offer full screen", default on (F-007), Teams
@@ -45,9 +45,10 @@ Workbench extension (F-011), texts in EN/DE/FR/ES — FR/ES Signavio labels unve
 repository link in the pane (F-013), own Teams app icons via `just icons` (F-014), background
 behind the diagram — default on and white (F-015), and the audit before the first release
 (F-016: settings module with injection tests, lifecycle guard, licence check and third-party
-notices in `just check`). Next: F-018 (diagram alignment and property pane order), then F-017
-(zoom and full-screen fixes from the audit), then F-009 (versioning, CI release, IT guide,
-release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
+notices in `just check`), diagram alignment — centred by default — and the property pane in
+the editors' order (F-018). Next: F-017 (zoom and full-screen fixes from the audit), then
+F-009 (versioning, CI release, IT guide, release 1.0.0); F-010 waits for SPFx 1.24 (Node
+24/26, GA targeted for October 2026).
 
 ## Project notes (learned the hard way)
 

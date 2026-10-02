@@ -97,15 +97,27 @@ describe('diagramStyles', () => {
     ],
     ['% / px', pct(50), px(600), { width: '50%' }, { width: '100%', height: '600px', 'object-fit': 'contain' }]
   ])('%s', (_label, width, height, frame, image) => {
-    expect(diagramStyles(width, height)).toEqual({
-      frame: { ...frame, 'max-width': '100%' },
+    expect(diagramStyles(width, height, 'center')).toEqual({
+      frame: { ...frame, 'max-width': '100%', 'margin-left': 'auto', 'margin-right': 'auto' },
       image: { ...image, 'max-width': '100%' }
     });
   });
 
   it('never puts a percentage on the image except 100% of its frame', () => {
-    const { image } = diagramStyles(pct(30), auto);
+    const { image } = diagramStyles(pct(30), auto, 'center');
     expect(image.width).toBe('100%');
+  });
+
+  it.each<['left' | 'center' | 'right', string, string]>([
+    ['left', '0', 'auto'],
+    ['center', 'auto', 'auto'],
+    ['right', 'auto', '0']
+  ])('positions the frame %s with automatic margins (pixel, percent and automatic width)', (align, left, right) => {
+    [px(400), pct(50), auto].forEach((width) => {
+      const { frame } = diagramStyles(width, auto, align);
+      expect(frame['margin-left']).toBe(left);
+      expect(frame['margin-right']).toBe(right);
+    });
   });
 });
 

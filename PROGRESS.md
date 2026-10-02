@@ -48,62 +48,11 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-016b | Settings read in `settings.ts`, property pane in `propertyPane.ts`; injection tests over all fields; theme, provider-link and text hardening | 2026-10-01 |
 | F-016c | Lifecycle guard, Teams theme errors logged, licence check and third-party notices, full-page host and unused dependencies removed, per-instance pane field keys, docs and tooling fixes | 2026-10-02 |
 | F-016 | Audit before the first release (F-016a, F-016b, F-016c) | 2026-10-02 |
+| F-018 | Diagram alignment (centred by default) and property pane in the editors' order | 2026-10-02 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-018 — Diagram alignment and property pane order
-
-**Status:** PLANNED
-
-**Problem:** A diagram narrower than its column has no defined horizontal position: the code
-places it at the left, yet in the local workbench narrow diagrams appeared centred and jumped
-to the left when another web part was added. Editors expect diagrams centred by default. The
-property pane also grew feature by feature: the size sits far from the image link, and the
-alternative text comes last, where it is easily missed.
-
-**Idea:** An alignment setting for the diagram itself — left, centre or right, centred by
-default — and a property pane ordered the way editors work: the diagram and its description
-first, then size and position, the texts around the diagram, the reader functions, and the
-about info last.
-
-**Solution sketch** (updated at prep-step, 2026-10-02; size: small to medium, one step — the
-alignment field, the pane order and the texts belong together):
-- New setting `diagramAlign`: manifest initial value and code fallback `center` — also for
-  web parts saved before the setting existed (they move from left to centred); the same icon
-  toolbar as the caption, reusing `readAlign`
-- The alignment becomes part of the frame styles: `diagramStyles(width, height, align)` sets
-  `margin-left`/`margin-right` (`auto` for centre, `0`/`auto` for the sides), `readSettings`
-  passes `readAlign(props, 'diagramAlign')`; `renderDiagram` stays unchanged. The hub overlay,
-  the control bar and zoom sit in the frame and move with it; caption and hub link keep their
-  own alignment; full screen unaffected
-- Pane order (owner decision 2026-10-02): **Diagram** (image link, alternative text) →
-  **Size and alignment** (maximum-size info, width, height, alignment) → **Caption** →
-  **Collaboration Hub link** → **Viewing** (zoom, full screen, background, colour) →
-  **About**; the group "Accessibility" goes away, "Size" becomes "Size and alignment"
-- Texts in all four languages: new `DiagramAlignLabel` (Alignment / Ausrichtung / Alignement /
-  Alineación), `SizeGroupName` becomes "Size and alignment" (Größe und Ausrichtung / Taille et
-  alignement / Tamaño y alineación), `AccessibilityGroupName` goes away — the typed
-  completeness test covers them; the check on 2026-10-02 found all 75 keys complete in every
-  language; hostile values covered by `injection.test.ts`
-- README "Using the web part" in the new order; REQUIREMENTS decision log (alignment, order)
-
-**Dependencies:** F-016 (settings module, instance-keyed pane fields)
-
-**Files:** `settings.ts`, `sizing.ts`, `propertyPane.ts`, `ProcViewWebPart.manifest.json`,
-`loc/*.js`, `loc/mystrings.d.ts`, `linkErrors.test.ts`, `sizing.test.ts`, `settings.test.ts`,
-`injection.test.ts`; `README.md`, `REQUIREMENTS.md`
-
-**Acceptance criteria:**
-- [ ] A diagram narrower than its column is centred by default — also in web parts saved
-      before the setting existed; left and right work with pixel, percent and automatic width;
-      the hub overlay and the control bar move with the diagram (tests, visual check)
-- [ ] The property pane follows the decided order; the alignment sits after width and height
-      and shows each web part's own value when switching between diagrams (visual check)
-- [ ] Texts complete in all four languages (typed test); hostile values in `diagramAlign`
-      have no effect (`injection.test.ts`)
-- [ ] `just check` green (isolated copy while the dev server runs)
 
 ### F-017 — Zoom and full-screen fixes from the audit
 
@@ -163,6 +112,8 @@ tags and attaches it to a GitHub release; a deployment guide for IT.
 - Release workflow on tags `v*`: tag must equal the version, `just setup` + `just build`,
   GitHub release with the `.sppkg`, a SHA-256 checksum and the CHANGELOG section as notes
 - Owner decisions (2026-10-01): first release **1.0.0**; cutting it is the last step of F-009b
+- The first CHANGELOG notes visible changes for pages built with earlier test packages:
+  narrow diagrams are centred by default (F-018)
 
 **Dependencies:** F-002, F-016 (audit before the first release), F-018 (diagram alignment,
 pane order), F-017 (zoom and full-screen fixes from the audit)
@@ -245,5 +196,5 @@ F-014 Own Teams app icons instead of the generator placeholders (DONE)
 F-015 Diagram background (setting) (DONE)
 F-016 Audit before the first release (DONE)
 F-017 Zoom and full-screen fixes from the audit
-F-018 Diagram alignment and property pane order (PLANNED)
+F-018 Diagram alignment and property pane order (DONE)
 -->

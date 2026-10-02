@@ -93,7 +93,9 @@ describe('readDimension', () => {
 });
 
 describe('readAlign', () => {
-  it('falls back per setting: caption centred, hub link right', () => {
+  it('falls back per setting: diagram and caption centred, hub link right', () => {
+    expect(readAlign({}, 'diagramAlign')).toBe('center');
+    expect(readAlign({ diagramAlign: 'right' }, 'diagramAlign')).toBe('right');
     expect(readAlign({}, 'captionAlign')).toBe('center');
     expect(readAlign({}, 'hubLinkAlign')).toBe('right');
     expect(readAlign({ captionAlign: 'left', hubLinkAlign: 'center' }, 'captionAlign')).toBe('left');
@@ -104,6 +106,7 @@ describe('readAlign', () => {
     'ignores the hostile value %p',
     (value) => {
       expect(readAlign({ captionAlign: value }, 'captionAlign')).toBe('center');
+      expect(readAlign({ diagramAlign: value }, 'diagramAlign')).toBe('center');
     }
   );
 });
@@ -130,7 +133,7 @@ describe('readSettings', () => {
   it('applies every default to empty settings', () => {
     expect(readSettings({}, LINK, STRINGS)).toEqual({
       diagram: {
-        style: diagramStyles({ kind: 'auto' }, { kind: 'auto' }),
+        style: diagramStyles({ kind: 'auto' }, { kind: 'auto' }, 'center'),
         altText: 'Process diagram',
         caption: '',
         captionAlign: 'center',
@@ -184,5 +187,18 @@ describe('readSettings', () => {
       offerZoom: false,
       offerFullScreen: true
     });
+  });
+});
+
+describe('readSettings — diagram alignment', () => {
+  it('centres the diagram by default — also for web parts saved before the setting existed', () => {
+    const { frame } = readSettings({ width: '400' }, LINK, STRINGS).diagram.style;
+    expect(frame['margin-left']).toBe('auto');
+    expect(frame['margin-right']).toBe('auto');
+  });
+
+  it('puts the diagram to the left or right on request', () => {
+    expect(readSettings({ diagramAlign: 'left' }, LINK, STRINGS).diagram.style.frame['margin-left']).toBe('0');
+    expect(readSettings({ diagramAlign: 'right' }, LINK, STRINGS).diagram.style.frame['margin-right']).toBe('0');
   });
 });

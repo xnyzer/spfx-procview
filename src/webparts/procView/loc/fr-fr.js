@@ -49,12 +49,13 @@ define([], function () {
     MessageBlockedBody:
       'Une stratégie de sécurité de ce site empêche le chargement du diagramme depuis {0}. L’administrateur SharePoint peut autoriser ce domaine.',
     ConfigureButton: 'Configurer',
-    SizeGroupName: 'Taille',
+    SizeGroupName: 'Taille et alignement',
     WidthLabel: 'Largeur',
     WidthDescription:
       'Pixels (p. ex. 800), pourcentage de la colonne (p. ex. 50 %) ou vide pour automatique. Jamais plus large que la colonne.',
     HeightLabel: 'Hauteur',
     HeightDescription: 'Pixels (p. ex. 600) ou vide pour automatique. Le diagramme conserve ses proportions.',
+    DiagramAlignLabel: 'Alignement',
     ViewingGroupName: 'Affichage',
     OfferZoomLabel: 'Proposer le zoom',
     OfferFullScreenLabel: 'Proposer le plein écran',
@@ -66,7 +67,6 @@ define([], function () {
     ZoomOut: 'Zoom arrière',
     ZoomReset: 'Ajuster au cadre',
     ZoomViewportLabel: 'Diagramme zoomable : + et − zooment, les flèches déplacent, 0 l’ajuste au cadre',
-    AccessibilityGroupName: 'Accessibilité',
     AltTextLabel: 'Texte de remplacement',
     AltTextDescription: 'Décrit le diagramme pour les lecteurs d’écran. Vide : « Diagramme de processus ».',
     AboutGroupName: 'À propos',

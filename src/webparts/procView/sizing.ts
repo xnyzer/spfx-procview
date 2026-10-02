@@ -1,9 +1,11 @@
 /**
- * Display size of the diagram: parsing the width/height settings and turning them into
- * CSS for the `<img>`. Pure functions — no DOM, no SharePoint.
+ * Display size and position of the diagram: parsing the width/height settings and turning them
+ * and the alignment into CSS for the `<img>` and its frame. Pure functions — no DOM, no
+ * SharePoint.
  */
 
 import { format } from './messages';
+import type { TextAlign } from './renderDiagram';
 
 /** Upper bound for pixel values — guards against typos such as 20000. */
 export const MAX_PX = 10000;
@@ -89,6 +91,13 @@ export interface IDiagramStyles {
   image: CssDeclarations;
 }
 
+/** Position of the frame in its column: automatic margins take up the free space. */
+const FRAME_MARGINS: Record<TextAlign, CssDeclarations> = {
+  left: { 'margin-left': '0', 'margin-right': 'auto' },
+  center: { 'margin-left': 'auto', 'margin-right': 'auto' },
+  right: { 'margin-left': 'auto', 'margin-right': '0' }
+};
+
 /**
  * Sizing rules: the diagram never grows wider than its column (`max-width: 100%`); with one
  * value set, the other follows the aspect ratio; whenever the height is fixed, the image
@@ -99,12 +108,16 @@ export interface IDiagramStyles {
  * corner. A percentage width therefore goes on the frame (it resolves against the column)
  * and the image fills it — a percentage on an image inside a shrink-to-fit frame would be
  * circular. Pixel and automatic widths stay on the image.
+ *
+ * `align` positions a frame narrower than its column (left, centre or right); the hub overlay,
+ * the control bar and zoom sit in the frame and move with it.
  */
-export function diagramStyles(width: Dimension, height: Dimension): IDiagramStyles {
+export function diagramStyles(width: Dimension, height: Dimension, align: TextAlign): IDiagramStyles {
   return {
     frame: {
       width: width.kind === 'percent' ? `${width.value}%` : 'fit-content',
-      'max-width': '100%'
+      'max-width': '100%',
+      ...FRAME_MARGINS[align]
     },
     image: {
       width: width.kind === 'percent' ? '100%' : toCss(width),

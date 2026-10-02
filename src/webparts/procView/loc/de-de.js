@@ -48,12 +48,13 @@ define([], function () {
     MessageBlockedBody:
       'Eine Sicherheitsrichtlinie dieser Website verhindert, dass das Diagramm von {0} geladen wird. Die SharePoint-Administration kann diese Domain zulassen.',
     ConfigureButton: 'Konfigurieren',
-    SizeGroupName: 'Größe',
+    SizeGroupName: 'Größe und Ausrichtung',
     WidthLabel: 'Breite',
     WidthDescription:
       'Pixel (z. B. 800), Prozent der Spalte (z. B. 50 %) oder leer für automatisch. Nie breiter als die Spalte.',
     HeightLabel: 'Höhe',
     HeightDescription: 'Pixel (z. B. 600) oder leer für automatisch. Das Diagramm behält seine Proportionen.',
+    DiagramAlignLabel: 'Ausrichtung',
     ViewingGroupName: 'Ansicht',
     OfferZoomLabel: 'Zoom anbieten',
     OfferFullScreenLabel: 'Vollbild anbieten',
@@ -65,7 +66,6 @@ define([], function () {
     ZoomOut: 'Verkleinern',
     ZoomReset: 'Einpassen',
     ZoomViewportLabel: 'Zoombares Diagramm: + und − zoomen, Pfeiltasten verschieben, 0 passt es ein',
-    AccessibilityGroupName: 'Barrierefreiheit',
     AltTextLabel: 'Alternativtext',
     AltTextDescription: 'Beschreibt das Diagramm für Screenreader. Leer: „Prozessdiagramm“.',
     AboutGroupName: 'Info',
