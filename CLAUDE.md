@@ -47,8 +47,8 @@ behind the diagram — default on and white (F-015), and the audit before the fi
 (F-016: settings module with injection tests, lifecycle guard, licence check and third-party
 notices in `just check`), diagram alignment — centred by default — and the property pane in
 the editors' order (F-018), and the zoom and full-screen fixes from the audit (F-017). Next:
-F-009 (versioning, CI release, IT guide, release 1.0.0); F-010 waits for SPFx 1.24 (Node
-24/26, GA targeted for October 2026).
+F-019 (fixes from the control audit of 2026-10-02), then F-009 (versioning, CI release, IT
+guide, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
 
 ## Project notes (learned the hard way)
 

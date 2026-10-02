@@ -58,6 +58,53 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ## Open tasks — work top to bottom
 
+### F-019 — Fixes from the control audit before the first release
+
+**Status:** BACKLOG
+
+**Problem:** The control audit of 2026-10-02 (after F-016, F-017 and F-018) confirmed most audit
+fixes but found new issues: a zoomed diagram can stay half-zoomed and unclipped after a resize,
+the alignment toolbars in the property pane lose the keyboard focus after every change in
+SharePoint, the web part and pane wiring is untested (the lifecycle fixes of F-016c can be
+reverted without a red test), and a new toolchain advisory (`node-forge`) is not recorded in
+ADR-0001 — plus 21 low findings, some of them remainders of partly fixed audit findings.
+
+**Idea:** One pass in three substeps, as in F-016 and F-017: first pin the web part and the pane
+with tests, then the pane focus with tooling and docs, then zoom and full screen. Finding ids
+(M14–M17, L26–L46) refer to the local `AUDIT-RESULTS.md` of 2026-10-02.
+
+**Solution sketch** (from the triage with the owner, 2026-10-02):
+- **F-019a — web part and pane tests, lifecycle and settings remainders:** tests on the real
+  `ProcViewWebPart.ts` and `propertyPane.ts` instead of the copied wiring in
+  `injection.test.ts` — stale and after-dispose events, hostile settings through `render()`,
+  pane order, conditional fields and defaults (M16); a policy violation re-renders only for the
+  current link (L29); a throwing Teams theme callback is reported instead of left as an
+  unhandled rejection (L30); more invisible characters count as empty text (L31); a stored load
+  error counts only while the same link stays entered (L32, owner decision); exhaustive
+  `render()` switch (L37); the pixel limit formatted in the UI language (L38); the pane reads
+  settings through `settings.ts` (L39); focus return to the full-screen button by reference,
+  not by its label (L40); a real assertion for the colour field (L41)
+- **F-019b — pane focus, tooling, docs:** custom pane fields updated in place instead of rebuilt
+  on every pane update, so the alignment toolbars and the colour input keep the keyboard focus
+  — checked in a SharePoint test site (M15); the `node-forge` advisory GHSA-86w9-cpqp-85rv
+  (dev only, not reachable) recorded in ADR-0001, the Dependabot alert dismissed with that
+  reason only after the owner's approval (M17); raw no-break spaces in `loc/` and tests written
+  as `\u` escapes (L44, owner decision); the licence check takes the bundled packages from the
+  build instead of a hand-kept list (L45); doc drift — README status and `just check`
+  description, decision table order, FEATURE-INDEX marker; the hub link target question
+  becomes a known limitation in the F-009b IT guide unless resolved (L46)
+- **F-019c — zoom and full screen:** back to the fitted view when a resize leaves too little
+  headroom to zoom (M14); keep the focus when the zoom controls disappear (L26); hide the
+  image in the full-screen error state (L27); held Enter repeats on the zoom buttons again,
+  only closing is guarded (L28); no orphaned dialog if `showModal()` fails (L33); no native drag
+  only for the image while zoomable (L34); pens handled like mice (L35); in full screen the
+  browser's pinch magnification stays available while the diagram cannot be zoomed (L36, owner
+  decision); tests for these (L41); wrong comments (L42); section comments in `zoomView.ts`,
+  shared image setup for page and full screen, a monotonic clock for the close guard, renames
+  only in files touched anyway (L43)
+
+**Dependencies:** F-016, F-017, F-018 (done)
+
 ### F-009 — Versioning, release via CI + IT deployment guide
 
 **Status:** PLANNED
@@ -88,7 +135,8 @@ tags and attaches it to a GitHub release; a deployment guide for IT.
   narrow diagrams are centred by default (F-018)
 
 **Dependencies:** F-002, F-016 (audit before the first release), F-018 (diagram alignment,
-pane order), F-017 (zoom and full-screen fixes from the audit)
+pane order), F-017 (zoom and full-screen fixes from the audit), F-019 (fixes from the control
+audit)
 
 #### F-009a — One version, version display, release recipe (local)
 
@@ -150,7 +198,7 @@ Node 26 support — audit F-016a, L24)
 ---
 
 <!-- FEATURE-INDEX
-next-feature: F-019
+next-feature: F-020
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
@@ -169,4 +217,5 @@ F-015 Diagram background (setting) (DONE)
 F-016 Audit before the first release (DONE)
 F-017 Zoom and full-screen fixes from the audit (DONE)
 F-018 Diagram alignment and property pane order (DONE)
+F-019 Fixes from the control audit before the first release (BACKLOG)
 -->
