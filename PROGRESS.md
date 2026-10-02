@@ -135,34 +135,67 @@ audit), F-020 (README with screenshots), F-021 (fixes from the release control a
 
 #### F-009c — Control audit and release 1.0.0
 
-**What:** The control audit before the first release in a new session, fixes for what blocks
-the release, the README's release statements, `just release 1.0.0` and the published release.
+**What:** The control audit before the first release (done — its findings were fixed in F-021),
+the docs brought to the state of a released project, `just release 1.0.0` and the published,
+verified release. Planned at prep-step 2026-10-02 in three phases, each step that writes to
+GitHub only after the owner's approval:
 
-**Files:** `AUDIT-RESULTS.md` (local, gitignored), whatever the audit's fixes touch,
-`README.md`; the release commit (`package.json`, `package-lock.json`,
-`config/package-solution.json`, `CHANGELOG.md`)
+1. **Docs before the tag** (one commit, pushed before `just release`, so the tagged README already
+   describes the release): README "Status" — released, download from the GitHub releases page,
+   worded without a fixed version; "For IT" — the "Package" and "Updates" bullets describe the
+   GitHub release (package, checksum, immutable, `gh release verify-asset`) instead of "follow
+   with F-009"; badges — GitHub's own status badges for CI (exists), CodeQL and Release, and
+   shields.io badges for the release version, the licence and the SPFx version (owner decision
+   2026-10-02: the criterion is "no tracking" — shields.io keeps no logs and sets no cookies, and
+   on GitHub README images go through GitHub's image proxy, so shields.io never sees a visitor);
+   a dated decision in REQUIREMENTS that supersedes the F-020 entry "the repository depends on no
+   third-party website" (an outage of shields.io only shows a broken badge); SECURITY.md
+   "Supported versions" — the latest release, fixes as a new patch release, instead of
+   "pre-release, latest `main` only"; `private/README.md` lists the local browser-check page
+2. **The release:** the owner stops the dev server (`just check` cleans its folders); Claude runs
+   `mise exec -- just release 1.0.0` after the owner's approval (fetch and checks, version,
+   CHANGELOG, `just check`, release commit and tag — local only); the owner approves
+   `git push --atomic origin main v1.0.0` — from here it is final: a published version can never
+   be replaced, only followed by 1.0.1; Claude watches the workflow — tag check, the ancestry
+   check against `main` (its first real run) and the first real `publish` run
+3. **Checks afterwards:** the release holds exactly `spfx-procview.sppkg`, its `.sha256` and
+   `THIRD-PARTY-NOTICES.md` and is immutable; the downloaded package passes `shasum -c`,
+   `gh release verify v1.0.0` and `gh release verify-asset v1.0.0 spfx-procview.sppkg`; on
+   GitHub the badges show the release and the README links (release page, IT guide) resolve
+
+Not part of F-009c (owner decisions 2026-10-02): the editor warnings on `tsconfig.json` (VS
+Code's own TypeScript 6 flags the SPFx rig's `target` and `moduleResolution`; the project builds
+with TypeScript 5.8.3) stay as they are; GitHub's "generated from project-template" label stays;
+the HOW-TO wording on where the skills come from goes to the template (managed file) and arrives
+here with `/update-conventions`.
+
+**Files:** `README.md`, `SECURITY.md`, `REQUIREMENTS.md`, `private/README.md`; the release commit
+(`package.json`, `package-lock.json`, `config/package-solution.json`, `CHANGELOG.md`, written by
+`just release`)
 
 **Dependencies:** F-009b (its dry run on GitHub is green), F-021 (the fixes from this audit —
 the audit ran on 2026-10-02: 0 critical, 0 high, 3 medium, 18 low; owner decision: all of them
-before the release)
+before the release; done)
 
 **Acceptance criteria:**
-- [ ] Control audit before the release, in a new session: `/audit-code` focused on the changes
+- [x] Control audit before the release, in a new session: `/audit-code` focused on the changes
       since `914d7c3` (F-019 and F-009 — above all the release workflow and the release
       recipe), checking that the findings of the 2026-10-02 control audit stay resolved; the
       current local `AUDIT-RESULTS.md` is kept before the run overwrites it; findings that block
-      the release are fixed before it
-- [ ] README brought up to date for the release (the F-020 README still describes the state
-      before it): "Status" says that release 1.0.0 is out and where to download it; the
-      "Package" and "Updates" bullets describe the GitHub release (`.sppkg`, checksum) and how
-      versions increase instead of "follow with F-009". Committed before `just release 1.0.0`,
-      so the tagged README already describes the release; once the workflow has published
-      `v1.0.0`, the README links (release page, deployment guide) are checked on GitHub
+      the release are fixed before it — audit 2026-10-02 (21 of 25 earlier findings fixed, the
+      rest followed up; 21 new findings), all fixed in F-021 (owner decision); the previous
+      results stay archived locally
+- [ ] Docs before the tag: README status, "For IT" and badges, the REQUIREMENTS decision on
+      badges, SECURITY.md supported versions, `private/README.md` — committed and pushed before
+      `just release 1.0.0`; `just check` green
 - [ ] First release: `just release 1.0.0` with the dev server stopped, owner approves the push
       of commit and tag, the workflow publishes release `v1.0.0` with `.sppkg`, `.sha256` and
-      `THIRD-PARTY-NOTICES.md` — the first run of its `publish` job, watched as it runs (F-021a);
-      the downloaded package matches its checksum and `gh release verify-asset v1.0.0` confirms
-      it
+      `THIRD-PARTY-NOTICES.md` — the first run of its `publish` job and of the ancestry check,
+      watched as they run (F-021a)
+- [ ] The published release checked: immutable, exactly the three files, the downloaded package
+      matches its checksum, `gh release verify v1.0.0` and `gh release verify-asset v1.0.0
+      spfx-procview.sppkg` confirm it; on GitHub the badges show 1.0.0 and the README links
+      resolve
 - [ ] `just check` green
 
 ### F-010 — SPFx upgrade before Node 22 end of life
