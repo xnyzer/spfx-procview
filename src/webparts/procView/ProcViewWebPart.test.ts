@@ -14,6 +14,7 @@ import {
   coreLibraryDouble,
   disposeWebParts,
   installDialogStandIn,
+  installResizeObserverStandIn,
   loadImage,
   reportImageViolation,
   startWebPart
@@ -181,6 +182,26 @@ describe('ProcViewWebPart — after dispose (audit M5)', () => {
     webPart.onDispose();
     teams.change('dark');
     expect(webPart.domElement.style.getPropertyValue('--bodyBackground')).toBe('');
+  });
+});
+
+describe('ProcViewWebPart — zoom teardown (audit L54)', () => {
+  it('lets go of the previous zoom on every render and on dispose', async () => {
+    const resizeObservers = installResizeObserverStandIn();
+    try {
+      const webPart = await start({ imageLink: LINK_A, offerZoom: true });
+      const { observers } = resizeObservers;
+      expect(observers).toHaveLength(1);
+      // A pane change renders a new diagram — the old zoom's observer must not outlive it
+      webPart.render();
+      expect(observers).toHaveLength(2);
+      expect(observers[0].isDisconnected).toBe(true);
+      expect(observers[1].isDisconnected).toBe(false);
+      webPart.onDispose();
+      expect(observers[1].isDisconnected).toBe(true);
+    } finally {
+      resizeObservers.restore();
+    }
   });
 });
 

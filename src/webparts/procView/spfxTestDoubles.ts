@@ -211,6 +211,49 @@ export function installDialogStandIn(): () => void {
   };
 }
 
+/** A `ResizeObserver` as the stand-in records it; `report` plays a size change of what it observes. */
+export interface IResizeObserverDouble {
+  readonly observed: Element[];
+  readonly isDisconnected: boolean;
+  report(): void;
+}
+
+/**
+ * Installs a `ResizeObserver` stand-in on `window` (jsdom has none) — `observers` lists every
+ * observer created from now on; `restore` takes the stand-in away again.
+ */
+export function installResizeObserverStandIn(): { observers: IResizeObserverDouble[]; restore: () => void } {
+  const observers: IResizeObserverDouble[] = [];
+  const view = window as unknown as { ResizeObserver?: unknown };
+  const original = view.ResizeObserver;
+  view.ResizeObserver = class implements IResizeObserverDouble {
+    public readonly observed: Element[] = [];
+    public isDisconnected = false;
+
+    public constructor(private readonly _callback: () => void) {
+      observers.push(this);
+    }
+
+    public observe(target: Element): void {
+      this.observed.push(target);
+    }
+
+    public disconnect(): void {
+      this.isDisconnected = true;
+    }
+
+    public report(): void {
+      this._callback();
+    }
+  };
+  return {
+    observers,
+    restore: () => {
+      view.ResizeObserver = original;
+    }
+  };
+}
+
 /** jsdom loads no images: gives the image a natural size and fires `load`. */
 export function loadImage(
   image: HTMLImageElement,

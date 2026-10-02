@@ -1,5 +1,6 @@
 import { CLOSE_GUARD_MS, openLightbox } from './lightbox';
 import type { ILightbox, ILightboxProps } from './lightbox';
+import { installResizeObserverStandIn } from './spfxTestDoubles';
 
 // Placeholder link — real model ids and keys never enter the repository.
 const IMAGE_URL = `https://editor.signavio.com/p/model/0123456789abcdef0123456789abcdef/png?inline&authkey=${'ab12'.repeat(16)}`;
@@ -83,6 +84,8 @@ function press(target: Element, clickTarget: Element = target): void {
   clickTarget.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 }
 
+// --- Content ------------------------------------------------------------------------------
+
 describe('openLightbox — content', () => {
   it('opens a modal dialog named after the diagram', () => {
     const dialog = open();
@@ -129,6 +132,8 @@ describe('openLightbox — background', () => {
     expect(plain.style.backgroundImage).toBe('');
   });
 });
+
+// --- Closing ------------------------------------------------------------------------------
 
 describe('openLightbox — closing', () => {
   it('closes with the close button and returns the focus', () => {
@@ -238,13 +243,45 @@ describe('openLightbox — held keys on the zoom buttons (audit L28)', () => {
   });
 });
 
-describe('openLightbox — showModal fails (audit L33)', () => {
-  it('leaves no dialog behind and passes the error on', () => {
+// --- Failures and the page behind ---------------------------------------------------------
+
+describe('openLightbox — showModal fails (audit L33, L54)', () => {
+  it('leaves no dialog, no size observer and no resize listener behind and passes the error on', () => {
+    const resizeObservers = installResizeObserverStandIn();
+    const addListener = jest.spyOn(window, 'addEventListener');
     showModal.mockImplementationOnce(() => {
       throw new Error('not allowed');
     });
-    expect(() => openLightbox(document, PROPS)).toThrow('not allowed');
+    try {
+      expect(() => openLightbox(document, PROPS)).toThrow('not allowed');
+    } finally {
+      resizeObservers.restore();
+      addListener.mockRestore();
+    }
     expect(document.querySelector('dialog')).toBeNull();
+    // The zoom is attached only once the dialog is shown
+    expect(resizeObservers.observers).toHaveLength(0);
+    expect(addListener.mock.calls.filter(([type]) => type === 'resize')).toHaveLength(0);
+  });
+});
+
+describe('openLightbox — the page behind stays still (audit L60)', () => {
+  function turnWheel(target: Element, init: WheelEventInit = {}): WheelEvent {
+    const event = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 100, ...init });
+    target.dispatchEvent(event);
+    return event;
+  }
+
+  it('stops plain wheel turns over the view, also over the diagram', () => {
+    const dialog = open();
+    expect(turnWheel(dialog).defaultPrevented).toBe(true);
+    expect(turnWheel(dialog.querySelector('.lightboxFrame') as Element).defaultPrevented).toBe(true);
+  });
+
+  it('passes Ctrl/Cmd + wheel on — page zoom and trackpad pinch stay with the browser', () => {
+    const dialog = open();
+    expect(turnWheel(dialog, { ctrlKey: true }).defaultPrevented).toBe(false);
+    expect(turnWheel(dialog, { metaKey: true }).defaultPrevented).toBe(false);
   });
 });
 
@@ -260,6 +297,8 @@ describe('openLightbox — error state', () => {
     expect(message?.getAttribute('role')).toBe('alert');
   });
 });
+
+// --- onClose ------------------------------------------------------------------------------
 
 describe('openLightbox — onClose', () => {
   function openWithOnClose(): { dialog: HTMLDialogElement; onClose: jest.Mock } {

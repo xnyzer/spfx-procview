@@ -8,6 +8,166 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-021 — Fixes from the release control audit before 1.0.0
+
+_Completed 2026-10-02 (F-021a, F-021b, F-021c)._
+
+**Problem:** The release control audit of 2026-10-02 (F-009c, after F-019, F-020, F-009a and
+F-009b) found the earlier fixes in place but new issues around the release: a release can be
+published from a commit that is not on `main` (the printed push of `main` and tag is not
+atomic — the tag reaches GitHub even when `main` is rejected), a published release and its
+checksum can still be replaced, and SECURITY.md's private reporting channel is switched off on
+GitHub — plus 18 low findings in the release workflow, the scripts, the web part, zoom and full
+screen, some of them remainders of partly fixed audit findings.
+
+**Idea:** One pass in three substeps, as in F-019: first the release path with the GitHub
+settings, then the web part, pane and settings remainders, then zoom and full screen. Finding
+ids (M18–M20, L47–L64) refer to the local `AUDIT-RESULTS.md` of 2026-10-02 (release control
+audit).
+
+**Solution sketch** (from the triage with the owner, 2026-10-02; F-021a, F-021b and F-021c updated
+at their prep-steps, 2026-10-02):
+- **F-021a — release path, tooling, docs, GitHub settings (done 2026-10-02):**
+  the release only from a commit on
+  `main` — `git push --atomic` in the recipe's push command and in the README, `release.mjs`
+  fetches `origin` and refuses a `main` that is behind or has diverged and a tag that exists
+  remotely, the build job checks that the tagged commit is an ancestor of `origin/main` (M18);
+  immutable releases on GitHub before `v1.0.0` (assets and tag locked, a signed release
+  attestation), the IT guide says what the checksum proves and shows `gh release verify-asset`
+  (M19); private vulnerability reporting switched on (M20); `publish` only on the `push` event
+  (L47); no tool cache in the release build (L48); a pinned runner image and the SHA-pinning
+  requirement for actions (L49); release versions without leading zeros (L50); space-like
+  characters in the source character check (L51); pane screenshot with the version line,
+  absolute links in `THIRD-PARTY-NOTICES.md` (L52); temp folders of the script tests removed,
+  the first run of `publish` watched consciously in F-009c (L53). Owner decision: Claude
+  switches the GitHub settings on with `gh api`, each change only after the owner's approval,
+  and reads the state back
+- **F-021b — web part, pane and settings (done 2026-10-02):**
+  stored values the page cannot read — toggles that
+  are not booleans, an unknown hub link position, texts that are not strings — normalised in
+  `onAfterDeserialize` to what the page reads, so pane and page never disagree, and the test
+  doubles apply SharePoint's "stored value wins" (L55); a test that compares the manifest
+  defaults with the code fallbacks (L56); `imageLink` read through `settings.ts` (L57); a failed
+  `showModal()` logged instead of escaping uncaught (L61); renames (L63: `shouldMoveFocus`,
+  `pickZoomClassNames`, `createExternalLink`)
+- **F-021c — zoom and full screen (done 2026-10-02):**
+  tests that pin the zoom teardown — the web part disposes
+  the zoom on re-render and dispose, `ZoomView.dispose` removes every listener, a stub
+  `ResizeObserver` for the resize path, the order of `showDialog` and zoom (L54); the frame
+  that holds the fallback focus keeps a role, the image's alternative text as name and a visible
+  focus, and window blur does not drop it (L58); mouse and pen pointers recorded only while
+  zoomed (L59); the page behind full screen made not to scroll in every browser — plain wheel
+  events stopped on the dialog, `touch-action: pinch-zoom` on the layer — checked in Firefox,
+  Safari and Chrome (L60); the test file split and section comments in the SCSS, away from the
+  500-line limit (L62); naming and an exhaustive `_onControl` (L63); comments (L64)
+
+Owner decisions (2026-10-02): all findings of the release control audit are fixed before
+release 1.0.0, in their own feature before F-009c.
+
+**Dependencies:** F-019, F-020, F-009a, F-009b (done)
+
+### F-021c — Zoom and full screen
+
+_Completed 2026-10-02. Completes F-021._
+
+**What:** The zoom teardown is pinned by tests, the fallback focus target of the zoom frame is
+named and visible, no stale pointers, the page behind full screen does not scroll in any browser,
+and the remaining structure, naming and comment findings in these files (L54, L58, L59, L60, L62,
+L63, L64).
+
+- **Teardown (L54):** a stand-in `ResizeObserver` (records `observe`/`disconnect`, can fire its
+  callback) — the real resize path: a frame that grows resets the zoom (M14's trigger), the
+  observer is disconnected on dispose; on web part level, with "Offer zoom" every re-render and
+  the dispose disconnect the previous zoom (the surviving mutation of the release control audit);
+  the dispose-mid-gesture test also checks that a later pointer move and Ctrl+wheel do nothing;
+  in full screen, a refused `showModal()` creates no observer and no `resize` listener
+- **Fallback focus (L58):** when the zoom controls disappear under the keyboard focus, the frame
+  that takes it keeps `role="group"` and gets the image's alternative text as its name — not the
+  zoom instructions, which no longer apply — until the focus moves on; a visible focus outline on
+  the page frame (`.frame:focus-visible`; full screen has its ring already); a window blur
+  (Alt+Tab) — the frame is still the active element — keeps it focusable
+- **Stale pointers (L59):** mouse and pen pointers are recorded only while zoomed — they cannot
+  pinch, so at the configured size there is nothing to record; a mouse released outside the frame
+  can no longer spoil a later two-finger pinch
+- **Scrolling behind full screen (L60):** `overscroll-behavior` alone does not stop scroll
+  chaining from a container that cannot scroll in every engine. The dialog stops plain wheel
+  events (Ctrl/Cmd + wheel stays with the browser: page zoom and trackpad pinch on a diagram that
+  cannot be zoomed, owner decision L36), and the layer gets `touch-action: pinch-zoom` — swipes
+  stop, pinch still magnifies; over a zoomable frame the intersection with `pan-x pan-y` is
+  `none`, so a pinch zooms the diagram as before. The SCSS comment then holds
+- **Structure (L62):** `zoomView.test.ts` (498 lines) split — gestures, controls and keys stay,
+  focus, resize and dispose move to `zoomViewLifecycle.test.ts` (with a small shared helper module
+  if needed); section comments in `ProcViewWebPart.module.scss` (page, zoom, messages, pane
+  fields, full screen) — no partials
+- **Names (L63):** `reportsButtons` → `isMouseOrPen`, `_toViewportPoint` →
+  `_convertToViewportPoint`; `_onControl` as a `switch` with `assertNever`
+- **Comments (L64):** the mouse-and-pen doc gives the real reason (they hover and have other
+  buttons — touch points report `buttons = 1` too); `attachZoom` mentions pens; the test title
+  "while attached" becomes "while zoomable"
+- **Browser check:** the local workbench is a VS Code webview (Chromium) and cannot be opened in
+  Firefox or Safari, so Claude builds a local test page outside the repository that bundles the
+  real diagram, zoom and full-screen modules with their styles (served on `localhost`); the owner
+  checks it in Firefox, Safari and Chrome. Touch stays with step 5 of the IT guide's first-use
+  check
+
+**Files:** `zoomView.ts`, `zoomInput.ts` (new), `lightbox.ts`, `ProcViewWebPart.module.scss`,
+`zoomView.test.ts`, `zoomViewLifecycle.test.ts` (new), `zoomTestSupport.ts` (new),
+`lightbox.test.ts`, `ProcViewWebPart.test.ts`, `spfxTestDoubles.ts` (all in
+`src/webparts/procView/`)
+
+**Dependencies:** F-021b
+
+**Acceptance criteria:**
+- [x] The three mutations that survived the release control audit fail a test now: the zoom
+      controller never stored by the web part, `ZoomView.dispose` leaving its listeners,
+      `attachZoom` before `showDialog`; a mutation of the resize path fails one too — mutation
+      runs: 1, 4, 1 and 1 failing tests
+- [x] Tests for the named fallback focus and the window blur (L58), the stale mouse pointer before
+      a pinch (L59) and the stopped wheel events in full screen with Ctrl/Cmd + wheel passed on
+      (L60) — each fails its mutation (window blur check removed, mouse recorded at scale 1, wheel
+      not stopped)
+- [x] Renames done, no old name left; `_onControl` exhaustive (`switch` with `assertNever`)
+- [x] No file above 500 lines; files above 300 lines are delimited by section comments —
+      `zoomView.ts` 469, the SCSS 474, `ProcViewWebPart.test.ts` 388, `zoomView.test.ts` 348,
+      `lightbox.test.ts` 329, all with sections
+- [x] Owner's check on the local test page in Firefox, Safari and Chrome — Firefox, Safari and
+      Brave (Chromium): in full screen, wheel and trackpad leave the page behind still (the page
+      compares the scroll position before and after), a trackpad pinch on the small diagram
+      magnifies, the frame shows a focus outline after the zoom controls disappear under the
+      keyboard focus. Safari reaches buttons with Tab only with Option + Tab or its "Press Tab to
+      highlight each item" setting — Safari's default, not the web part's
+- [x] `just check` green (isolated copy while the dev server runs) — 710 Jest tests in 27 suites,
+      75 script tests
+
+**Implemented:**
+- `zoomView.ts` — the fallback focus keeps `role="group"` with the image's alternative text as
+  its name until the focus moves on, a window blur keeps it (`_onFrameBlur` checks the active
+  element); mouse and pen pointers are recorded only while zoomed; `_onControl` as a `switch`
+  with `assertNever`; `_convertToViewportPoint`; comments
+- `zoomInput.ts` (new) — the DOM input helpers moved out of `zoomView.ts` (`isMouseOrPen`, wheel
+  units, `isOnControl`, control availability, `PRIMARY_BUTTON`); `zoomView.ts` would otherwise
+  have grown past 500 lines
+- `lightbox.ts` — `keepPageBehindStill`: the dialog stops plain wheel events, Ctrl/Cmd + wheel
+  goes on
+- `ProcViewWebPart.module.scss` — `.frame:focus-visible` (moved from `.zoomable`),
+  `touch-action: pinch-zoom` on the full-screen layer with a corrected comment, six section
+  comments
+- `spfxTestDoubles.ts` — `installResizeObserverStandIn` (records `observe`/`disconnect`,
+  `report` plays a resize)
+- Tests: `zoomView.test.ts` (gestures, three sections) and `zoomViewLifecycle.test.ts` (dispose,
+  focus, resize) with `zoomTestSupport.ts`; the dispose-mid-gesture test checks the later move
+  and Ctrl + wheel; the resize path through the observer stand-in; L58 and L59 tests;
+  `lightbox.test.ts` — no observer or `resize` listener after a refused dialog, the stopped
+  wheel; `ProcViewWebPart.test.ts` — every render and the dispose disconnect the previous zoom
+- Browser check: a local test page outside the repository bundles the compiled diagram, zoom and
+  full-screen modules with the compiled stylesheet (theme tokens replaced by their defaults) and
+  reports whether the page scrolled while full screen was open
+
+**Deviations from the plan:**
+- `zoomInput.ts` split off `zoomView.ts` (510 lines otherwise); the shared zoom test helpers went
+  into `zoomTestSupport.ts`, the `ResizeObserver` stand-in into `spfxTestDoubles.ts` (used by the
+  zoom, full-screen and web part tests)
+
 ### F-021b — Web part, pane and settings
 
 _Completed 2026-10-02. Part of F-021, which stays open with F-021c._

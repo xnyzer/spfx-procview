@@ -1,3 +1,5 @@
+// --- Page: diagram, caption, hub link -----------------------------------------------------
+
 .procView {
   color: var(--bodyText, '[theme:bodyText, default: #323130]');
 }
@@ -8,9 +10,16 @@
 }
 
 // Hugs the image (width/max-width set inline, see sizing.ts) so the overlay link sits at the
-// image's corner, not the column's
+// image's corner, not the column's. With "Offer zoom" it is the zoom viewport, which takes the
+// keyboard focus while zoomable and keeps it when the zoom controls disappear under it
+// (zoomView.ts) — an outline in both cases
 .frame {
   position: relative;
+
+  &:focus-visible {
+    outline: 2px solid var(--focusBorder, '[theme:focusBorder, default: #605e5c]');
+    outline-offset: 2px;
+  }
 }
 
 // Block-level so the image sits flush without the inline baseline gap;
@@ -62,17 +71,14 @@
   font-size: 0.875em;
 }
 
+// --- Zoom and the control bar -------------------------------------------------------------
+
 // Zoom ("Offer zoom", zoomView.ts): the frame clips the zoomed image. touch-action decides who
 // gets touch gestures: while zoomable, swipes still scroll the page and pinch reaches the
 // diagram; while zoomed, every gesture goes to the diagram
 .zoomable {
   overflow: hidden;
   touch-action: pan-x pan-y;
-
-  &:focus-visible {
-    outline: 2px solid var(--focusBorder, '[theme:focusBorder, default: #605e5c]');
-    outline-offset: 2px;
-  }
 }
 
 .zoomed {
@@ -152,6 +158,8 @@
   }
 }
 
+// --- Links and screen-reader text ---------------------------------------------------------
+
 .hubAnchor {
   display: inline-flex;
   align-items: center;
@@ -182,6 +190,8 @@
   white-space: nowrap;
   border: 0;
 }
+
+// --- Messages -----------------------------------------------------------------------------
 
 // Empty/error states (F-004): a quiet box in theme colours, not a warning banner. Text and
 // background come from the same (section) theme — see theme.ts
@@ -240,6 +250,8 @@
     border: 1px solid CanvasText;
   }
 }
+
+// --- Property pane fields -----------------------------------------------------------------
 
 // Caption alignment toolbar in the property pane (custom field, see alignmentField.ts). The pane
 // is not inside a section, so static page-theme tokens are right here
@@ -307,6 +319,8 @@
   margin-top: 8px;
 }
 
+// --- Full screen --------------------------------------------------------------------------
+
 // Full-screen layout: room for the close button above the image and a margin around it — the
 // image's maximum size is the window minus exactly these paddings
 $lightbox-padding-top: 56px;
@@ -331,10 +345,13 @@ $lightbox-padding-side: 24px;
   border: 0;
   background: rgba(0, 0, 0, 0.85);
   overflow: hidden;
-  // The page behind never scrolls along, by touch or wheel. Gestures stay with the browser — a
-  // pinch magnifies — except on a zoomable frame, whose classes hand them to the diagram (owner
-  // decision 2026-10-02)
+  // The page behind never scrolls along: plain wheel turns stop at the dialog (lightbox.ts), and
+  // swipes stop here — a pinch still magnifies, except on a zoomable frame, where pinch-zoom
+  // meets the frame's pan-x pan-y and leaves nothing to the browser, so the pinch zooms the
+  // diagram (owner decision 2026-10-02). overscroll-behavior adds to it where browsers apply it
+  // to a layer that cannot scroll
   overscroll-behavior: contain;
+  touch-action: pinch-zoom;
 
   :focus-visible {
     outline: 2px solid #ffffff;

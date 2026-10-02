@@ -13,7 +13,16 @@ import {
   zoomBy
 } from './zoom';
 import type { IPoint, IZoomGeometry, IZoomState } from './zoom';
+import { assertNever } from './assertNever';
 import { createIcon } from './svgIcon';
+import {
+  PRIMARY_BUTTON,
+  isButtonAvailable,
+  isMouseOrPen,
+  isOnControl,
+  measureWheelPixels,
+  setAvailable
+} from './zoomInput';
 
 // --- Types --------------------------------------------------------------------------------
 
@@ -63,13 +72,6 @@ export interface IZoomController {
 
 /** Exponent per wheel pixel: the zoom factor is e^(−delta × this) — 100 px (one Chrome notch) ≈ 1.16×. */
 const WHEEL_SENSITIVITY = 0.0015;
-/** Pixels per wheel "line" when the browser reports lines instead of pixels. */
-const WHEEL_LINE = 16;
-/** `WheelEvent.deltaMode` values: lines, pages (else pixels). */
-const DOM_DELTA_LINE = 1;
-const DOM_DELTA_PAGE = 2;
-/** Mouse button that pans — the primary one; the others open menus or autoscroll. */
-const PRIMARY_BUTTON = 0;
 
 type ControlName = 'zoomIn' | 'zoomOut' | 'reset';
 
@@ -85,45 +87,6 @@ function measureDistance(first: IPoint, second: IPoint): number {
 
 function findMidpoint(first: IPoint, second: IPoint): IPoint {
   return { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
-}
-
-/** Presses on the controls or on links (the hub overlay) are clicks, not gestures. */
-function isOnControl(event: Event): boolean {
-  const target = event.target;
-  return target instanceof Element && target.closest('button, a') !== null;
-}
-
-/**
- * Marks a control as available or not with `aria-disabled` — unlike `disabled`, the button keeps
- * the keyboard focus when it becomes unavailable (e.g. "fit" right after fitting). Writes only on
- * change.
- */
-function setAvailable(button: HTMLButtonElement, isAvailable: boolean): void {
-  const value = String(!isAvailable);
-  if (button.getAttribute('aria-disabled') !== value) {
-    button.setAttribute('aria-disabled', value);
-  }
-}
-
-function isButtonAvailable(button: HTMLButtonElement): boolean {
-  return button.getAttribute('aria-disabled') !== 'true';
-}
-
-/** Mice and pens report which buttons are pressed — touch points do not. */
-function reportsButtons(event: PointerEvent): boolean {
-  return event.pointerType === 'mouse' || event.pointerType === 'pen';
-}
-
-/** Wheel movement in pixels, whatever unit the browser reports. */
-function measureWheelPixels(event: WheelEvent, pageHeight: number): number {
-  switch (event.deltaMode) {
-    case DOM_DELTA_LINE:
-      return event.deltaY * WHEEL_LINE;
-    case DOM_DELTA_PAGE:
-      return event.deltaY * pageHeight;
-    default:
-      return event.deltaY;
-  }
 }
 
 // --- The zoom view ------------------------------------------------------------------------
@@ -237,14 +200,11 @@ class ZoomView {
       viewport.tabIndex = 0;
       viewport.setAttribute('role', 'group');
       viewport.setAttribute('aria-label', labels.viewport);
+    } else if (this._hasFocus()) {
+      this._keepFocusInFrame();
     } else {
-      const hadFocus = this._hasFocus();
       viewport.removeAttribute('tabindex');
-      viewport.removeAttribute('role');
-      viewport.removeAttribute('aria-label');
-      if (hadFocus) {
-        this._keepFocusInFrame();
-      }
+      this._removeViewportName();
     }
     this._controls.hidden = !isZoomable;
   }
@@ -257,23 +217,42 @@ class ZoomView {
 
   /**
    * The focused control or viewport stops being focusable — the frame takes the focus (without
-   * becoming a tab stop) instead of letting it fall to the page, until the focus moves on.
+   * becoming a tab stop) instead of letting it fall to the page, until the focus moves on. It
+   * stays a named group: the image's alternative text, as the zoom instructions no longer apply.
    */
   private _keepFocusInFrame(): void {
-    const { viewport } = this._props;
+    const { viewport, image } = this._props;
     viewport.tabIndex = -1;
+    viewport.setAttribute('role', 'group');
+    viewport.setAttribute('aria-label', image.alt);
     viewport.addEventListener('blur', this._onFrameBlur, { once: true });
     viewport.focus({ preventScroll: true });
   }
 
+  /**
+   * The focus left the frame: unless zooming is offered again, it stops being focusable. When only
+   * the window lost the focus (Alt+Tab), the frame is still the active element and gets the focus
+   * back — it stays as it is.
+   */
   private readonly _onFrameBlur = (): void => {
+    const { viewport } = this._props;
+    if (this._doc.activeElement === viewport) {
+      viewport.addEventListener('blur', this._onFrameBlur, { once: true });
+      return;
+    }
     if (!this._isZoomable) {
-      this._props.viewport.removeAttribute('tabindex');
+      viewport.removeAttribute('tabindex');
+      this._removeViewportName();
     }
   };
 
+  private _removeViewportName(): void {
+    this._props.viewport.removeAttribute('role');
+    this._props.viewport.removeAttribute('aria-label');
+  }
+
   /** Viewport coordinates of a client point. */
-  private _toViewportPoint(clientX: number, clientY: number): IPoint {
+  private _convertToViewportPoint(clientX: number, clientY: number): IPoint {
     const rect = this._props.viewport.getBoundingClientRect();
     return { x: clientX - rect.left, y: clientY - rect.top };
   }
@@ -285,10 +264,18 @@ class ZoomView {
       return;
     }
     const geometry = this._measure();
-    if (name === 'reset') {
-      this._set(INITIAL_STATE, geometry);
-    } else {
-      this._set(zoomBy(this._state, geometry, { factor: name === 'zoomIn' ? ZOOM_STEP : 1 / ZOOM_STEP }), geometry);
+    switch (name) {
+      case 'reset':
+        this._set(INITIAL_STATE, geometry);
+        return;
+      case 'zoomIn':
+        this._set(zoomBy(this._state, geometry, { factor: ZOOM_STEP }), geometry);
+        return;
+      case 'zoomOut':
+        this._set(zoomBy(this._state, geometry, { factor: 1 / ZOOM_STEP }), geometry);
+        return;
+      default:
+        assertNever(name);
     }
   }
 
@@ -299,18 +286,20 @@ class ZoomView {
     }
     event.preventDefault();
     const factor = Math.exp(-measureWheelPixels(event, geometry.viewport.height) * WHEEL_SENSITIVITY);
-    const focal = this._toViewportPoint(event.clientX, event.clientY);
+    const focal = this._convertToViewportPoint(event.clientX, event.clientY);
     this._set(zoomBy(this._state, geometry, { factor, focal }), geometry);
   };
 
   // --- Pointer gestures -------------------------------------------------------------------
 
   private readonly _onPointerDown = (event: PointerEvent): void => {
-    const isOtherButton = reportsButtons(event) && event.button !== PRIMARY_BUTTON;
-    if (isOtherButton || isOnControl(event) || this._pointers.size >= 2 || !canZoom(this._measure())) {
+    // Mice and pens only pan, and only while zoomed: they cannot pinch, and a press recorded at the
+    // configured size and released outside the frame would spoil a later two-finger pinch
+    const isMouseNotPanning = isMouseOrPen(event) && (event.button !== PRIMARY_BUTTON || !isZoomed(this._state));
+    if (isMouseNotPanning || isOnControl(event) || this._pointers.size >= 2 || !canZoom(this._measure())) {
       return;
     }
-    const point = this._toViewportPoint(event.clientX, event.clientY);
+    const point = this._convertToViewportPoint(event.clientX, event.clientY);
     this._pointers.set(event.pointerId, point);
     if (this._pointers.size === 2) {
       const [first, second] = Array.from(this._pointers.values());
@@ -335,11 +324,11 @@ class ZoomView {
       return;
     }
     // The button was released where we could not see it (e.g. over a context menu, a lifted pen)
-    if (reportsButtons(event) && event.buttons === 0) {
+    if (isMouseOrPen(event) && event.buttons === 0) {
       this._onPointerEnd(event);
       return;
     }
-    const point = this._toViewportPoint(event.clientX, event.clientY);
+    const point = this._convertToViewportPoint(event.clientX, event.clientY);
     this._pointers.set(event.pointerId, point);
     const geometry = this._measure();
     if (this._pointers.size >= 2 && this._pinchStart) {
@@ -469,8 +458,8 @@ class ZoomView {
 
 /**
  * Adds zoom and pan to a diagram: controls (−, +, fit) in the host (by default the viewport),
- * Ctrl/Cmd + wheel, a drag with the primary mouse button or one finger while zoomed, two-finger
- * pinch, and keys (+, −, 0, arrows) on the focusable viewport. Plain wheel and one-finger swipes
+ * Ctrl/Cmd + wheel, a drag with the primary mouse button, a pen or one finger while zoomed,
+ * two-finger pinch, and keys (+, −, 0, arrows) on the focusable viewport. Plain wheel and one-finger swipes
  * at the configured size keep scrolling the page. The image keeps its element size; only a CSS
  * transform changes (zoom.ts).
  */

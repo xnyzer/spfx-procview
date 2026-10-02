@@ -62,128 +62,12 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-009b | Release workflow (read-only build job, publish job with write access on tags only, dry run), `--notes` from the CHANGELOG, CodeQL for workflows, IT deployment guide; dry run on GitHub green | 2026-10-02 |
 | F-021a | Release only from `main` (fetch and up-to-date check, atomic push, ancestry check in the build), `publish` only for a pushed tag, immutable releases, private vulnerability reporting, SHA pinning required, pinned runner image; stricter version and character checks, docs; dry run on GitHub green | 2026-10-02 |
 | F-021b | Stored values the page cannot read normalised in `onAfterDeserialize` (pane and page agree), manifest defaults tested against the code fallbacks, `imageLink` via `settings.ts`, a refused full-screen dialog logged, renames | 2026-10-02 |
+| F-021c | Zoom teardown pinned by tests (resize observer, re-render, dispose, refused dialog), named and visible fallback focus, no stale mouse pointers, page behind full screen stays still in every browser, zoom tests split | 2026-10-02 |
+| F-021 | Fixes from the release control audit before 1.0.0 (F-021a, F-021b, F-021c) | 2026-10-02 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-021 — Fixes from the release control audit before 1.0.0
-
-**Status:** PLANNED
-
-**Problem:** The release control audit of 2026-10-02 (F-009c, after F-019, F-020, F-009a and
-F-009b) found the earlier fixes in place but new issues around the release: a release can be
-published from a commit that is not on `main` (the printed push of `main` and tag is not
-atomic — the tag reaches GitHub even when `main` is rejected), a published release and its
-checksum can still be replaced, and SECURITY.md's private reporting channel is switched off on
-GitHub — plus 18 low findings in the release workflow, the scripts, the web part, zoom and full
-screen, some of them remainders of partly fixed audit findings.
-
-**Idea:** One pass in three substeps, as in F-019: first the release path with the GitHub
-settings, then the web part, pane and settings remainders, then zoom and full screen. Finding
-ids (M18–M20, L47–L64) refer to the local `AUDIT-RESULTS.md` of 2026-10-02 (release control
-audit).
-
-**Solution sketch** (from the triage with the owner, 2026-10-02; F-021a, F-021b and F-021c updated
-at their prep-steps, 2026-10-02):
-- **F-021a — release path, tooling, docs, GitHub settings:** the release only from a commit on
-  `main` — `git push --atomic` in the recipe's push command and in the README, `release.mjs`
-  fetches `origin` and refuses a `main` that is behind or has diverged and a tag that exists
-  remotely, the build job checks that the tagged commit is an ancestor of `origin/main` (M18);
-  immutable releases on GitHub before `v1.0.0` (assets and tag locked, a signed release
-  attestation), the IT guide says what the checksum proves and shows `gh release verify-asset`
-  (M19); private vulnerability reporting switched on (M20); `publish` only on the `push` event
-  (L47); no tool cache in the release build (L48); a pinned runner image and the SHA-pinning
-  requirement for actions (L49); release versions without leading zeros (L50); space-like
-  characters in the source character check (L51); pane screenshot with the version line,
-  absolute links in `THIRD-PARTY-NOTICES.md` (L52); temp folders of the script tests removed,
-  the first run of `publish` watched consciously in F-009c (L53). Owner decision: Claude
-  switches the GitHub settings on with `gh api`, each change only after the owner's approval,
-  and reads the state back
-- **F-021b — web part, pane and settings:** stored values the page cannot read — toggles that
-  are not booleans, an unknown hub link position, texts that are not strings — normalised in
-  `onAfterDeserialize` to what the page reads, so pane and page never disagree, and the test
-  doubles apply SharePoint's "stored value wins" (L55); a test that compares the manifest
-  defaults with the code fallbacks (L56); `imageLink` read through `settings.ts` (L57); a failed
-  `showModal()` logged instead of escaping uncaught (L61); renames (L63: `shouldMoveFocus`,
-  `pickZoomClassNames`, `createExternalLink`)
-- **F-021c — zoom and full screen:** tests that pin the zoom teardown — the web part disposes
-  the zoom on re-render and dispose, `ZoomView.dispose` removes every listener, a stub
-  `ResizeObserver` for the resize path, the order of `showDialog` and zoom (L54); the frame
-  that holds the fallback focus keeps a role, the image's alternative text as name and a visible
-  focus, and window blur does not drop it (L58); mouse and pen pointers recorded only while
-  zoomed (L59); the page behind full screen made not to scroll in every browser — plain wheel
-  events stopped on the dialog, `touch-action: pinch-zoom` on the layer — checked in Firefox,
-  Safari and Chrome (L60); the test file split and section comments in the SCSS, away from the
-  500-line limit (L62); naming and an exhaustive `_onControl` (L63); comments (L64)
-
-Owner decisions (2026-10-02): all findings of the release control audit are fixed before
-release 1.0.0, in their own feature before F-009c.
-
-**Dependencies:** F-019, F-020, F-009a, F-009b (done)
-
-#### F-021c — Zoom and full screen
-
-**What:** The zoom teardown is pinned by tests, the fallback focus target of the zoom frame is
-named and visible, no stale pointers, the page behind full screen does not scroll in any browser,
-and the remaining structure, naming and comment findings in these files (L54, L58, L59, L60, L62,
-L63, L64).
-
-- **Teardown (L54):** a stand-in `ResizeObserver` (records `observe`/`disconnect`, can fire its
-  callback) — the real resize path: a frame that grows resets the zoom (M14's trigger), the
-  observer is disconnected on dispose; on web part level, with "Offer zoom" every re-render and
-  the dispose disconnect the previous zoom (the surviving mutation of the release control audit);
-  the dispose-mid-gesture test also checks that a later pointer move and Ctrl+wheel do nothing;
-  in full screen, a refused `showModal()` creates no observer and no `resize` listener
-- **Fallback focus (L58):** when the zoom controls disappear under the keyboard focus, the frame
-  that takes it keeps `role="group"` and gets the image's alternative text as its name — not the
-  zoom instructions, which no longer apply — until the focus moves on; a visible focus outline on
-  the page frame (`.frame:focus-visible`; full screen has its ring already); a window blur
-  (Alt+Tab) — the frame is still the active element — keeps it focusable
-- **Stale pointers (L59):** mouse and pen pointers are recorded only while zoomed — they cannot
-  pinch, so at the configured size there is nothing to record; a mouse released outside the frame
-  can no longer spoil a later two-finger pinch
-- **Scrolling behind full screen (L60):** `overscroll-behavior` alone does not stop scroll
-  chaining from a container that cannot scroll in every engine. The dialog stops plain wheel
-  events (Ctrl/Cmd + wheel stays with the browser: page zoom and trackpad pinch on a diagram that
-  cannot be zoomed, owner decision L36), and the layer gets `touch-action: pinch-zoom` — swipes
-  stop, pinch still magnifies; over a zoomable frame the intersection with `pan-x pan-y` is
-  `none`, so a pinch zooms the diagram as before. The SCSS comment then holds
-- **Structure (L62):** `zoomView.test.ts` (498 lines) split — gestures, controls and keys stay,
-  focus, resize and dispose move to `zoomViewLifecycle.test.ts` (with a small shared helper module
-  if needed); section comments in `ProcViewWebPart.module.scss` (page, zoom, messages, pane
-  fields, full screen) — no partials
-- **Names (L63):** `reportsButtons` → `isMouseOrPen`, `_toViewportPoint` →
-  `_convertToViewportPoint`; `_onControl` as a `switch` with `assertNever`
-- **Comments (L64):** the mouse-and-pen doc gives the real reason (they hover and have other
-  buttons — touch points report `buttons = 1` too); `attachZoom` mentions pens; the test title
-  "while attached" becomes "while zoomable"
-- **Browser check:** the local workbench is a VS Code webview (Chromium) and cannot be opened in
-  Firefox or Safari, so Claude builds a local test page outside the repository that bundles the
-  real diagram, zoom and full-screen modules with their styles (served on `localhost`); the owner
-  checks it in Firefox, Safari and Chrome. Touch stays with step 5 of the IT guide's first-use
-  check
-
-**Files:** `zoomView.ts`, `zoomView.test.ts`, `zoomViewLifecycle.test.ts` (new), `lightbox.ts`,
-`lightbox.test.ts`, `ProcViewWebPart.test.ts`, `ProcViewWebPart.module.scss` (all in
-`src/webparts/procView/`)
-
-**Dependencies:** F-021b (done)
-
-**Acceptance criteria:**
-- [ ] The three mutations that survived the release control audit fail a test now: the zoom
-      controller never stored by the web part, `ZoomView.dispose` leaving its listeners,
-      `attachZoom` before `showDialog`; a mutation of the resize path fails one too
-- [ ] Tests for the named fallback focus and the window blur (L58), the stale mouse pointer before
-      a pinch (L59) and the stopped wheel events in full screen with Ctrl/Cmd + wheel passed on
-      (L60)
-- [ ] Renames done, no old name left; `_onControl` exhaustive
-- [ ] No file above 500 lines; files above 300 lines are delimited by section comments
-- [ ] Owner's check on the local test page in Firefox, Safari and Chrome: in full screen, wheel
-      and trackpad do not scroll the page behind; a trackpad pinch on a diagram that cannot be
-      zoomed still magnifies; after resizing the window while a zoom button has the keyboard
-      focus, the frame shows a focus outline
-- [ ] `just check` green
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
@@ -324,5 +208,5 @@ F-017 Zoom and full-screen fixes from the audit (DONE)
 F-018 Diagram alignment and property pane order (DONE)
 F-019 Fixes from the control audit before the first release (DONE)
 F-020 README with screenshots and a settings reference (DONE)
-F-021 Fixes from the release control audit before 1.0.0 (PLANNED)
+F-021 Fixes from the release control audit before 1.0.0 (DONE)
 -->

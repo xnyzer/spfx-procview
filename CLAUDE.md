@@ -36,7 +36,7 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
 requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-020 in `PROGRESS.md`). All planned
-features are done (704 Jest tests, 75 script tests): Signavio link validation and provider
+features are done (710 Jest tests, 75 script tests): Signavio link validation and provider
 contract (F-001), configuration pane, sizing and caption (F-002), Collaboration Hub link
 (F-003), empty and error states (F-004), section theme colours (F-005), zoom and pan — "Offer
 zoom", default off (F-006), full-screen view — "Offer full screen", default on (F-007), Teams
@@ -64,8 +64,11 @@ into F-021 before the release. F-021a is done: a release only from a commit on `
 in the release build), `publish` only for a pushed tag, immutable releases, private vulnerability
 reporting and SHA-pinned actions required on GitHub. F-021b is done: stored values the page
 cannot read are normalised in `onAfterDeserialize`, so pane and page agree; the manifest defaults
-are tested against the code fallbacks. Next: F-021c, then F-009c (README for the release, release
-1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
+are tested against the code fallbacks. F-021c is done, and with it F-021: the zoom teardown is
+pinned by tests, the fallback focus is named and visible, the page behind full screen stays still
+in every browser (checked in Firefox, Safari and Chromium on a local test page outside the
+repository — the local workbench is a VS Code webview). Next: F-009c (README for the release,
+badges, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
 
 ## Project notes (learned the hard way)
 

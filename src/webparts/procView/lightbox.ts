@@ -131,6 +131,23 @@ function bindClosing(parts: ILightboxParts, close: () => void): void {
   });
 }
 
+/**
+ * Plain wheel turns over the view would scroll the page behind it: the layer cannot scroll, and
+ * not every browser stops the scroll there (`overscroll-behavior`). Ctrl/Cmd + wheel goes on —
+ * the zoom on the frame handles it first, else it is the browser's page zoom or trackpad pinch.
+ */
+function keepPageBehindStill(dialog: HTMLDialogElement): void {
+  dialog.addEventListener(
+    'wheel',
+    (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+      }
+    },
+    { passive: false }
+  );
+}
+
 /** Shows the dialog modally — if the browser refuses, the dialog is removed and the error passed on. */
 function showDialog(doc: Document, dialog: HTMLDialogElement): void {
   doc.body.appendChild(dialog);
@@ -155,6 +172,7 @@ export function openLightbox(doc: Document, props: ILightboxProps): ILightbox {
   const parts = createParts(doc, props);
   const { dialog, frame, image, closeButton } = parts;
   showDialog(doc, dialog);
+  keepPageBehindStill(dialog);
   // Full screen always offers zoom: the diagram first fits the window
   const zoom = attachZoom(doc, {
     viewport: frame,

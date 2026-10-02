@@ -1,97 +1,24 @@
+/**
+ * The zoom view's gestures: controls, wheel, keys, pointers, pens, the native image drag and the
+ * host of the controls. Focus, resize and dispose are in zoomViewLifecycle.test.ts.
+ */
 import { attachZoom } from './zoomView';
-import type { IZoomController } from './zoomView';
-import type { IZoomGeometry } from './zoom';
+import {
+  CLASS_NAMES,
+  FULL_SIZE,
+  LABELS,
+  ZOOMABLE,
+  disposeFixture,
+  key,
+  pointer,
+  setup,
+  wheel
+} from './zoomTestSupport';
+import type { IFixture } from './zoomTestSupport';
 
-/** Diagram shown at a quarter of its natural size: zoomable up to 4×. */
-const ZOOMABLE: IZoomGeometry = { viewport: { width: 500, height: 250 }, natural: { width: 2000, height: 1000 } };
-/** Diagram already shown at natural size: nothing to zoom. */
-const FULL_SIZE: IZoomGeometry = { viewport: { width: 500, height: 250 }, natural: { width: 500, height: 250 } };
+afterEach(disposeFixture);
 
-const CLASS_NAMES = { zoomable: 'zoomable', zoomed: 'zoomed', controls: 'controls', button: 'button' };
-const LABELS = { zoomIn: 'Zoom in', zoomOut: 'Zoom out', reset: 'Fit', viewport: 'Diagram, zoomable' };
-
-interface IFixture {
-  viewport: HTMLElement;
-  image: HTMLImageElement;
-  zoom: IZoomController;
-  buttons: () => Record<'zoomIn' | 'zoomOut' | 'reset', HTMLButtonElement>;
-  setGeometry: (geometry: IZoomGeometry) => void;
-}
-
-let fixture: IFixture | undefined;
-
-function setup(initial: IZoomGeometry = ZOOMABLE): IFixture {
-  let geometry = initial;
-  const viewport = document.createElement('div');
-  const image = document.createElement('img');
-  viewport.appendChild(image);
-  document.body.appendChild(viewport);
-  const zoom = attachZoom(document, {
-    viewport,
-    image,
-    labels: LABELS,
-    classNames: CLASS_NAMES,
-    measure: () => geometry
-  });
-  const buttons = (): Record<'zoomIn' | 'zoomOut' | 'reset', HTMLButtonElement> => {
-    const byLabel = (label: string): HTMLButtonElement =>
-      viewport.querySelector(`button[aria-label="${label}"]`) as HTMLButtonElement;
-    return { zoomIn: byLabel('Zoom in'), zoomOut: byLabel('Zoom out'), reset: byLabel('Fit') };
-  };
-  fixture = { viewport, image, zoom, buttons, setGeometry: (next) => (geometry = next) };
-  return fixture;
-}
-
-afterEach(() => {
-  fixture?.zoom.dispose();
-  fixture?.viewport.remove();
-  fixture = undefined;
-});
-
-interface IPointerInit {
-  id: number;
-  x: number;
-  y: number;
-  /** `mouse`, `touch` or `pen`; empty like a synthetic event by default. */
-  pointerType?: string;
-  button?: number;
-  buttons?: number;
-}
-
-/** jsdom has no PointerEvent constructor everywhere — a MouseEvent with the pointer fields will do. */
-function pointer(target: Element, type: string, init: IPointerInit): Event {
-  const event = new MouseEvent(type, {
-    bubbles: true,
-    cancelable: true,
-    clientX: init.x,
-    clientY: init.y,
-    button: init.button ?? 0,
-    buttons: init.buttons ?? 0
-  });
-  Object.defineProperty(event, 'pointerId', { value: init.id });
-  Object.defineProperty(event, 'pointerType', { value: init.pointerType ?? '' });
-  target.dispatchEvent(event);
-  return event;
-}
-
-function wheel(target: Element, deltaY: number, ctrlKey: boolean): WheelEvent {
-  const event = new WheelEvent('wheel', {
-    bubbles: true,
-    cancelable: true,
-    deltaY,
-    ctrlKey,
-    clientX: 250,
-    clientY: 125
-  });
-  target.dispatchEvent(event);
-  return event;
-}
-
-function key(target: Element, keyName: string, init: KeyboardEventInit = {}): KeyboardEvent {
-  const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: keyName, ...init });
-  target.dispatchEvent(event);
-  return event;
-}
+// --- Controls, wheel and keys -------------------------------------------------------------
 
 describe('attachZoom — controls', () => {
   it('adds labelled buttons; at the configured size only "zoom in" is active', () => {
@@ -191,6 +118,37 @@ describe('attachZoom — wheel and keyboard', () => {
   });
 });
 
+describe('attachZoom — wheel units and unexpected keys', () => {
+  function wheelIn(target: Element, deltaMode: number, deltaY: number): void {
+    target.dispatchEvent(
+      new WheelEvent('wheel', { bubbles: true, cancelable: true, ctrlKey: true, deltaMode, deltaY })
+    );
+  }
+
+  it('zooms for wheel lines and pages, not only for pixels', () => {
+    const lines = setup();
+    wheelIn(lines.viewport, 1, -3);
+    expect(lines.zoom.state().scale).toBeGreaterThan(1.05);
+    lines.zoom.dispose();
+    lines.viewport.remove();
+
+    const pages = setup();
+    wheelIn(pages.viewport, 2, -1);
+    expect(pages.zoom.state().scale).toBeGreaterThan(1.3);
+  });
+
+  it.each([['constructor'], ['toString'], ['__proto__'], ['valueOf'], ['Enter']])(
+    'ignores the key %p without an error',
+    (keyName) => {
+      const { viewport, zoom } = setup();
+      expect(() => key(viewport, keyName)).not.toThrow();
+      expect(zoom.state()).toEqual({ scale: 1, x: 0, y: 0 });
+    }
+  );
+});
+
+// --- Pointers and the native drag ---------------------------------------------------------
+
 describe('attachZoom — pointer gestures', () => {
   it('drags the zoomed image', () => {
     const { viewport, image, zoom } = setup();
@@ -248,69 +206,6 @@ describe('attachZoom — pointer gestures', () => {
   });
 });
 
-describe('attachZoom — host', () => {
-  it('puts the controls into the given host, e.g. a shared control bar', () => {
-    const viewport = document.createElement('div');
-    const host = document.createElement('div');
-    viewport.appendChild(host);
-    const image = document.createElement('img');
-    viewport.appendChild(image);
-    const zoom = attachZoom(document, {
-      viewport,
-      image,
-      labels: LABELS,
-      classNames: CLASS_NAMES,
-      host,
-      measure: () => ZOOMABLE
-    });
-    expect(host.querySelector('.controls')).not.toBeNull();
-    expect(host.firstElementChild?.className).toBe('controls');
-    zoom.dispose();
-    expect(host.querySelector('.controls')).toBeNull();
-  });
-});
-
-describe('attachZoom — dispose', () => {
-  it('removes controls, listeners and the transform', () => {
-    const { viewport, image, zoom } = setup();
-    key(viewport, '+');
-    zoom.dispose();
-    expect(viewport.querySelector('.controls')).toBeNull();
-    expect(image.style.transform).toBe('');
-    expect(viewport.hasAttribute('tabindex')).toBe(false);
-    expect(viewport.classList.contains('zoomable')).toBe(false);
-    key(viewport, '+');
-    expect(zoom.state().scale).toBe(1);
-  });
-});
-
-describe('attachZoom — focus and unavailable controls', () => {
-  it('keeps the focus on "fit" when fitting makes it unavailable', () => {
-    const { buttons } = setup();
-    buttons().zoomIn.click();
-    const reset = buttons().reset;
-    reset.focus();
-    reset.click();
-    expect(reset.getAttribute('aria-disabled')).toBe('true');
-    expect(document.activeElement).toBe(reset);
-  });
-
-  it('does nothing when an unavailable control is pressed', () => {
-    const { zoom, buttons } = setup();
-    buttons().zoomOut.click();
-    buttons().reset.click();
-    expect(zoom.state()).toEqual({ scale: 1, x: 0, y: 0 });
-  });
-
-  it('writes the viewport attributes only when zooming becomes possible or impossible', () => {
-    const { viewport, buttons } = setup();
-    const setAttribute = jest.spyOn(viewport, 'setAttribute');
-    buttons().zoomIn.click();
-    buttons().zoomIn.click();
-    expect(setAttribute).not.toHaveBeenCalled();
-  });
-});
-
 describe('attachZoom — mouse buttons, lost pointers and native drag', () => {
   function setupZoomed(): IFixture {
     const zoomed = setup();
@@ -354,7 +249,7 @@ describe('attachZoom — mouse buttons, lost pointers and native drag', () => {
     expect(zoom.state()).toEqual(before);
   });
 
-  it('blocks the native image drag while attached and restores it afterwards', () => {
+  it('blocks the native image drag while zoomable and restores it afterwards', () => {
     const { image, zoom } = setup();
     expect(image.draggable).toBe(false);
     const drag = new Event('dragstart', { bubbles: true, cancelable: true });
@@ -362,97 +257,6 @@ describe('attachZoom — mouse buttons, lost pointers and native drag', () => {
     expect(drag.defaultPrevented).toBe(true);
     zoom.dispose();
     expect(image.draggable).toBe(true);
-  });
-});
-
-describe('attachZoom — wheel units and unexpected keys', () => {
-  function wheelIn(target: Element, deltaMode: number, deltaY: number): void {
-    target.dispatchEvent(
-      new WheelEvent('wheel', { bubbles: true, cancelable: true, ctrlKey: true, deltaMode, deltaY })
-    );
-  }
-
-  it('zooms for wheel lines and pages, not only for pixels', () => {
-    const lines = setup();
-    wheelIn(lines.viewport, 1, -3);
-    expect(lines.zoom.state().scale).toBeGreaterThan(1.05);
-    lines.zoom.dispose();
-    lines.viewport.remove();
-
-    const pages = setup();
-    wheelIn(pages.viewport, 2, -1);
-    expect(pages.zoom.state().scale).toBeGreaterThan(1.3);
-  });
-
-  it.each([['constructor'], ['toString'], ['__proto__'], ['valueOf'], ['Enter']])(
-    'ignores the key %p without an error',
-    (keyName) => {
-      const { viewport, zoom } = setup();
-      expect(() => key(viewport, keyName)).not.toThrow();
-      expect(zoom.state()).toEqual({ scale: 1, x: 0, y: 0 });
-    }
-  );
-});
-
-describe('attachZoom — a resize below the zoom headroom (audit M14)', () => {
-  it('goes back to the configured size when the frame grows close to the natural size', () => {
-    const { viewport, image, zoom, setGeometry } = setup();
-    for (let press = 0; press < 10; press++) {
-      key(viewport, '+');
-    }
-    expect(zoom.state().scale).toBe(4);
-    // The column widened: the image now shows at 98 % of its natural size
-    setGeometry({ viewport: { width: 1960, height: 980 }, natural: { width: 2000, height: 1000 } });
-    image.dispatchEvent(new Event('load'));
-    expect(zoom.state()).toEqual({ scale: 1, x: 0, y: 0 });
-    expect(image.style.transform).toBe('');
-    expect(viewport.classList.contains('zoomed')).toBe(false);
-  });
-});
-
-describe('attachZoom — the focus when the controls disappear (audit L26)', () => {
-  it('keeps the focus in the frame when a focused control disappears', () => {
-    const { viewport, image, buttons, setGeometry } = setup();
-    buttons().zoomIn.focus();
-    setGeometry(FULL_SIZE);
-    image.dispatchEvent(new Event('load'));
-    expect(document.activeElement).toBe(viewport);
-    expect(viewport.getAttribute('tabindex')).toBe('-1');
-    viewport.blur();
-    expect(viewport.hasAttribute('tabindex')).toBe(false);
-  });
-
-  it('leaves a focus elsewhere where it is', () => {
-    const { image, setGeometry } = setup();
-    const outside = document.createElement('button');
-    document.body.appendChild(outside);
-    outside.focus();
-    setGeometry(FULL_SIZE);
-    image.dispatchEvent(new Event('load'));
-    expect(document.activeElement).toBe(outside);
-    outside.remove();
-  });
-});
-
-describe('attachZoom — native drag only for the zoomable image (audit L34)', () => {
-  function startDrag(target: Element): Event {
-    const drag = new Event('dragstart', { bubbles: true, cancelable: true });
-    target.dispatchEvent(drag);
-    return drag;
-  }
-
-  it('lets links in the frame be dragged', () => {
-    const { viewport } = setup();
-    const link = document.createElement('a');
-    link.href = 'https://example.com/';
-    viewport.appendChild(link);
-    expect(startDrag(link).defaultPrevented).toBe(false);
-  });
-
-  it('leaves the image draggable while there is nothing to zoom', () => {
-    const { image } = setup(FULL_SIZE);
-    expect(image.draggable).toBe(true);
-    expect(startDrag(image).defaultPrevented).toBe(false);
   });
 });
 
@@ -484,15 +288,61 @@ describe('attachZoom — pens (audit L35)', () => {
   });
 });
 
-describe('attachZoom — dispose during a gesture (audit L41)', () => {
-  it('ignores the rest of the gesture and tolerates a second dispose', () => {
-    const { viewport, image, zoom } = setup();
-    key(viewport, '+');
-    pointer(image, 'pointerdown', { id: 1, x: 200, y: 100, pointerType: 'mouse', buttons: 1 });
+describe('attachZoom — mouse and pen pointers at the configured size (audit L59)', () => {
+  it('leaves a mouse press alone, so a mouse released outside cannot spoil a later pinch', () => {
+    const { image, zoom } = setup();
+    // Pressed at the configured size and released outside the frame: no pointerup reaches it
+    const press = pointer(image, 'pointerdown', { id: 1, x: 10, y: 10, pointerType: 'mouse', buttons: 1 });
+    expect(press.defaultPrevented).toBe(false);
+    pointer(image, 'pointerdown', { id: 2, x: 200, y: 125, pointerType: 'touch' });
+    pointer(image, 'pointerdown', { id: 3, x: 300, y: 125, pointerType: 'touch' });
+    pointer(image, 'pointermove', { id: 3, x: 400, y: 125, pointerType: 'touch' });
+    expect(zoom.state().scale).toBeCloseTo(2);
+  });
+});
+
+describe('attachZoom — native drag only for the zoomable image (audit L34)', () => {
+  function startDrag(target: Element): Event {
+    const drag = new Event('dragstart', { bubbles: true, cancelable: true });
+    target.dispatchEvent(drag);
+    return drag;
+  }
+
+  it('lets links in the frame be dragged', () => {
+    const { viewport } = setup();
+    const link = document.createElement('a');
+    link.href = 'https://example.com/';
+    viewport.appendChild(link);
+    expect(startDrag(link).defaultPrevented).toBe(false);
+  });
+
+  it('leaves the image draggable while there is nothing to zoom', () => {
+    const { image } = setup(FULL_SIZE);
+    expect(image.draggable).toBe(true);
+    expect(startDrag(image).defaultPrevented).toBe(false);
+  });
+});
+
+// --- Host of the controls -----------------------------------------------------------------
+
+describe('attachZoom — host', () => {
+  it('puts the controls into the given host, e.g. a shared control bar', () => {
+    const viewport = document.createElement('div');
+    const host = document.createElement('div');
+    viewport.appendChild(host);
+    const image = document.createElement('img');
+    viewport.appendChild(image);
+    const zoom = attachZoom(document, {
+      viewport,
+      image,
+      labels: LABELS,
+      classNames: CLASS_NAMES,
+      host,
+      measure: () => ZOOMABLE
+    });
+    expect(host.querySelector('.controls')).not.toBeNull();
+    expect(host.firstElementChild?.className).toBe('controls');
     zoom.dispose();
-    pointer(image, 'pointermove', { id: 1, x: 100, y: 50, pointerType: 'mouse', buttons: 1 });
-    expect(image.style.transform).toBe('');
-    expect(() => zoom.dispose()).not.toThrow();
-    expect(viewport.querySelector('button')).toBeNull();
+    expect(host.querySelector('.controls')).toBeNull();
   });
 });
