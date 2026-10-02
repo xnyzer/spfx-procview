@@ -1,6 +1,15 @@
 import type { IDiagramLink } from '../../providers/types';
 import { DEFAULT_BACKGROUND } from './background';
-import { isOn, isOnByDefault, readAlign, readBackground, readDimension, readSettings, readText } from './settings';
+import {
+  isOn,
+  isOnByDefault,
+  readAlign,
+  readBackground,
+  readDimension,
+  readPaneSettings,
+  readSettings,
+  readText
+} from './settings';
 import type { SettingsStrings } from './settings';
 import { diagramStyles } from './sizing';
 
@@ -59,6 +68,30 @@ describe('readText', () => {
     ['whitespace mix', ' \t\u00a0\u3000 ']
   ])('reads text made only of invisible characters (%s) as empty', (_label, value) => {
     expect(readText(value)).toBe('');
+  });
+
+  // Built from code points: the characters are invisible, and their escapes can turn into raw
+  // characters when a file is written (CLAUDE.md)
+  it.each([
+    ['combining grapheme joiner', [0x034f]],
+    ['Arabic letter mark', [0x061c]],
+    ['Hangul fillers', [0x115f, 0x1160, 0x3164, 0xffa0]],
+    ['Khmer inherent vowels', [0x17b4, 0x17b5]],
+    ['Mongolian vowel separator and variation selectors', [0x180e, 0x180b, 0x180f]],
+    ['deprecated format characters', [0x206a, 0x206f]],
+    ['Braille blank', [0x2800]],
+    ['variation selectors', [0xfe00, 0xfe0f]],
+    ['interlinear annotation characters', [0xfff9, 0xfffb]],
+    ['musical formatting characters', [0xd834, 0xdd73, 0xd834, 0xdd7a]],
+    ['tag characters', [0xdb40, 0xdc20, 0xdb40, 0xdc7f]],
+    ['supplementary variation selectors', [0xdb40, 0xdd00, 0xdb40, 0xddef]]
+  ])('reads text made only of invisible characters (%s) as empty (audit L31)', (_label, codes) => {
+    expect(readText(String.fromCharCode(...codes))).toBe('');
+  });
+
+  it('keeps visible text that contains such characters', () => {
+    const variationSelector = String.fromCharCode(0xfe0f);
+    expect(readText(`Order ${variationSelector}process`)).toBe(`Order ${variationSelector}process`);
   });
 });
 
@@ -208,5 +241,53 @@ describe('readSettings — background switch', () => {
     expect(readSettings({ showBackground: false, backgroundColor: '#0e5a73' }, LINK, STRINGS).diagram.background).toBe(
       undefined
     );
+  });
+});
+
+describe('readPaneSettings (audit L39)', () => {
+  it('gives the pane every stored value checked, with the defaults applied', () => {
+    expect(readPaneSettings({})).toEqual({
+      showHubLink: false,
+      hubLinkPosition: 'below',
+      offerFullScreen: true,
+      showBackground: true,
+      backgroundColor: DEFAULT_BACKGROUND,
+      align: { diagramAlign: 'center', captionAlign: 'center', hubLinkAlign: 'right' }
+    });
+  });
+
+  it('takes only valid stored values', () => {
+    expect(
+      readPaneSettings({
+        showHubLink: true,
+        hubLinkPosition: 'overlay',
+        offerFullScreen: false,
+        showBackground: false,
+        backgroundColor: '#0E5A73',
+        diagramAlign: 'left',
+        captionAlign: 'right',
+        hubLinkAlign: 'center'
+      })
+    ).toEqual({
+      showHubLink: true,
+      hubLinkPosition: 'overlay',
+      offerFullScreen: false,
+      showBackground: false,
+      backgroundColor: '#0e5a73',
+      align: { diagramAlign: 'left', captionAlign: 'right', hubLinkAlign: 'center' }
+    });
+  });
+
+  it('switches the hub link on only with a real true', () => {
+    expect(readPaneSettings({ showHubLink: 'true' }).showHubLink).toBe(false);
+    expect(readPaneSettings({ showHubLink: 1 }).showHubLink).toBe(false);
+  });
+
+  it.each(WRONG_TYPES.map((value) => [value]))('falls back to every default for the wrong type %p', (value) => {
+    const props: Record<string, unknown> = {};
+    ['hubLinkPosition', 'backgroundColor', 'diagramAlign', 'captionAlign', 'hubLinkAlign'].forEach(
+      (name) => (props[name] = value)
+    );
+    expect(readPaneSettings(props)).toEqual(readPaneSettings({}));
   });
 });

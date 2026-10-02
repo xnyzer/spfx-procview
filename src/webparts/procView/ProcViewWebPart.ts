@@ -6,7 +6,8 @@ import type { IReadonlyTheme } from '@microsoft/sp-component-base';
 import styles from './ProcViewWebPart.module.scss';
 import * as strings from 'ProcViewWebPartStrings';
 import { parseDiagramLink } from '../../providers/registry';
-import type { IDiagramLink } from '../../providers/types';
+import type { IDiagramLink, LinkParseResult } from '../../providers/types';
+import { assertNever } from './assertNever';
 import { format, outcomeFor, resolveMessage, resolveState } from './messages';
 import type { ILoadError, IMessageModel } from './messages';
 import { createLifecycleGuard } from './lifecycleGuard';
@@ -89,6 +90,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   private _zoom: IZoomController | undefined;
   /** Open full-screen view, if any — closed when the web part goes away. */
   private _lightbox: ILightbox | undefined;
+  /** The current diagram's full-screen button — the focus returns to it when the view closes. */
+  private _fullScreenButton: HTMLButtonElement | undefined;
   /** SharePoint theme (on a coloured section: the section's variant) from `onThemeChanged`. */
   private _siteTheme: IReadonlyTheme | undefined;
   /** Teams theme when hosted in Teams; `default` elsewhere. */
@@ -111,7 +114,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
           this._applyTheme();
         }),
         // The SharePoint colours stay — the web part remains usable
-        (error) => Log.warn(LOG_SOURCE, `Teams theme unavailable: ${String(error)}`, this.context.serviceScope)
+        (error) => Log.warn(LOG_SOURCE, `Teams theme not applied: ${String(error)}`, this.context.serviceScope)
       );
     }
     return super.onInit();
@@ -159,7 +162,9 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     // replaced image's late load/error events must not reach the web part any more
     this._guard.nextRender();
     this._disposeZoom();
+    this._fullScreenButton = undefined;
     const result = parseDiagramLink(this.properties.imageLink);
+    this._dropOtherLoadError(result);
     const settings = readSettings(this.properties, result.ok ? result.link : undefined, strings);
     const outcome = outcomeFor(resolveState(result, this._loadError), this.displayMode === DisplayMode.Edit);
     switch (outcome.kind) {
@@ -172,6 +177,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       case 'diagram':
         this.domElement.replaceChildren(this._diagramView(outcome.link, settings));
         return;
+      default:
+        assertNever(outcome);
     }
   }
 
@@ -201,7 +208,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
         ? {
             label: strings.FullScreen,
             className: styles.zoomButton,
-            onOpen: (button) => this._openFullScreen(link, settings, button)
+            onOpen: (button) => this._openFullScreen(link, settings, button),
+            onAttach: (button) => (this._fullScreenButton = button)
           }
         : undefined,
       classNames: DIAGRAM_CLASS_NAMES,
@@ -244,10 +252,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     if (document.activeElement && document.activeElement !== document.body) {
       return;
     }
-    const button = Array.from(this.domElement.querySelectorAll('button')).find(
-      (candidate) => candidate.getAttribute('aria-label') === strings.FullScreen
-    );
-    button?.focus();
+    this._fullScreenButton?.focus();
   }
 
   private _disposeZoom(): void {
@@ -285,6 +290,18 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   }
 
   // --- Image events -----------------------------------------------------------------------
+
+  /**
+   * A load error counts only while its link stays entered (owner decision 2026-10-02): another
+   * link — or none — drops it, so a link entered again loads again, and a late policy violation
+   * can no longer upgrade the error of a link that is gone.
+   */
+  private _dropOtherLoadError(result: LinkParseResult): void {
+    const error = this._loadError;
+    if (error && !(result.ok && result.link.imageUrl === error.imageUrl)) {
+      this._loadError = undefined;
+    }
+  }
 
   private _onImageError(imageUrl: string): void {
     this._loadError = { imageUrl, cause: this._violations?.isBlocked(imageUrl) ? 'blocked' : 'failed' };

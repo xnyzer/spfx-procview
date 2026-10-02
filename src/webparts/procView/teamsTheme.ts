@@ -83,8 +83,8 @@ export interface ITeamsJs {
 /**
  * Reports the current Teams theme and every later change. TeamsJS keeps a single theme handler
  * per frame and cannot remove it — the caller makes `onTheme` a no-op once the web part is gone.
- * When Teams cannot report its theme, `onError` gets the reason and the SharePoint colours stay,
- * the safe fallback; errors thrown by `onTheme` itself are not caught.
+ * When Teams cannot report its theme, or `onTheme` fails to apply it, `onError` gets the reason
+ * and the SharePoint colours stay, the safe fallback — never an unhandled rejection.
  */
 export function followTeamsTheme(
   teamsJs: ITeamsJs,
@@ -93,10 +93,17 @@ export function followTeamsTheme(
 ): void {
   let hasChanged = false;
   let context: Promise<{ app: { theme: string } }>;
+  const applyTheme = (theme: unknown): void => {
+    try {
+      onTheme(parseTeamsTheme(theme));
+    } catch (error) {
+      onError(error);
+    }
+  };
   try {
     teamsJs.app.registerOnThemeChangeHandler((theme) => {
       hasChanged = true;
-      onTheme(parseTeamsTheme(theme));
+      applyTheme(theme);
     });
     context = teamsJs.app.getContext();
   } catch (error) {
@@ -106,7 +113,7 @@ export function followTeamsTheme(
   context.then((current) => {
     // A change reported in the meantime is newer than the context
     if (!hasChanged) {
-      onTheme(parseTeamsTheme(current?.app?.theme));
+      applyTheme(current?.app?.theme);
     }
   }, onError);
 }

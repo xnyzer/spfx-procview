@@ -53,6 +53,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-017b | Zoom: `ZoomView` class, options objects, focus kept via `aria-disabled`, primary mouse button only, no native image drag, wheel units, NaN guards | 2026-10-02 |
 | F-017c | Full screen: no close right after opening, two-tone focus ring, error state, `onClose` with focus return, `openLightbox` split, background switch applies in full screen too | 2026-10-02 |
 | F-017 | Zoom and full-screen fixes from the audit (F-017a, F-017b, F-017c) | 2026-10-02 |
+| F-019a | Web part and pane tests on SharePoint stand-ins; stale load errors dropped, Teams theme errors reported, invisible-only texts, pane settings via `settings.ts`, focus return by reference | 2026-10-02 |
 
 ---
 
@@ -76,7 +77,7 @@ with tests, then the pane focus with tooling and docs, then zoom and full screen
 **Solution sketch** (from the triage with the owner, 2026-10-02; F-019a updated at prep-step the
 same day — F-019b and F-019c get their own prep-step after F-019a, since b builds on the pane
 tests of a):
-- **F-019a — web part and pane tests, lifecycle and settings remainders:** tests on the real
+- **F-019a — web part and pane tests, lifecycle and settings remainders (done 2026-10-02):** tests on the real
   `ProcViewWebPart.ts` and `propertyPane.ts` through shared SPFx test doubles (the real SPFx
   packages do not load under Jest) instead of the copied wiring in `injection.test.ts` — stale
   and after-dispose events, hostile settings through `render()`, pane order, conditional
@@ -109,44 +110,6 @@ tests of a):
   only in files touched anyway (L43)
 
 **Dependencies:** F-016, F-017, F-018 (done)
-
-#### F-019a — Web part and pane tests, lifecycle and settings remainders
-
-**What:** First pin today's behaviour of the web part and the property pane with tests on the
-real modules, then fix the lifecycle and settings remainders, each with a test that fails
-before the fix. Size: about 900 lines in about 15 files, roughly 750 of them tests.
-
-**Files:** `spfxTestDoubles.ts` (new — stubs for `sp-core-library`, `sp-property-pane`,
-`sp-webpart-base`, the strings module and a `<dialog>` stand-in, used via `jest.mock` at the
-top of a test file as in `customPaneField.test.ts`), `ProcViewWebPart.test.ts` (new),
-`propertyPane.test.ts` (new), `injection.test.ts` (end-to-end sections through the real web
-part and pane, the copied wiring removed), `ProcViewWebPart.ts`, `settings.ts`
-(`readPaneSettings`, invisible characters), `settings.test.ts`, `propertyPane.ts`,
-`renderDiagram.ts` (`onAttach` of the full-screen button), `renderDiagram.test.ts`,
-`teamsTheme.ts`, `teamsTheme.test.ts`, `assertNever.ts` (new, moved out of `sizing.ts`),
-`sizing.ts`, `sizing.test.ts`
-
-**Dependencies:** —
-
-**Acceptance criteria:**
-- [ ] The mutations that survived the audit now fail at least one test, checked in the
-      isolated copy: `onImageError` without `forRender`, `render()` without the disposed
-      check, the raw `altText` in full screen, the raw stored value as toolbar selection,
-      no `checked` on the background toggle
-- [ ] A failed load counts only while the same link stays entered: another link and back loads
-      again, a re-render with the same link (e.g. typing the caption) keeps the error, and a
-      late policy violation does not rebuild the new link's diagram
-- [ ] A throwing Teams theme callback reaches `onError` (logged) — no unhandled rejection, in
-      both the change handler and the `getContext` path
-- [ ] An alternative or link text made only of the L31 characters falls back to the default
-      text; the characters are written as `\u` escapes (perl scan for raw format characters)
-- [ ] The pane gets every stored value from `readPaneSettings()`; group and field order,
-      conditional fields, toggle defaults, toolbar selections and the colour field (white for
-      a hostile value) are pinned by tests
-- [ ] `render()` ends in `assertNever`; the pixel limit reads "10000" in every language
-- [ ] After closing full screen the focus returns to the current full-screen button by
-      reference, also after a re-render while the view was open
-- [ ] `just check` green (isolated copy while the dev server runs); no file over 500 lines
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 

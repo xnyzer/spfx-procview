@@ -7,7 +7,7 @@
 import type { IDiagramLink } from '../../providers/types';
 import { parseBackgroundColor } from './background';
 import { parseHubLinkPosition, parseTextAlign } from './renderDiagram';
-import type { IDiagramView, IHubLinkView, TextAlign } from './renderDiagram';
+import type { HubLinkPosition, IDiagramView, IHubLinkView, TextAlign } from './renderDiagram';
 import { diagramStyles, parseDimension } from './sizing';
 import type { Dimension, DimensionField } from './sizing';
 
@@ -73,8 +73,15 @@ const HIDDEN_CONTROL_RANGES: readonly (readonly [number, number])[] = [
   [0x2066, 0x2069]
 ];
 
-/** Characters that draw nothing: whitespace, soft hyphen, zero-width characters and marks, BOM. */
-const INVISIBLE = /[\s\u00ad\u200b-\u200f\u2060-\u2064\ufeff]/g;
+/**
+ * Characters that draw nothing: whitespace, soft hyphen, zero-width characters and marks, fillers
+ * and blanks, deprecated and annotation format characters, BOM; in a class of their own the
+ * combining ones (grapheme joiner, Khmer inherent vowels, variation selectors), which next to
+ * another character would read as one combined character; and, as surrogate pairs (the ES5
+ * target has no `u` flag), musical formatting, tag and supplementary variation selector characters.
+ */
+const INVISIBLE =
+  /[\s\u00ad\u061c\u115f\u1160\u200b-\u200f\u2060-\u206f\u2800\u3164\ufeff\uffa0\ufff9-\ufffb]|[\u034f\u17b4\u17b5\u180b-\u180f\ufe00-\ufe0f]|\ud834[\udd73-\udd7a]|\udb40[\udc00-\udc7f\udd00-\uddef]/g;
 
 /** Texts the settings fall back to (from `loc/`). */
 export type SettingsStrings = Pick<IProcViewWebPartStrings, 'DefaultAltText' | 'HubLinkDefaultText' | 'NewTabHint'>;
@@ -137,6 +144,36 @@ export function readAlign(props: UntrustedProps, property: AlignProperty): TextA
 /** Colour behind the PNG (`#rrggbb`), or `undefined` when switched off — on and white by default. */
 export function readBackground(props: UntrustedProps): string | undefined {
   return isOnByDefault(props.showBackground) ? parseBackgroundColor(props.backgroundColor) : undefined;
+}
+
+/** What the property pane shows: the stored values checked, every default applied. */
+export interface IPaneSettings {
+  showHubLink: boolean;
+  hubLinkPosition: HubLinkPosition;
+  offerFullScreen: boolean;
+  showBackground: boolean;
+  /** `#rrggbb`, white by default — the colour field shows it even while the background is off. */
+  backgroundColor: string;
+  align: Record<AlignProperty, TextAlign>;
+}
+
+/**
+ * Reads the settings the property pane needs to choose its fields and show their state — the same
+ * checks and defaults as on the page, so pane and page never disagree.
+ */
+export function readPaneSettings(props: UntrustedProps): IPaneSettings {
+  return {
+    showHubLink: isOn(props.showHubLink),
+    hubLinkPosition: parseHubLinkPosition(props.hubLinkPosition),
+    offerFullScreen: isOnByDefault(props.offerFullScreen),
+    showBackground: isOnByDefault(props.showBackground),
+    backgroundColor: parseBackgroundColor(props.backgroundColor),
+    align: {
+      diagramAlign: readAlign(props, 'diagramAlign'),
+      captionAlign: readAlign(props, 'captionAlign'),
+      hubLinkAlign: readAlign(props, 'hubLinkAlign')
+    }
+  };
 }
 
 /** Hub link, when switched on and the tool has an interactive view for the link. */

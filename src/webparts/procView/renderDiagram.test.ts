@@ -340,6 +340,16 @@ describe('renderDiagram — full screen and control bar', () => {
     button.click();
     expect(opened).toEqual([button]);
   });
+
+  it('reports the new button through onAttach, so the web part keeps a reference (audit L40)', () => {
+    const attached: HTMLButtonElement[] = [];
+    const fullScreen = {
+      ...fullScreenOption(() => undefined),
+      onAttach: (button: HTMLButtonElement) => attached.push(button)
+    };
+    const root = renderDiagram(document, view({ fullScreen }));
+    expect(attached).toEqual([root.querySelector('.controlBar button')]);
+  });
 });
 
 describe('renderDiagram — background behind the diagram', () => {

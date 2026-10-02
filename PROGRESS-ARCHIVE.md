@@ -8,6 +8,82 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-019a — Web part and pane tests, lifecycle and settings remainders
+
+_Part of F-019 — Fixes from the control audit before the first release. Completed 2026-10-02._
+
+**What:** First pin today's behaviour of the web part and the property pane with tests on the
+real modules, then fix the lifecycle and settings remainders of the control audit (M16, L29,
+L30, L31, L32, L37, L38, L39, L40, L41), each with a test that failed before the fix.
+
+**Files:** `spfxTestDoubles.ts`, `ProcViewWebPart.test.ts`, `propertyPane.test.ts`,
+`assertNever.ts` (all new), `ProcViewWebPart.ts`, `settings.ts`, `settings.test.ts`,
+`propertyPane.ts`, `renderDiagram.ts`, `renderDiagram.test.ts`, `teamsTheme.ts`,
+`teamsTheme.test.ts`, `sizing.ts`, `sizing.test.ts`, `injection.test.ts`, `CLAUDE.md`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [x] The mutations that survived the audit now fail at least one test, checked in the
+      isolated copy — each fails one: `onImageError` without `forRender` (late error of a
+      replaced image), `render()` without the disposed check (dispose test), the raw `altText`
+      in full screen (full-screen test), the raw stored value as toolbar selection and no
+      `checked` on the background toggle (pane default tests)
+- [x] A failed load counts only while the same link stays entered — `ProcViewWebPart.test.ts`:
+      another link and back loads again, the same link keeps the error, a late policy
+      violation keeps the new link's image element (both new cases failed before the fix)
+- [x] A throwing Teams theme callback reaches `onError` in both paths, no unhandled rejection —
+      `teamsTheme.test.ts` (failed before)
+- [x] Texts made only of the L31 characters fall back to the default text — 12 cases in
+      `settings.test.ts`, built from code points (failed before); the source uses `\u`
+      escapes, the perl scan finds no raw format characters
+- [x] The pane gets every stored value from `readPaneSettings()` — `propertyPane.ts` reads no
+      stored value directly; order, conditional fields, toggle defaults, toolbar selections and
+      the colour field are pinned in `propertyPane.test.ts` (11 tests)
+- [x] `render()` ends in `assertNever`; the pixel limit reads "10000" — `sizing.test.ts`,
+      `propertyPane.test.ts` (failed before)
+- [x] Focus returns by reference — `renderDiagram.test.ts` (`onAttach`, failed before) and
+      `ProcViewWebPart.test.ts` (re-render while the view is open)
+- [x] `just check` green — 663 Jest tests (was 603), 12 script tests; no file over 500 lines
+      (`renderDiagram.test.ts` 401, `ProcViewWebPart.ts` 330), no function over 40 lines
+
+**Implemented:**
+- `spfxTestDoubles.ts` — stand-ins for `sp-core-library` (`DisplayMode`, `Log.warn` as a
+  mock, `Version`), `sp-property-pane` (field factories that record type, target property and
+  properties), the strings module (keys as texts, placeholders kept) and
+  `BaseClientSideWebPart` (element, properties, display mode, a context with recorded pane
+  calls); `startWebPart` / `disposeWebParts`, a `<dialog>` stand-in, `loadImage`,
+  `reportImageViolation`.
+- `ProcViewWebPart.test.ts` (23 tests) — states, image events of replaced diagrams (M4),
+  dispose (M5), load errors with L32/L29, full screen with checked settings and the focus
+  return, section and Teams themes, pane wiring (per-instance keys, refresh).
+- `propertyPane.test.ts` (11 tests) — groups and fields in order, conditional fields, toggle
+  defaults, toolbar selections and their change, the colour field, validation while typing.
+- `injection.test.ts` — the 129 hostile cases run through the real web part and pane; the
+  copied wiring (page, full-screen, message and pane-field copies) is gone.
+- `ProcViewWebPart.ts` — `render()` drops a load error of another link (L32, which also
+  resolves L29), ends in `assertNever` (L37) and gets the full-screen button via `onAttach`,
+  focused by reference on close (L40); the log text reads "Teams theme not applied".
+- `settings.ts` — `readPaneSettings()` (L39); more invisible characters for the emptiness
+  check: combining ones in a class of their own, supplementary ones as surrogate pairs (L31).
+- `propertyPane.ts` — the field builders work from `readPaneSettings()` (L39).
+- `teamsTheme.ts` — an error of the theme callback goes to `onError` in both paths (L30).
+- `renderDiagram.ts` — optional `onAttach` of the full-screen button (L40).
+- `assertNever.ts` — moved out of `sizing.ts`; `sizing.ts` names the limit without digit
+  grouping (L38).
+- `CLAUDE.md` — notes on the web part tests and on escapes that change while a file is
+  written.
+
+**Decisions / deviations:**
+- L29 is resolved by L32's mechanism — `render()` drops a stale error in one place, no extra
+  check in `_onViolation`.
+- L38: "10000", the form the width field accepts, instead of formatting in the UI culture.
+- L31: ESLint's `no-misleading-character-class` rejects combining marks right after a base
+  character in a character class; they got a class of their own, with the same behaviour.
+- No test of its own for `assertNever` — its branch is unreachable by design.
+- While files were written, escapes turned into raw characters once and a dash into escape
+  text once; the scan caught both — recorded in `CLAUDE.md`.
+
 ### F-017 — Zoom and full-screen fixes from the audit
 
 _Completed 2026-10-02 (F-017a, F-017b, F-017c)._

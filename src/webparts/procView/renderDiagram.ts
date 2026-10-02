@@ -43,6 +43,8 @@ export interface IDiagramFullScreen {
   className: string;
   /** Opens the full-screen view; the button gets the focus back when it closes. */
   onOpen: (button: HTMLButtonElement) => void;
+  /** Gets the button as soon as it exists — the focus goes to the current one after a re-render. */
+  onAttach?: (button: HTMLButtonElement) => void;
 }
 
 /** Everything the diagram view needs — assembled by the web part, rendered here. */
@@ -212,5 +214,6 @@ function createFullScreenButton(doc: Document, fullScreen: IDiagramFullScreen): 
   button.title = fullScreen.label;
   button.appendChild(createIcon(doc, 'fullScreen'));
   button.addEventListener('click', () => fullScreen.onOpen(button));
+  fullScreen.onAttach?.(button);
   return button;
 }

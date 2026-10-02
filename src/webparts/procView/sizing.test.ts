@@ -141,8 +141,8 @@ describe('dimensionErrorText', () => {
     { get: (_target, key) => (key === 'DimensionErrorTooLarge' ? 'The maximum is {0} pixels.' : String(key)) }
   ) as unknown as IProcViewWebPartStrings;
 
-  it('fills in the upper bound from MAX_PX in the reader’s number format', () => {
-    expect(dimensionErrorText('tooLarge', 'width', strings)).toBe(`The maximum is ${MAX_PX.toLocaleString()} pixels.`);
+  it('fills in the upper bound without digit grouping, as the field accepts it (audit L38)', () => {
+    expect(dimensionErrorText('tooLarge', 'width', strings)).toBe(`The maximum is ${MAX_PX} pixels.`);
   });
 
   it('leaves texts without a placeholder as they are', () => {

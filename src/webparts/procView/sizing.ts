@@ -4,6 +4,7 @@
  * SharePoint.
  */
 
+import { assertNever } from './assertNever';
 import { format } from './messages';
 import type { TextAlign } from './renderDiagram';
 
@@ -66,11 +67,6 @@ export function parseDimension(input: unknown, allowPercent: boolean): Dimension
 
 /** CSS property → value, as used by `style.setProperty`. */
 export type CssDeclarations = Record<string, string>;
-
-/** Compile-time guard: a new variant that is not handled fails the build here. */
-function assertNever(value: never): never {
-  throw new Error(`unhandled value ${String(value)}`);
-}
 
 function toCss(dimension: Dimension): string {
   switch (dimension.kind) {
@@ -145,13 +141,13 @@ export function dimensionErrorKey(error: DimensionError, field: DimensionField):
 }
 
 /**
- * The pane's error text for a width/height. The "too large" text names the upper bound, filled in
- * from `MAX_PX` in the reader's number format (e.g. 10,000 or 10.000).
+ * The pane's error text for a width/height. The "too large" text names the upper bound from
+ * `MAX_PX` without digit grouping — the way the field accepts numbers, in every language.
  */
 export function dimensionErrorText(
   error: DimensionError,
   field: DimensionField,
   strings: IProcViewWebPartStrings
 ): string {
-  return format(strings[dimensionErrorKey(error, field)], [MAX_PX.toLocaleString()]);
+  return format(strings[dimensionErrorKey(error, field)], [String(MAX_PX)]);
 }

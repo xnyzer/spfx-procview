@@ -127,6 +127,23 @@ describe('followTeamsTheme', () => {
     expect(themes).toEqual(['contrast']);
   });
 
+  it('reports a theme callback that throws, in both paths — no unhandled rejection (audit L30)', async () => {
+    const failure = new Error('cannot apply the theme');
+    const onError = jest.fn();
+    const teams = mockTeams(() => Promise.resolve({ app: { theme: 'dark' } }));
+    followTeamsTheme(
+      teams.teamsJs,
+      () => {
+        throw failure;
+      },
+      onError
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(onError).toHaveBeenCalledWith(failure);
+    expect(() => teams.change('contrast')).not.toThrow();
+    expect(onError).toHaveBeenCalledTimes(2);
+  });
+
   it('treats an unknown theme from Teams as default', async () => {
     const themes: TeamsTheme[] = [];
     const teams = mockTeams(() => Promise.resolve({ app: { theme: 'neon' } }));
