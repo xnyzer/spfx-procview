@@ -1,3 +1,4 @@
+/** Texts, value and classes of the colour field in the property pane. */
 export interface IColorFieldProps {
   labelText: string;
   /** Current colour as `#rrggbb`. */

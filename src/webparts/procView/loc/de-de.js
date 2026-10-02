@@ -91,7 +91,7 @@ define([], function () {
     DimensionErrorInvalidWidth:
       'Pixel (z. B. 800) oder Prozent der Spalte (z. B. 50 %) eingeben – oder leer lassen für automatisch.',
     DimensionErrorInvalidHeight: 'Pixel (z. B. 600) eingeben – oder leer lassen für automatisch.',
-    DimensionErrorTooLarge: 'Das Maximum sind 10000 Pixel.',
+    DimensionErrorTooLarge: 'Das Maximum sind {0} Pixel.',
     DimensionErrorPercentOutOfRange: 'Einen Prozentwert von 1 % bis 100 % verwenden.',
     DimensionErrorPercentHeight:
       'Die Höhe kann kein Prozentwert sein – Pixel eingeben oder leer lassen für automatisch.'

@@ -70,14 +70,6 @@ export function themeVariables(theme: IReadonlyTheme | undefined): Record<string
 }
 
 /**
- * Sets the theme's custom properties on the web part element and removes those the theme
- * does not provide, so a colour from a previous theme never lingers.
- */
-export function applyThemeVariables(style: CSSStyleDeclaration, theme: IReadonlyTheme | undefined): void {
-  applyVariables(style, themeVariables(theme));
-}
-
-/**
  * Sets the given colour variables (e.g. a Teams palette) on the web part element and removes the
  * other known ones, so a colour from a previous theme never lingers.
  */

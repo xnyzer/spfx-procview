@@ -10,6 +10,7 @@ export interface ILoadError {
   cause: 'failed' | 'blocked';
 }
 
+/** What there is to show: the diagram (with its validated link) or why not. */
 export type DiagramState =
   | { kind: 'ok'; link: IDiagramLink }
   | { kind: 'noLink' }
@@ -55,16 +56,18 @@ function hostOf(url: string): string {
   try {
     return new URL(url).hostname;
   } catch {
-    return url;
+    // Not reachable — the image URL comes from a validated link. Never echo the URL itself: it
+    // carries the auth key
+    return '';
   }
 }
 
-function message(partial: Partial<IMessageModel> & Pick<IMessageModel, 'bodyKey'>): IMessageModel {
+function createMessage(partial: Partial<IMessageModel> & Pick<IMessageModel, 'bodyKey'>): IMessageModel {
   return { tone: 'error', detailKeys: [], params: [], showConfigure: false, showHubLink: false, ...partial };
 }
 
 /** Readers get short, neutral messages; editors get causes and a way to fix them. */
-const READER_LOAD_FAILED = message({ bodyKey: 'MessageLoadFailedReader', showHubLink: true });
+const READER_LOAD_FAILED = createMessage({ bodyKey: 'MessageLoadFailedReader', showHubLink: true });
 
 /** The state table of F-004: what editors and readers see in each state. */
 export function outcomeFor(state: DiagramState, editMode: boolean): Outcome {
@@ -75,7 +78,7 @@ export function outcomeFor(state: DiagramState, editMode: boolean): Outcome {
       return editMode
         ? {
             kind: 'message',
-            message: message({
+            message: createMessage({
               tone: 'info',
               titleKey: 'MessageNoLinkTitle',
               bodyKey: 'MessageNoLinkBody',
@@ -87,14 +90,18 @@ export function outcomeFor(state: DiagramState, editMode: boolean): Outcome {
       return {
         kind: 'message',
         message: editMode
-          ? message({ titleKey: 'MessageInvalidLinkTitle', bodyKey: LINK_ERROR_KEYS[state.error], showConfigure: true })
-          : message({ bodyKey: 'MessageUnavailableReader' })
+          ? createMessage({
+              titleKey: 'MessageInvalidLinkTitle',
+              bodyKey: LINK_ERROR_KEYS[state.error],
+              showConfigure: true
+            })
+          : createMessage({ bodyKey: 'MessageUnavailableReader' })
       };
     case 'loadFailed':
       return {
         kind: 'message',
         message: editMode
-          ? message({
+          ? createMessage({
               titleKey: 'MessageLoadFailedTitle',
               bodyKey: 'MessageLoadFailedCauses',
               detailKeys: ['CauseSharingRevoked', 'CauseLinkIncorrect', 'CauseDomainBlocked'],
@@ -106,7 +113,7 @@ export function outcomeFor(state: DiagramState, editMode: boolean): Outcome {
       return {
         kind: 'message',
         message: editMode
-          ? message({ titleKey: 'MessageBlockedTitle', bodyKey: 'MessageBlockedBody', params: [state.host] })
+          ? createMessage({ titleKey: 'MessageBlockedTitle', bodyKey: 'MessageBlockedBody', params: [state.host] })
           : READER_LOAD_FAILED
       };
   }
@@ -138,20 +145,3 @@ export function resolveMessage(model: IMessageModel, strings: IProcViewWebPartSt
     showHubLink: model.showHubLink
   };
 }
-
-/** Every `loc/` key a message can use — for the completeness test. */
-export const MESSAGE_KEYS: StringKey[] = [
-  'MessageNoLinkTitle',
-  'MessageNoLinkBody',
-  'MessageInvalidLinkTitle',
-  'MessageUnavailableReader',
-  'MessageLoadFailedTitle',
-  'MessageLoadFailedCauses',
-  'MessageLoadFailedReader',
-  'CauseSharingRevoked',
-  'CauseLinkIncorrect',
-  'CauseDomainBlocked',
-  'MessageBlockedTitle',
-  'MessageBlockedBody',
-  'ConfigureButton'
-];

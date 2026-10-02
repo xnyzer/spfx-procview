@@ -1,5 +1,5 @@
 import type { IReadonlyTheme } from '@microsoft/sp-component-base';
-import { ACCENT_VARIABLE, SEMANTIC_SLOTS, applyThemeVariables, applyVariables, themeVariables } from './theme';
+import { ACCENT_VARIABLE, SEMANTIC_SLOTS, applyVariables, themeVariables } from './theme';
 
 /** A light page theme (default Fluent colours). */
 const PAGE_THEME = {
@@ -112,20 +112,23 @@ describe('themeVariables', () => {
   });
 });
 
-describe('applyThemeVariables', () => {
+describe('applyVariables with a SharePoint theme', () => {
   it('sets the variables on the element style', () => {
     const element = document.createElement('div');
-    applyThemeVariables(element.style, STRONG_SECTION_THEME);
+    applyVariables(element.style, themeVariables(STRONG_SECTION_THEME));
     expect(element.style.getPropertyValue('--bodyText')).toBe('#ffffff');
     expect(element.style.getPropertyValue(ACCENT_VARIABLE)).toBe('#ffffff');
   });
 
   it('removes colours the new theme does not provide — nothing lingers from the old one', () => {
     const element = document.createElement('div');
-    applyThemeVariables(element.style, STRONG_SECTION_THEME);
-    applyThemeVariables(element.style, {
-      semanticColors: { bodyText: '#111111' }
-    } as unknown as IReadonlyTheme);
+    applyVariables(element.style, themeVariables(STRONG_SECTION_THEME));
+    applyVariables(
+      element.style,
+      themeVariables({
+        semanticColors: { bodyText: '#111111' }
+      } as unknown as IReadonlyTheme)
+    );
     expect(element.style.getPropertyValue('--bodyText')).toBe('#111111');
     expect(element.style.getPropertyValue('--bodyStandoutBackground')).toBe('');
     expect(element.style.getPropertyValue(ACCENT_VARIABLE)).toBe('');
@@ -133,8 +136,8 @@ describe('applyThemeVariables', () => {
 
   it('clears everything without a theme', () => {
     const element = document.createElement('div');
-    applyThemeVariables(element.style, PAGE_THEME);
-    applyThemeVariables(element.style, undefined);
+    applyVariables(element.style, themeVariables(PAGE_THEME));
+    applyVariables(element.style, themeVariables(undefined));
     expect(element.style.cssText).toBe('');
   });
 });
@@ -142,7 +145,7 @@ describe('applyThemeVariables', () => {
 describe('applyVariables', () => {
   it('sets a given palette and removes the other known colours', () => {
     const element = document.createElement('div');
-    applyThemeVariables(element.style, PAGE_THEME);
+    applyVariables(element.style, themeVariables(PAGE_THEME));
     applyVariables(element.style, { '--bodyText': '#ffffff', '--bodyBackground': '#292929' });
     expect(element.style.getPropertyValue('--bodyText')).toBe('#ffffff');
     expect(element.style.getPropertyValue('--bodyBackground')).toBe('#292929');

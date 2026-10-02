@@ -31,6 +31,33 @@ describe('trackImageViolations', () => {
     tracker.dispose();
   });
 
+  it('falls back to violatedDirective with its source list (older browsers)', () => {
+    const tracker = trackImageViolations(document);
+    const event = new Event('securitypolicyviolation');
+    Object.defineProperty(event, 'blockedURI', { value: IMAGE_URL });
+    Object.defineProperty(event, 'violatedDirective', { value: "img-src 'self' https://*.sharepoint.com" });
+    document.dispatchEvent(event);
+    expect(tracker.isBlocked(IMAGE_URL)).toBe(true);
+    tracker.dispose();
+  });
+
+  it('ignores a violatedDirective that only starts like an image directive', () => {
+    const tracker = trackImageViolations(document);
+    const event = new Event('securitypolicyviolation');
+    Object.defineProperty(event, 'blockedURI', { value: IMAGE_URL });
+    Object.defineProperty(event, 'violatedDirective', { value: "img-src-elem 'self'" });
+    document.dispatchEvent(event);
+    expect(tracker.isBlocked(IMAGE_URL)).toBe(false);
+    tracker.dispose();
+  });
+
+  it('recognises an origin reported with a trailing slash', () => {
+    const tracker = trackImageViolations(document);
+    document.dispatchEvent(violation('https://editor.signavio.com/', 'img-src'));
+    expect(tracker.isBlocked(IMAGE_URL)).toBe(true);
+    tracker.dispose();
+  });
+
   it('recognises default-src as fallback directive', () => {
     const tracker = trackImageViolations(document);
     document.dispatchEvent(violation(IMAGE_URL, 'default-src'));

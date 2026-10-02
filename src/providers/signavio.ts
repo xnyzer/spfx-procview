@@ -88,6 +88,7 @@ function parseSignavioLink(input: string): LinkParseResult | undefined {
   };
 }
 
+/** The SAP Signavio provider: accepts only the "Simple image" link of a shared diagram. */
 export const signavioProvider: IProcessToolProvider = {
   id: 'signavio',
   parse: parseSignavioLink

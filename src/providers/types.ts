@@ -31,8 +31,10 @@ export interface IDiagramLink {
   hubUrl?: string;
 }
 
+/** Result of parsing a link: the validated link or the reason it was rejected. */
 export type LinkParseResult = { ok: true; link: IDiagramLink } | { ok: false; error: LinkErrorCode };
 
+/** A process tool the web part can show diagrams from (one per tool, see registry.ts). */
 export interface IProcessToolProvider {
   readonly id: string;
   /**

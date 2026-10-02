@@ -419,7 +419,7 @@ describe('injection — every setting hostile at once', () => {
     const about = renderAboutField(document, {
       linkText: 'Repository',
       newTabHint: '(new tab)',
-      classNames: { root: 'r', hubAnchor: 'a', srOnly: 's' }
+      classNames: { root: 'r', anchor: 'a', srOnly: 's' }
     });
     [alignment, color, about].forEach(expectInert);
     expect(color.querySelector('input')?.value).toMatch(/^#[0-9a-f]{6}$/);

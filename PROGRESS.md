@@ -46,92 +46,43 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-008 | Teams: follows the Teams theme (dark, high contrast); personal-app host removed | 2026-10-01 |
 | F-016a | Audit before the first release: 0 critical / 0 high / 13 medium / 24 low, triaged into F-016b, F-016c and the new F-017 | 2026-10-01 |
 | F-016b | Settings read in `settings.ts`, property pane in `propertyPane.ts`; injection tests over all fields; theme, provider-link and text hardening | 2026-10-01 |
+| F-016c | Lifecycle guard, Teams theme errors logged, licence check and third-party notices, full-page host and unused dependencies removed, per-instance pane field keys, docs and tooling fixes | 2026-10-02 |
+| F-016 | Audit before the first release (F-016a, F-016b, F-016c) | 2026-10-02 |
 
 ---
 
 ## Open tasks — work top to bottom
 
-### F-016 — Audit before the first release
+### F-018 — Diagram alignment and property pane order
 
-**Status:** PLANNED
+**Status:** BACKLOG
 
-**Problem:** Before 1.0.0 goes to IT, the whole web part should be checked once end to end —
-not only step by step as built.
+**Problem:** A diagram narrower than its column has no defined horizontal position: the code
+places it at the left, yet in the local workbench narrow diagrams appeared centred and jumped
+to the left when another web part was added. Editors expect diagrams centred by default. The
+property pane also grew feature by feature: the size sits far from the image link, and the
+alternative text comes last, where it is easily missed.
 
-**Idea:** A full audit with `/coding-kit:audit-code` (results in `AUDIT-RESULTS.md`), with
-three explicit focal points from the owner; findings are fixed directly or become own
-F-numbers.
+**Idea:** An alignment setting for the diagram itself — left, centre or right, centred by
+default — and a property pane ordered the way editors work: the diagram and its description
+first, then size and position, the texts around the diagram, the reader functions, and the
+about info last.
 
-**Solution sketch** (updated at prep-step, 2026-10-01; size: medium, three substeps):
-- **Audit run:** the owner starts `/coding-kit:audit-code` without an argument (the skill
-  cannot be invoked by Claude); it documents only and overwrites the gitignored
-  `AUDIT-RESULTS.md` — the 2026-09-29 results exist nowhere else and are kept locally
-  first. Checks run in an isolated copy while the dev server runs. Done in F-016a — the
-  findings with their triage are in `PROGRESS-ARCHIVE.md` (F-016a).
-- **Correctness:** review against CODING-STANDARDS and the requirements, edge cases (invalid
-  sizes, broken links, images that fail, fast toggling, listener cleanup)
-- **Licences:** what actually ships in the built package (expected: own code plus `tslib`
-  helpers, 0BSD; SharePoint libraries are provided by SharePoint — SPFx licence, ADR-0001);
-  licences of all dependencies via `npm query` (npm's own tooling, verified to report the
-  `license` field): no GPL/AGPL beyond the dual-licensed exceptions in ADR-0001; other rights
-  (icons, texts — the trademark notice is already in the README). Owner decision: a permanent
-  check in `just check` (and thereby CI) instead of a one-off list — Renovate keeps updating
-  dependencies, a list would be stale after the next update
-- **Injection robustness:** every input (image link, caption, alt text, link text, width,
-  height, colour, alignment, position, toggles) with hostile values — HTML tags,
-  `javascript:` links, quotes, CSS breakouts, Unicode tricks, wrong types (objects instead of
-  text); extra tests that feed all fields at once and assert nothing becomes active HTML, CSS
-  or script. Owner decision: the mapping from web part properties to the views moves out of
-  `ProcViewWebPart.ts` (untested, needs SharePoint; 579 lines, above the 500-line hard limit
-  of CODING-STANDARDS §2) into a pure `settings.ts`, so the tests take the web part's own path
-- **Seen while planning** — assessed in F-016a: the Teams handler (L5), the unused
-  dependencies (L17) and the stale image events (M4) are confirmed findings
+**Solution sketch:**
+- New setting `diagramAlign`: manifest initial value and code fallback `center` — also for
+  web parts saved before the setting existed (they move from left to centred); the same icon
+  toolbar as the caption, reusing `readAlign`
+- Position the image frame with automatic margins, so the hub overlay and the control bar move
+  with the image; caption and hub link keep their own alignment; full screen unaffected
+- Pane order (owner decision 2026-10-02): **Diagram** (image link, alternative text) →
+  **Size and alignment** (maximum-size info, width, height, alignment) → **Caption** →
+  **Collaboration Hub link** → **Viewing** (zoom, full screen, background, colour) →
+  **About**; the group "Accessibility" goes away, "Size" becomes "Size and alignment"
+- Texts in all four languages (new alignment label, renamed size group, removed accessibility
+  group name) — the typed completeness test covers them; the check on 2026-10-02 found all 75
+  keys complete in every language; hostile values covered by `injection.test.ts`
 
-**Dependencies:** F-015, F-008 (all features built)
-
-#### F-016c — Remaining findings and licence check
-
-**What:** Fix the findings triaged into this substep; a dependency-free licence check on
-`npm query` in `just check` that fails on GPL/AGPL and accepts the ADR-0001 exceptions (SPFx
-licence terms, the permissive option of dual-licensed packages).
-
-**Audit findings:**
-- Lifecycle: M4 (late events of replaced images re-render), M5 (no guard after
-  `onDispose`), L5 (Teams handler: swallowed callback errors without a log, race with
-  `getContext`), L21 (check whether each render fetches the PNG again)
-- Licences: M13 (`THIRD-PARTY-NOTICES.md` for `tslib` and `@microsoft/load-themed-styles`),
-  L22 (`@microsoft/microsoft-graph-client` has no licence field — explicit exception)
-- Manifest and dependencies: L15 (remove the `SharePointFullPage` host, fix the fallback
-  comment), L17 (remove `sp-lodash-subset`, `sp-office-ui-fabric-core`, the `eject-webpack`
-  script; exact versions)
-- Docs: L18 (REQUIREMENTS features 2/7/8, CODING-STANDARDS §13 and a convention override for
-  the own SVG icons, README Teams theme)
-- Small code fixes: M2d (`renderAlignmentButtons` over 50 lines), M3 (parameters in
-  `scripts/teams-icons.mjs`), L6d (test-only `applyThemeVariables`, `MESSAGE_KEYS`), L8b
-  (`MAX_PX` as placeholder in the loc files), L9b (`hostOf` fallback), L10 (exhaustive
-  switches in `sizing.ts`), L16 (weak tests), L19a (external-link helper in its own module),
-  L19c (doc comments and names outside zoom/full screen), L23 (`renderMessage` 51 lines)
-- Tooling: L20 (CodeQL permissions, format/lint `scripts/`, lefthook order, Renovate rule for
-  `tslib`)
-
-**Files:** `scripts/licence-check.mjs` (new), `THIRD-PARTY-NOTICES.md` (new), `justfile`,
-`ProcViewWebPart.ts`, `ProcViewWebPart.manifest.json`, `teamsTheme.ts`, `theme.ts`,
-`messages.ts`, `sizing.ts`, `alignmentField.ts`, `renderMessage.ts`, `aboutField.ts`,
-`loc/*.js`, tests, `package.json`, `scripts/teams-icons.mjs`, `lefthook.yml`, `renovate.json`,
-`.github/workflows/codeql.yml`, `REQUIREMENTS.md`, `CODING-STANDARDS.md`,
-`.claude/convention-overrides.md`, `README.md`
-
-**Dependencies:** F-016b
-
-**Acceptance criteria:**
-- [ ] `just check` fails on a GPL/AGPL-only package and passes on the current tree (SPDX `OR`
-      expressions pass when one option is permissive)
-- [ ] Image events of replaced images and every callback after `onDispose` are ignored
-      (tests)
-- [ ] `THIRD-PARTY-NOTICES.md` lists every third-party package in the bundle with its notice
-- [ ] Every finding from F-016a has a status with evidence (fixed / own F-number / accepted
-      with reason), recorded in `AUDIT-RESULTS.md`
-- [ ] `just check` and `just build` green (isolated copy while the dev server runs)
+**Dependencies:** F-016 (settings module, instance-keyed pane fields)
 
 ### F-017 — Zoom and full-screen fixes from the audit
 
@@ -192,8 +143,8 @@ tags and attaches it to a GitHub release; a deployment guide for IT.
   GitHub release with the `.sppkg`, a SHA-256 checksum and the CHANGELOG section as notes
 - Owner decisions (2026-10-01): first release **1.0.0**; cutting it is the last step of F-009b
 
-**Dependencies:** F-002, F-016 (audit before the first release), F-017 (zoom and full-screen
-fixes from the audit)
+**Dependencies:** F-002, F-016 (audit before the first release), F-018 (diagram alignment,
+pane order), F-017 (zoom and full-screen fixes from the audit)
 
 #### F-009a — One version, version display, release recipe (local)
 
@@ -255,7 +206,7 @@ Node 26 support — audit F-016a, L24)
 ---
 
 <!-- FEATURE-INDEX
-next-feature: F-018
+next-feature: F-019
 F-001 Provider interface + Signavio provider (DONE)
 F-002 Configuration pane + diagram display with size control (DONE)
 F-003 Collaboration Hub link (DONE)
@@ -271,6 +222,7 @@ F-012 Localisation: German, English, French, Spanish (DONE)
 F-013 Link to the GitHub repository in the property pane (DONE)
 F-014 Own Teams app icons instead of the generator placeholders (DONE)
 F-015 Diagram background (setting) (DONE)
-F-016 Audit before the first release (PLANNED)
+F-016 Audit before the first release (DONE)
 F-017 Zoom and full-screen fixes from the audit
+F-018 Diagram alignment and property pane order
 -->

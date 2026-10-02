@@ -3,8 +3,8 @@
 # skills and CI call only these names. Tooling comes from the SPFx 1.23 Heft rig
 # (npm, ESLint, Jest); Prettier is the formatter.
 
-# Prettier scope: source and SPFx config only — governance Markdown/YAML stays untouched
-prettier_globs := '"src/**/*.{ts,js,scss,json}" "config/**/*.json" "*.config.js"'
+# Prettier scope: source, scripts and SPFx config only — governance Markdown/YAML stays untouched
+prettier_globs := '"src/**/*.{ts,js,scss,json}" "scripts/**/*.mjs" "config/**/*.json" "*.config.js"'
 
 default:
     @just --list
@@ -20,9 +20,11 @@ setup:
 dev locale="":
     npx --no-install heft start --clean --nobrowser {{ if locale == "" { "" } else { "--locales " + locale } }}
 
-# Build (TypeScript + Heft lint) and run the Jest suite
+# Build (TypeScript + Heft lint) and run the Jest suite, then the tests of the Node scripts
+# (Node's built-in test runner — the scripts have no dependencies)
 test:
     npx --no-install heft test --clean
+    node --test scripts/*.test.mjs
 
 # Static analysis: ESLint with the SPFx profile, zero warnings
 lint:
@@ -39,6 +41,7 @@ check:
     just lint
     just test
     node scripts/teams-icons.mjs --check
+    node scripts/licence-check.mjs
 
 # Production build: tests + solution package (sharepoint/solution/spfx-procview.sppkg)
 build:

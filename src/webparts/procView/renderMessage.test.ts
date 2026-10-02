@@ -86,6 +86,7 @@ describe('renderMessage', () => {
     const anchor = root.querySelector('a') as HTMLAnchorElement;
     expect(root.lastElementChild?.className).toBe('hubLink');
     expect(anchor.getAttribute('href')).toBe(HUB.url);
+    expect(anchor.target).toBe('_blank');
     expect(anchor.rel).toBe('noopener noreferrer');
   });
 

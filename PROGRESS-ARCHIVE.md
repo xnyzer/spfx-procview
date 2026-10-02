@@ -8,6 +8,108 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-016 — Audit before the first release
+
+_Completed 2026-10-02 (F-016a, F-016b, F-016c)._
+
+**Problem:** Before 1.0.0 goes to IT, the whole web part should be checked once end to end —
+not only step by step as built.
+
+**Idea:** A full audit with `/coding-kit:audit-code` (results in `AUDIT-RESULTS.md`), with
+three explicit focal points from the owner — correctness, licences, injection robustness;
+findings are fixed directly or become own F-numbers.
+
+**Result:** 38 findings (0 critical, 0 high, 13 medium, 25 low — L25 found by the owner in
+the visual check). F-016b and F-016c fixed every finding outside zoom and full screen; F-017
+takes the zoom and full-screen parts (M2b–d, M3, M6–M11, L3a, L6b–c, L7b–c, L9a, L11–L14,
+L19b–c); L21 needed no change (checked in the browser), L24 is a note for F-010, and one test
+file rename was accepted as unnecessary. No input becomes active HTML, CSS, script or a foreign
+URL; licences are checked on every `just check`; the bundled third-party code is listed in
+`THIRD-PARTY-NOTICES.md`. New on the way: F-018 (diagram alignment and property pane order).
+
+**Dependencies:** F-015, F-008 (all features built)
+
+### F-016c — Remaining findings and licence check
+
+_Part of F-016 — Audit before the first release. Completed 2026-10-02._
+
+**What:** Fix the findings triaged into this substep; a dependency-free licence check on
+`npm query` in `just check` that fails on GPL/AGPL and accepts the ADR-0001 exceptions (SPFx
+licence terms, the permissive option of dual-licensed packages).
+
+**Audit findings:** M2d (alignment toolbar), M3 (icon script), M4, M5, M13, L5, L6d, L8b,
+L9b, L10, L15, L16, L17, L18, L19a, L19c, L20, L21, L22, L23 — and L25, found by the owner in
+the visual check (see the F-016a table)
+
+**Files:** new `THIRD-PARTY-NOTICES.md`, `scripts/licence-check.mjs`,
+`scripts/licence-check.test.mjs`, `lifecycleGuard.ts` (+ test), `customPaneField.ts`
+(+ test), `externalLink.ts`; changed `ProcViewWebPart.ts`, `ProcViewWebPart.manifest.json`,
+`propertyPane.ts`, `teamsTheme.ts`, `theme.ts`, `messages.ts`, `sizing.ts`,
+`alignmentField.ts`, `renderMessage.ts`, `renderDiagram.ts`, `aboutField.ts`, `colorField.ts`,
+`src/providers/signavio.ts`, `src/providers/types.ts`, `loc/*.js` and the tests `messages`,
+`sizing`, `theme`, `teamsTheme`, `renderMessage`, `violationTracker`, `aboutField`,
+`injection`, `signavio`; `package.json`, `package-lock.json`, `justfile`, `eslint.config.js`,
+`lefthook.yml`, `renovate.json`, `.github/workflows/codeql.yml`, `scripts/teams-icons.mjs`;
+docs `README.md`, `REQUIREMENTS.md`, `CODING-STANDARDS.md`, `.claude/convention-overrides.md`,
+`CLAUDE.md`
+
+**Dependencies:** F-016b
+
+**Acceptance criteria:**
+- [x] `just check` fails on a GPL/AGPL-only package and passes on the current tree (SPDX `OR`
+      expressions pass when one option is permissive) — `licence-check.test.mjs` (exit code
+      1 for an AGPL-only fixture); 1149 installed packages pass
+- [x] Image events of replaced images and every callback after `onDispose` are ignored
+      (tests) — `lifecycleGuard.test.ts`
+- [x] `THIRD-PARTY-NOTICES.md` lists every third-party package in the bundle with its notice
+      — `tslib` 2.3.1 (0BSD) and `@microsoft/load-themed-styles` 1.10.292 (MIT), checked
+      against the installed versions by the licence check
+- [x] Every finding from F-016a has a status with evidence (fixed / own F-number / accepted
+      with reason), recorded in `AUDIT-RESULTS.md` — 38 of 38, including L25
+- [x] `just check` and `just build` green (isolated copy while the dev server runs) — 562
+      Jest tests, 12 script tests; the built package declares only `SharePointWebPart` and
+      `TeamsTab`
+
+**Implemented:**
+- Lifecycle: `createLifecycleGuard()` — `forRender` ties image `load`/`error` to the render
+  that created the image, `forLifetime` keeps the Teams theme callback until `onDispose`;
+  `render()` returns once disposed. `followTeamsTheme(teamsJs, onTheme, onError)` reports a
+  failing `getContext` or a TeamsJS that is not ready (`Log.warn` in the web part), no longer
+  swallows errors of `onTheme`, and lets a theme change win over the older context result.
+- Licences: `licence-check.mjs` reads `npm query '*'` (or `--input`), evaluates SPDX
+  expressions against an allow-list, accepts the SPFx licence URL only for `@microsoft/*`
+  and the missing licence field only for `@microsoft/microsoft-graph-client`, and checks that
+  the notices name the installed versions of the bundled packages. `just test` runs the
+  script tests with Node's built-in runner; `just check` runs the licence check.
+- Manifest and dependencies: `supportedHosts` without `SharePointFullPage`; the unused
+  `sp-lodash-subset` and `sp-office-ui-fabric-core` and the `eject-webpack` script removed;
+  exact versions for `@types/webpack-env`, `css-loader`, `typescript`.
+- Small fixes: shorter `renderAlignmentButtons` and `renderMessage`; option objects and named
+  geometry in the icon script (icons byte-identical); `applyThemeVariables` and `MESSAGE_KEYS`
+  removed; `{0}` for the pixel maximum in all four languages (`dimensionErrorText`, number in
+  the reader's format); `hostOf` never echoes the URL; `assertNever` in `sizing.ts`;
+  `externalLink.ts` for the hub and repository links; doc comments on exported types;
+  stronger tests (exact host list, `violatedDirective` fallback, link `target`).
+- Property pane (L25): `customPaneField.ts` with a key per web part instance from
+  `this.context.instanceId` — the colour picker and the alignment toolbars showed the
+  previous web part's value in the local workbench.
+- Docs and tooling: REQUIREMENTS features 2/7/8, CODING-STANDARDS §13 (DOM properties, own
+  SVG icons) with a convention override, README (Teams themes, third-party notices); CodeQL
+  job with `contents: read` and `security-events: write` only; Prettier and ESLint core rules
+  for `scripts/`; lefthook runs format before the scans (`piped`); Renovate updates `tslib`.
+
+**Decisions / deviations:**
+- L25 was not in the plan: the owner found it in the visual check. The first fix used
+  `this.instanceId`, which is `undefined` in the local workbench (its stand-in base class has
+  no getter); the second takes `this.context.instanceId` — confirmed by the owner.
+- L21 needed no change: the owner saw no PNG request while typing a caption, only when the
+  image link changed.
+- The isolated check copy needs a real `node_modules` (copy-on-write clone): `npm query`
+  does not follow a symlinked one — recorded in the CLAUDE.md project notes.
+- Diagram alignment and the property pane order were raised during the visual check and
+  became F-018 instead of being built here.
+- The CodeQL permission change can only be confirmed by the next CodeQL run after a push.
+
 ### F-016b — Settings mapping and injection tests
 
 _Part of F-016 — Audit before the first release. Completed 2026-10-01._

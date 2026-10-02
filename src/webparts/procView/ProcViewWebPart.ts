@@ -1,4 +1,4 @@
-import { DisplayMode, Version } from '@microsoft/sp-core-library';
+import { DisplayMode, Log, Version } from '@microsoft/sp-core-library';
 import type { IPropertyPaneConfiguration } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import type { IReadonlyTheme } from '@microsoft/sp-component-base';
@@ -9,6 +9,7 @@ import { parseDiagramLink } from '../../providers/registry';
 import type { IDiagramLink } from '../../providers/types';
 import { format, outcomeFor, resolveMessage, resolveState } from './messages';
 import type { ILoadError, IMessageModel } from './messages';
+import { createLifecycleGuard } from './lifecycleGuard';
 import { CONDITIONAL_FIELD_PROPERTIES, propertyPaneConfiguration } from './propertyPane';
 import { renderDiagram } from './renderDiagram';
 import type { IDiagramView } from './renderDiagram';
@@ -64,12 +65,19 @@ function zoomClassNames(controls: string): IZoomClassNames {
   return { zoomable: styles.zoomable, zoomed: styles.zoomed, controls, button: styles.zoomButton };
 }
 
+/** Source name for SharePoint's log. */
+const LOG_SOURCE = 'ProcViewWebPart';
+
 interface INaturalSize {
   imageUrl: string;
   width: number;
   height: number;
 }
 
+/**
+ * The ProcView web part: shows a process diagram from a shared image link on a SharePoint page or
+ * in a Teams tab, with its property pane, empty and error states, zoom and full screen.
+ */
 export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebPartProps> {
   /** Natural size of the image last loaded — shown as "maximum size" in the pane. */
   private _naturalSize: INaturalSize | undefined;
@@ -85,6 +93,8 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   private _siteTheme: IReadonlyTheme | undefined;
   /** Teams theme when hosted in Teams; `default` elsewhere. */
   private _teamsTheme: TeamsTheme = 'default';
+  /** Silences image events of replaced diagrams and every callback after dispose. */
+  private readonly _guard = createLifecycleGuard();
 
   // --- Lifecycle --------------------------------------------------------------------------
 
@@ -94,15 +104,21 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     // dark and high-contrast themes (TeamsJS ships with SPFx)
     const teams = this.context.sdks.microsoftTeams;
     if (teams) {
-      followTeamsTheme(teams.teamsJs, (theme) => {
-        this._teamsTheme = theme;
-        this._applyTheme();
-      });
+      followTeamsTheme(
+        teams.teamsJs,
+        this._guard.forLifetime((theme: TeamsTheme) => {
+          this._teamsTheme = theme;
+          this._applyTheme();
+        }),
+        // The SharePoint colours stay — the web part remains usable
+        (error) => Log.warn(LOG_SOURCE, `Teams theme unavailable: ${String(error)}`, this.context.serviceScope)
+      );
     }
     return super.onInit();
   }
 
   protected onDispose(): void {
+    this._guard.dispose();
     this._disposeZoom();
     this._lightbox?.close();
     this._lightbox = undefined;
@@ -136,7 +152,12 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   // --- Rendering --------------------------------------------------------------------------
 
   public render(): void {
-    // Every render builds a new diagram; the old zoom's listeners and observer must go
+    if (this._guard.isDisposed) {
+      return;
+    }
+    // Every render builds a new diagram: the old zoom's listeners and observer must go, and the
+    // replaced image's late load/error events must not reach the web part any more
+    this._guard.nextRender();
     this._disposeZoom();
     const result = parseDiagramLink(this.properties.imageLink);
     const settings = readSettings(this.properties, result.ok ? result.link : undefined, strings);
@@ -184,8 +205,10 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
           }
         : undefined,
       classNames: DIAGRAM_CLASS_NAMES,
-      onImageLoad: (width, height) => this._onImageLoad(link.imageUrl, width, height),
-      onImageError: () => this._onImageError(link.imageUrl)
+      onImageLoad: this._guard.forRender((width: number, height: number) =>
+        this._onImageLoad(link.imageUrl, width, height)
+      ),
+      onImageError: this._guard.forRender(() => this._onImageError(link.imageUrl))
     });
   }
 
@@ -218,7 +241,10 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
     return propertyPaneConfiguration({
       properties: this.properties,
-      instanceId: this.instanceId,
+      // From the context: the local workbench's stand-in base class has no `instanceId` getter
+      // (SharePoint's returns the same value), and one id for all web parts kept the custom
+      // fields showing the previous web part's value
+      instanceId: this.context.instanceId,
       naturalSizeText: this._naturalSizeText()
     });
   }

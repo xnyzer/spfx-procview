@@ -185,9 +185,9 @@ a site you may edit — typically a test site provided by IT:
   diagram link could ever be entered.
 - **IT:** after deploying the package, select it in the tenant App Catalog and choose
   **Sync to Teams**; the app then shows up in Teams under the organisation's apps.
-- **Themes:** in Teams the web part follows Teams' light, dark and high-contrast themes
-  (via the Teams SDK that SPFx provides); the background behind the diagram keeps the
-  diagram readable in every theme.
+- **Themes:** in Teams' dark and high-contrast themes the web part switches to matching
+  colours (via the Teams SDK that SPFx provides); in Teams' default (light) theme it keeps the
+  SharePoint site theme. The background behind the diagram keeps it readable in every theme.
 - **Limits:** full screen covers the tab, not the whole Teams window. Teams cannot be
   simulated in the local workbench — check it in a test tenant.
 
@@ -231,7 +231,10 @@ that kind of sharing.
 
 ## License
 
-Apache-2.0 — see [LICENSE](LICENSE).
+Apache-2.0 — see [LICENSE](LICENSE). The solution package also contains small third-party
+helpers compiled into the bundle; their licences are listed in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). `just check` rejects any dependency that is
+not under a permissive licence (`scripts/licence-check.mjs`, ADR-0001 exceptions).
 
 ## Disclaimer
 

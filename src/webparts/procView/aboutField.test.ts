@@ -1,6 +1,6 @@
 import { REPOSITORY_URL, renderAboutField } from './aboutField';
 
-const CLASS_NAMES = { root: 'aboutField', hubAnchor: 'hubAnchor', srOnly: 'srOnly' };
+const CLASS_NAMES = { root: 'aboutField', anchor: 'hubAnchor', srOnly: 'srOnly' };
 
 function render(): HTMLElement {
   return renderAboutField(document, {

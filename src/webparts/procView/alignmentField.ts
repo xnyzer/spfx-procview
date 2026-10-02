@@ -2,12 +2,14 @@ import type { TextAlign } from './renderDiagram';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+/** One choice of the alignment toolbar. */
 export interface IAlignmentOption {
   key: TextAlign;
   /** Tooltip and accessible name of the button, e.g. "Align left". */
   text: string;
 }
 
+/** Everything the alignment toolbar needs — the web part assembles it per text setting. */
 export interface IAlignmentButtonsProps {
   /** Visible label above the buttons; also names the radio group. */
   labelText: string;
@@ -68,13 +70,8 @@ function keyTarget(key: string, index: number, last: number): number | undefined
   }
 }
 
-/**
- * Compact icon toolbar for a text alignment, built as an accessible radio group:
- * one tab stop (the selected button), arrow keys/Home/End move the selection, the
- * buttons carry `aria-checked`. It keeps its own state, because a property pane host may
- * render a custom field only once.
- */
-export function renderAlignmentButtons(doc: Document, props: IAlignmentButtonsProps): HTMLElement {
+/** The labelled radio group the buttons go into, inside the field's root element. */
+function createLabelledGroup(doc: Document, props: IAlignmentButtonsProps): { root: HTMLElement; group: HTMLElement } {
   const root = doc.createElement('div');
   root.className = props.classNames.root;
 
@@ -90,18 +87,30 @@ export function renderAlignmentButtons(doc: Document, props: IAlignmentButtonsPr
   group.setAttribute('role', 'radiogroup');
   group.setAttribute('aria-labelledby', labelId);
   root.appendChild(group);
+  return { root, group };
+}
 
+/** One icon button of the radio group; the option text is its accessible name and tooltip. */
+function createOptionButton(doc: Document, option: IAlignmentOption): HTMLButtonElement {
+  const button = doc.createElement('button');
+  button.type = 'button';
+  button.setAttribute('role', 'radio');
+  button.setAttribute('aria-label', option.text);
+  button.title = option.text;
+  button.appendChild(alignIcon(doc, option.key));
+  return button;
+}
+
+/**
+ * Compact icon toolbar for a text alignment, built as an accessible radio group:
+ * one tab stop (the selected button), arrow keys/Home/End move the selection, the
+ * buttons carry `aria-checked`. It keeps its own state, because a property pane host may
+ * render a custom field only once.
+ */
+export function renderAlignmentButtons(doc: Document, props: IAlignmentButtonsProps): HTMLElement {
+  const { root, group } = createLabelledGroup(doc, props);
+  const buttons = props.options.map((option) => group.appendChild(createOptionButton(doc, option)));
   let selected = props.selected;
-  const buttons = props.options.map((option) => {
-    const button = doc.createElement('button');
-    button.type = 'button';
-    button.setAttribute('role', 'radio');
-    button.setAttribute('aria-label', option.text);
-    button.title = option.text;
-    button.appendChild(alignIcon(doc, option.key));
-    group.appendChild(button);
-    return button;
-  });
 
   const update = (): void => {
     buttons.forEach((button, index) => {

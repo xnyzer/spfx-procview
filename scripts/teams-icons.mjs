@@ -29,32 +29,45 @@ const CIRCLE = { cx: -11.25, r: 3 };
 const BOX = { x0: -4.75, x1: 3.25, halfHeight: 3.5, radius: 1.2 };
 const DIAMOND = { cx: 10.5, d: 3.75 };
 
-/** Signed distance to a rounded rectangle centred at the origin. */
-function roundedBox(x, y, halfWidth, halfHeight, radius) {
-  const qx = Math.abs(x) - halfWidth + radius;
-  const qy = Math.abs(y) - halfHeight + radius;
+/** Colour icon: pixels per motif unit and line width in pixels, for 192 px (scaled with the size). */
+const COLOR_SCALE_AT_192 = 5.1;
+const COLOR_STROKE_AT_192 = 4.5;
+/** Outline icon (32 px): pixels per motif unit — the motif fills the width — and line width in pixels. */
+const OUTLINE_SCALE = 0.98;
+const OUTLINE_STROKE = 2;
+
+/** Signed distance from `point` to a rounded rectangle centred at the origin. */
+function roundedBox(point, { halfWidth, halfHeight, radius }) {
+  const qx = Math.abs(point.x) - halfWidth + radius;
+  const qy = Math.abs(point.y) - halfHeight + radius;
   const outside = Math.hypot(Math.max(qx, 0), Math.max(qy, 0));
   return outside + Math.min(Math.max(qx, qy), 0) - radius;
 }
 
-/** Distance to the axis-aligned segment from (x0, y0) to (x1, y1). */
-function segment(x, y, x0, y0, x1, y1) {
-  const cx = Math.min(Math.max(x, Math.min(x0, x1)), Math.max(x0, x1));
-  const cy = Math.min(Math.max(y, Math.min(y0, y1)), Math.max(y0, y1));
-  return Math.hypot(x - cx, y - cy);
+/** Distance from `point` to the axis-aligned segment from `from` to `to`. */
+function segment(point, from, to) {
+  const cx = Math.min(Math.max(point.x, Math.min(from.x, to.x)), Math.max(from.x, to.x));
+  const cy = Math.min(Math.max(point.y, Math.min(from.y, to.y)), Math.max(from.y, to.y));
+  return Math.hypot(point.x - cx, point.y - cy);
 }
 
 /** Whether a point (in motif units) lies on one of the motif's lines of the given width. */
 function onMotif(x, y, stroke) {
   const circle = Math.abs(Math.hypot(x - CIRCLE.cx, y) - CIRCLE.r);
   const boxCenter = (BOX.x0 + BOX.x1) / 2;
-  const box = Math.abs(roundedBox(x - boxCenter, y, (BOX.x1 - BOX.x0) / 2, BOX.halfHeight, BOX.radius));
+  const box = Math.abs(
+    roundedBox(
+      { x: x - boxCenter, y },
+      { halfWidth: (BOX.x1 - BOX.x0) / 2, halfHeight: BOX.halfHeight, radius: BOX.radius }
+    )
+  );
   // A diamond is a square rotated by 45°: rotate the point, then measure against the square
-  const u = (x - DIAMOND.cx + y) / Math.SQRT2;
-  const v = (x - DIAMOND.cx - y) / Math.SQRT2;
-  const diamond = Math.abs(roundedBox(u, v, DIAMOND.d / Math.SQRT2, DIAMOND.d / Math.SQRT2, 0));
-  const link1 = segment(x, y, CIRCLE.cx + CIRCLE.r, 0, BOX.x0, 0);
-  const link2 = segment(x, y, BOX.x1, 0, DIAMOND.cx - DIAMOND.d, 0);
+  const rotated = { x: (x - DIAMOND.cx + y) / Math.SQRT2, y: (x - DIAMOND.cx - y) / Math.SQRT2 };
+  const halfSide = DIAMOND.d / Math.SQRT2;
+  const diamond = Math.abs(roundedBox(rotated, { halfWidth: halfSide, halfHeight: halfSide, radius: 0 }));
+  const point = { x, y };
+  const link1 = segment(point, { x: CIRCLE.cx + CIRCLE.r, y: 0 }, { x: BOX.x0, y: 0 });
+  const link2 = segment(point, { x: BOX.x1, y: 0 }, { x: DIAMOND.cx - DIAMOND.d, y: 0 });
   return Math.min(circle, box, diamond, link1, link2) <= stroke / 2;
 }
 
@@ -91,7 +104,7 @@ function coverage(size, scale, strokePx) {
  * 15 px of margin (owner decision).
  */
 function colorIcon(size = 192) {
-  const cover = coverage(size, (5.1 * size) / 192, (4.5 * size) / 192);
+  const cover = coverage(size, (COLOR_SCALE_AT_192 * size) / 192, (COLOR_STROKE_AT_192 * size) / 192);
   const rgba = Buffer.alloc(size * size * 4);
   cover.forEach((c, i) => {
     BACKGROUND.forEach((channel, k) => {
@@ -105,7 +118,7 @@ function colorIcon(size = 192) {
 /** RGBA pixels: white motif with 2 px lines, transparency everywhere else. */
 function outlineIcon() {
   const size = 32;
-  const cover = coverage(size, 0.98, 2);
+  const cover = coverage(size, OUTLINE_SCALE, OUTLINE_STROKE);
   const rgba = Buffer.alloc(size * size * 4);
   cover.forEach((c, i) => {
     rgba.fill(255, i * 4, i * 4 + 3);

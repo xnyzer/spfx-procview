@@ -74,26 +74,63 @@ describe('followTeamsTheme', () => {
 
   it('reports the current theme and every later change', async () => {
     const themes: TeamsTheme[] = [];
+    const onError = jest.fn();
     const teams = mockTeams(() => Promise.resolve({ app: { theme: 'dark' } }));
-    followTeamsTheme(teams.teamsJs, (theme) => themes.push(theme));
+    followTeamsTheme(teams.teamsJs, (theme) => themes.push(theme), onError);
     await Promise.resolve();
     teams.change('contrast');
     teams.change('default');
     expect(themes).toEqual(['dark', 'contrast', 'default']);
+    expect(onError).not.toHaveBeenCalled();
   });
 
-  it('ignores a failing getContext — the SharePoint colours stay', async () => {
+  it('reports a failing getContext and keeps the SharePoint colours', async () => {
     const themes: TeamsTheme[] = [];
-    const teams = mockTeams(() => Promise.reject(new Error('not in Teams')));
-    followTeamsTheme(teams.teamsJs, (theme) => themes.push(theme));
+    const onError = jest.fn();
+    const failure = new Error('not in Teams');
+    const teams = mockTeams(() => Promise.reject(failure));
+    followTeamsTheme(teams.teamsJs, (theme) => themes.push(theme), onError);
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(themes).toEqual([]);
+    expect(onError).toHaveBeenCalledWith(failure);
+  });
+
+  it('reports a TeamsJS that is not ready instead of failing the web part', () => {
+    const onError = jest.fn();
+    const failure = new Error('not initialised');
+    const teamsJs: ITeamsJs = {
+      app: {
+        getContext: () => Promise.resolve({ app: { theme: 'dark' } }),
+        registerOnThemeChangeHandler: () => {
+          throw failure;
+        }
+      }
+    };
+    expect(() => followTeamsTheme(teamsJs, () => undefined, onError)).not.toThrow();
+    expect(onError).toHaveBeenCalledWith(failure);
+  });
+
+  it('keeps a change reported before getContext resolves — the context is older', async () => {
+    const themes: TeamsTheme[] = [];
+    let resolveContext: (value: { app: { theme: string } }) => void = () => undefined;
+    const teams = mockTeams(
+      () =>
+        new Promise((resolve) => {
+          resolveContext = resolve;
+        })
+    );
+    followTeamsTheme(teams.teamsJs, (theme) => themes.push(theme), jest.fn());
+    teams.change('contrast');
+    resolveContext({ app: { theme: 'default' } });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(themes).toEqual(['contrast']);
   });
 
   it('treats an unknown theme from Teams as default', async () => {
     const themes: TeamsTheme[] = [];
     const teams = mockTeams(() => Promise.resolve({ app: { theme: 'neon' } }));
-    followTeamsTheme(teams.teamsJs, (theme) => themes.push(theme));
+    followTeamsTheme(teams.teamsJs, (theme) => themes.push(theme), jest.fn());
     await Promise.resolve();
     expect(themes).toEqual(['default']);
   });

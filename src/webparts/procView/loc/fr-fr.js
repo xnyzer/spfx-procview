@@ -92,7 +92,7 @@ define([], function () {
     DimensionErrorInvalidWidth:
       'Saisir des pixels (p. ex. 800) ou un pourcentage de la colonne (p. ex. 50 %), ou laisser vide pour automatique.',
     DimensionErrorInvalidHeight: 'Saisir des pixels (p. ex. 600) ou laisser vide pour automatique.',
-    DimensionErrorTooLarge: 'Le maximum est de 10 000 pixels.',
+    DimensionErrorTooLarge: 'Le maximum est de {0} pixels.',
     DimensionErrorPercentOutOfRange: 'Utiliser un pourcentage de 1 % à 100 %.',
     DimensionErrorPercentHeight:
       'La hauteur ne peut pas être un pourcentage — saisir des pixels ou laisser vide pour automatique.'

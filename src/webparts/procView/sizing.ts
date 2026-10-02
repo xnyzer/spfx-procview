@@ -3,15 +3,21 @@
  * CSS for the `<img>`. Pure functions — no DOM, no SharePoint.
  */
 
+import { format } from './messages';
+
 /** Upper bound for pixel values — guards against typos such as 20000. */
 export const MAX_PX = 10000;
 
+/** A width or height: automatic, pixels or (width only) percent of the column. */
 export type Dimension = { kind: 'auto' } | { kind: 'px'; value: number } | { kind: 'percent'; value: number };
 
+/** Why a width/height setting was rejected. */
 export type DimensionError = 'invalid' | 'tooLarge' | 'percentNotAllowed' | 'percentOutOfRange';
 
+/** Result of `parseDimension`: the dimension or the reason it was rejected. */
 export type DimensionResult = { ok: true; dimension: Dimension } | { ok: false; error: DimensionError };
 
+/** Which setting a dimension belongs to — the height allows no percent. */
 export type DimensionField = 'width' | 'height';
 
 const AUTO: Dimension = { kind: 'auto' };
@@ -59,14 +65,21 @@ export function parseDimension(input: unknown, allowPercent: boolean): Dimension
 /** CSS property → value, as used by `style.setProperty`. */
 export type CssDeclarations = Record<string, string>;
 
+/** Compile-time guard: a new variant that is not handled fails the build here. */
+function assertNever(value: never): never {
+  throw new Error(`unhandled value ${String(value)}`);
+}
+
 function toCss(dimension: Dimension): string {
   switch (dimension.kind) {
     case 'px':
       return `${dimension.value}px`;
     case 'percent':
       return `${dimension.value}%`;
-    default:
+    case 'auto':
       return 'auto';
+    default:
+      return assertNever(dimension);
   }
 }
 
@@ -111,7 +124,21 @@ export function dimensionErrorKey(error: DimensionError, field: DimensionField):
       return 'DimensionErrorPercentOutOfRange';
     case 'percentNotAllowed':
       return 'DimensionErrorPercentHeight';
-    default:
+    case 'invalid':
       return field === 'width' ? 'DimensionErrorInvalidWidth' : 'DimensionErrorInvalidHeight';
+    default:
+      return assertNever(error);
   }
+}
+
+/**
+ * The pane's error text for a width/height. The "too large" text names the upper bound, filled in
+ * from `MAX_PX` in the reader's number format (e.g. 10,000 or 10.000).
+ */
+export function dimensionErrorText(
+  error: DimensionError,
+  field: DimensionField,
+  strings: IProcViewWebPartStrings
+): string {
+  return format(strings[dimensionErrorKey(error, field)], [MAX_PX.toLocaleString()]);
 }

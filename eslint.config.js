@@ -24,5 +24,21 @@ module.exports = [
         project: './tsconfig.json'
       }
     }
+  },
+  {
+    // Dependency-free Node scripts — the SPFx profile covers TypeScript only, so core rules here
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { Buffer: 'readonly', console: 'readonly', process: 'readonly' }
+    },
+    rules: {
+      eqeqeq: 'error',
+      'no-undef': 'error',
+      'no-unused-vars': 'error',
+      'no-var': 'error',
+      'prefer-const': 'error'
+    }
   }
 ];

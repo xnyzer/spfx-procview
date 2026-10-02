@@ -81,13 +81,32 @@ export interface ITeamsJs {
 }
 
 /**
- * Reports the current Teams theme and every later change. A failing `getContext` is ignored —
- * the SharePoint colours then stay, which is the safe fallback.
+ * Reports the current Teams theme and every later change. TeamsJS keeps a single theme handler
+ * per frame and cannot remove it — the caller makes `onTheme` a no-op once the web part is gone.
+ * When Teams cannot report its theme, `onError` gets the reason and the SharePoint colours stay,
+ * the safe fallback; errors thrown by `onTheme` itself are not caught.
  */
-export function followTeamsTheme(teamsJs: ITeamsJs, onTheme: (theme: TeamsTheme) => void): void {
-  teamsJs.app.registerOnThemeChangeHandler((theme) => onTheme(parseTeamsTheme(theme)));
-  teamsJs.app
-    .getContext()
-    .then((context) => onTheme(parseTeamsTheme(context?.app?.theme)))
-    .catch(() => undefined);
+export function followTeamsTheme(
+  teamsJs: ITeamsJs,
+  onTheme: (theme: TeamsTheme) => void,
+  onError: (error: unknown) => void
+): void {
+  let hasChanged = false;
+  let context: Promise<{ app: { theme: string } }>;
+  try {
+    teamsJs.app.registerOnThemeChangeHandler((theme) => {
+      hasChanged = true;
+      onTheme(parseTeamsTheme(theme));
+    });
+    context = teamsJs.app.getContext();
+  } catch (error) {
+    onError(error);
+    return;
+  }
+  context.then((current) => {
+    // A change reported in the meantime is newer than the context
+    if (!hasChanged) {
+      onTheme(parseTeamsTheme(current?.app?.theme));
+    }
+  }, onError);
 }

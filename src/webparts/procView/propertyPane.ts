@@ -9,7 +9,6 @@ import {
   type IPropertyPaneField,
   type IPropertyPaneGroup,
   PropertyPaneChoiceGroup,
-  PropertyPaneFieldType,
   PropertyPaneLabel,
   PropertyPaneTextField,
   PropertyPaneToggle
@@ -22,11 +21,12 @@ import { renderAboutField } from './aboutField';
 import { renderAlignmentButtons } from './alignmentField';
 import { parseBackgroundColor } from './background';
 import { renderColorField } from './colorField';
+import { customPaneField } from './customPaneField';
 import { LINK_ERROR_KEYS } from './linkErrors';
 import { parseHubLinkPosition } from './renderDiagram';
 import { isOn, isOnByDefault, readAlign } from './settings';
 import type { AlignProperty, IProcViewWebPartProps } from './settings';
-import { dimensionErrorKey, parseDimension } from './sizing';
+import { dimensionErrorText, parseDimension } from './sizing';
 import type { DimensionField } from './sizing';
 
 /** Pause before the link is checked while typing — a half-pasted link is not flagged yet. */
@@ -40,14 +40,11 @@ export const CONDITIONAL_FIELD_PROPERTIES: readonly string[] = ['showHubLink', '
 /** What the pane needs from the web part. */
 export interface IPaneSource {
   properties: IProcViewWebPartProps;
-  /** Unique per web part instance — keeps the ids of the custom fields apart. */
+  /** Unique per web part instance — keeps the ids and keys of the custom fields apart. */
   instanceId: string;
   /** Read-only info on the loaded image ("maximum size"). */
   naturalSizeText: string;
 }
-
-/** Change callback SharePoint hands a custom field. */
-type ChangeCallback = (targetProperty?: string, newValue?: unknown) => void;
 
 /** The whole property pane: one page with the groups in the order editors work through them. */
 export function propertyPaneConfiguration(source: IPaneSource): IPropertyPaneConfiguration {
@@ -76,7 +73,7 @@ export function propertyPaneConfiguration(source: IPaneSource): IPropertyPaneCon
               PropertyPaneTextField('altText', { label: strings.AltTextLabel, description: strings.AltTextDescription })
             ]
           },
-          { groupName: strings.AboutGroupName, groupFields: [aboutField()] }
+          { groupName: strings.AboutGroupName, groupFields: [aboutField(source)] }
         ]
       }
     ]
@@ -197,35 +194,13 @@ function backgroundFields(source: IPaneSource): IPropertyPaneField<unknown>[] {
   return fields;
 }
 
-/**
- * A custom field in the documented `PropertyPaneFieldType.Custom` pattern
- * (`PropertyPaneCustomField()` is not public API in SPFx 1.23). `build` creates the field's
- * content; its `onChange` stores a new value for `targetProperty`. For read-only fields the
- * target is a field id, not a stored property.
- */
-function customPaneField(
-  targetProperty: string,
-  build: (onChange: (value: unknown) => void) => HTMLElement
-): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
-  return {
-    type: PropertyPaneFieldType.Custom,
-    targetProperty,
-    properties: {
-      key: `${targetProperty}Field`,
-      onRender: (element: HTMLElement, _context?: unknown, changeCallback?: ChangeCallback) =>
-        element.replaceChildren(build((value) => changeCallback?.(targetProperty, value))),
-      onDispose: (element: HTMLElement) => element.replaceChildren()
-    }
-  };
-}
-
 /** Alignment toolbar (alignmentField.ts). */
 function alignField(
   source: IPaneSource,
   property: AlignProperty,
   labelText: string
 ): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
-  return customPaneField(property, (onChange) =>
+  return customPaneField(source.instanceId, property, (onChange) =>
     renderAlignmentButtons(document, {
       labelText,
       options: [
@@ -249,7 +224,7 @@ function alignField(
 
 /** The browser's colour picker (colorField.ts). */
 function colorField(source: IPaneSource): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
-  return customPaneField('backgroundColor', (onChange) =>
+  return customPaneField(source.instanceId, 'backgroundColor', (onChange) =>
     renderColorField(document, {
       labelText: strings.BackgroundColorLabel,
       value: parseBackgroundColor(source.properties.backgroundColor),
@@ -261,12 +236,12 @@ function colorField(source: IPaneSource): IPropertyPaneField<IPropertyPaneCustom
 }
 
 /** Repository link — read-only (aboutField.ts). */
-function aboutField(): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
-  return customPaneField('aboutInfo', () =>
+function aboutField(source: IPaneSource): IPropertyPaneField<IPropertyPaneCustomFieldProps> {
+  return customPaneField(source.instanceId, 'aboutInfo', () =>
     renderAboutField(document, {
       linkText: strings.RepositoryLinkText,
       newTabHint: strings.NewTabHint,
-      classNames: { root: styles.aboutField, hubAnchor: styles.hubAnchor, srOnly: styles.srOnly }
+      classNames: { root: styles.aboutField, anchor: styles.hubAnchor, srOnly: styles.srOnly }
     })
   );
 }
@@ -282,5 +257,5 @@ function validateLink(value: string): string {
 
 function validateDimension(value: string, field: DimensionField): string {
   const result = parseDimension(value, field === 'width');
-  return result.ok ? '' : strings[dimensionErrorKey(result.error, field)];
+  return result.ok ? '' : dimensionErrorText(result.error, field, strings);
 }

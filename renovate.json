@@ -22,10 +22,14 @@
         "@rushstack/heft",
         "@types/jest",
         "@types/webpack-env",
-        "css-loader",
-        "tslib"
+        "css-loader"
       ],
       "enabled": false
+    },
+    {
+      "description": "tslib ships inside the web part bundle (TypeScript helpers), so it gets updates — a version change also needs THIRD-PARTY-NOTICES.md, which `just check` enforces",
+      "matchPackageNames": ["tslib"],
+      "enabled": true
     },
     {
       "description": "SPFx 1.23 supports Node 22 only — Node majors change only with an SPFx upgrade",

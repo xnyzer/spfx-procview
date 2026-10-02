@@ -1,15 +1,16 @@
-import { hubAnchor } from './renderDiagram';
+import { externalLink } from './externalLink';
 
 /** Public repository of this web part — source code, documentation and issue tracker. */
 export const REPOSITORY_URL = 'https://github.com/xnyzer/spfx-procview';
 
+/** Texts and classes of the "About" field in the property pane. */
 export interface IAboutFieldProps {
   linkText: string;
   /** Screen-reader-only note appended to the link text, e.g. "(opens in a new tab)". */
   newTabHint: string;
   classNames: {
     root: string;
-    hubAnchor: string;
+    anchor: string;
     srOnly: string;
   };
 }
@@ -23,7 +24,7 @@ export function renderAboutField(doc: Document, props: IAboutFieldProps): HTMLEl
   const root = doc.createElement('p');
   root.className = props.classNames.root;
   root.appendChild(
-    hubAnchor(doc, { url: REPOSITORY_URL, text: props.linkText, newTabHint: props.newTabHint }, props.classNames)
+    externalLink(doc, { url: REPOSITORY_URL, text: props.linkText, newTabHint: props.newTabHint }, props.classNames)
   );
   return root;
 }

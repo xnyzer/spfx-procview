@@ -91,7 +91,7 @@ define([], function () {
     DimensionErrorInvalidWidth:
       'Escribir píxeles (p. ej., 800) o un porcentaje de la columna (p. ej., 50 %), o dejar vacío para automático.',
     DimensionErrorInvalidHeight: 'Escribir píxeles (p. ej., 600) o dejar vacío para automático.',
-    DimensionErrorTooLarge: 'El máximo es 10 000 píxeles.',
+    DimensionErrorTooLarge: 'El máximo es {0} píxeles.',
     DimensionErrorPercentOutOfRange: 'Usar un porcentaje del 1 % al 100 %.',
     DimensionErrorPercentHeight: 'El alto no puede ser un porcentaje: escribir píxeles o dejar vacío para automático.'
   };

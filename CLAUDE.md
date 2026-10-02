@@ -35,19 +35,19 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 ## Status & where to start
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
-requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-017 in `PROGRESS.md`). All planned
-features are done (547 Jest tests): Signavio link validation and provider contract (F-001),
-configuration pane, sizing and caption (F-002), Collaboration Hub link (F-003), empty and
-error states (F-004), section theme colours (F-005), zoom and pan — "Offer zoom", default off
-(F-006), full-screen view — "Offer full screen", default on (F-007), Teams tab following the
-Teams theme, no personal app (F-008), local testing via the SPFx Local Workbench extension
-(F-011), texts in EN/DE/FR/ES — FR/ES Signavio labels unverified (F-012), repository link in
-the pane (F-013), own Teams app icons via `just icons` (F-014), background behind the
-diagram — default on and white (F-015). The audit before the first release (F-016) is under
-way: audit and triage (F-016a) and the settings module with injection tests (F-016b) are
-done. Next: F-016c (lifecycle, licence check and notices, small fixes), then F-017 (zoom and
-full-screen fixes from the audit), then F-009 (versioning, CI release, IT guide, release
-1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
+requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-018 in `PROGRESS.md`). All planned
+features are done (562 Jest tests, 12 script tests): Signavio link validation and provider
+contract (F-001), configuration pane, sizing and caption (F-002), Collaboration Hub link
+(F-003), empty and error states (F-004), section theme colours (F-005), zoom and pan — "Offer
+zoom", default off (F-006), full-screen view — "Offer full screen", default on (F-007), Teams
+tab following the Teams theme, no personal app (F-008), local testing via the SPFx Local
+Workbench extension (F-011), texts in EN/DE/FR/ES — FR/ES Signavio labels unverified (F-012),
+repository link in the pane (F-013), own Teams app icons via `just icons` (F-014), background
+behind the diagram — default on and white (F-015), and the audit before the first release
+(F-016: settings module with injection tests, lifecycle guard, licence check and third-party
+notices in `just check`). Next: F-018 (diagram alignment and property pane order), then F-017
+(zoom and full-screen fixes from the audit), then F-009 (versioning, CI release, IT guide,
+release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
 
 ## Project notes (learned the hard way)
 
@@ -55,8 +55,10 @@ full-screen fixes from the audit), then F-009 (versioning, CI release, IT guide,
   `mise exec -- just …`.
 - **Dev server vs. checks:** `just check`/`just build` clean the folders the dev server
   serves from (the workbench then fails with a 404). While the owner's dev server runs, run
-  the checks in an isolated copy (rsync without build folders, `node_modules` symlinked) —
-  never in the project folder.
+  the checks in an isolated copy (rsync without build folders and `node_modules`) — never in
+  the project folder. Give the copy a real `node_modules` (on macOS a copy-on-write clone,
+  `cp -cR`): the licence check's `npm query` does not follow a symlinked `node_modules`.
+  Clone it again after dependency changes.
 - **Texts:** every new string goes into `loc/mystrings.d.ts`, **every** language file in
   `loc/` (`en-us.js`, `de-de.js`, …) and the completeness list in `linkErrors.test.ts`
   (typed, so a gap fails the build; the tests check every file listed in `LOCALES` for
@@ -87,7 +89,9 @@ full-screen fixes from the audit), then F-009 (versioning, CI release, IT guide,
   no-ops, text values containing `:` arrive as objects (known bug, see README), no live
   reload — confirm those behaviours in a SharePoint test site, plus two-finger pinch zoom
   (needs a touch device) and Teams (no Teams simulation locally; tab, themes incl. high
-  contrast).
+  contrast). Its stand-in `BaseClientSideWebPart` has no `instanceId` getter — use
+  `this.context.instanceId` — and it renders a custom pane field again only when the field's
+  `key` changes, so keys must be unique per web part instance.
 
 <!-- section:claude-startup -->
 Read `README.md` and `REQUIREMENTS.md` (while it exists). Then `PROGRESS.md`: its open-tasks

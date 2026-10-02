@@ -85,7 +85,7 @@ define([], function () {
     DimensionErrorInvalidWidth:
       'Enter pixels (e.g. 800), a percentage of the column (e.g. 50%), or leave empty for automatic.',
     DimensionErrorInvalidHeight: 'Enter pixels (e.g. 600) or leave empty for automatic.',
-    DimensionErrorTooLarge: 'The maximum is 10000 pixels.',
+    DimensionErrorTooLarge: 'The maximum is {0} pixels.',
     DimensionErrorPercentOutOfRange: 'Use a percentage from 1% to 100%.',
     DimensionErrorPercentHeight: 'The height cannot be a percentage — enter pixels or leave empty for automatic.'
   };

@@ -177,14 +177,16 @@ this section changes. Contract: `MANIFEST.md` § Standards fragments.
   (`--framework none`). Adding React or other runtime libraries is an architecture decision
   (ADR), not a drive-by change.
 - **Escape everything that reaches HTML.** Every value from web part properties, URLs, or
-  remote content is escaped (`escape` from `@microsoft/sp-lodash-subset`) or set via DOM
-  properties (`textContent`, `setAttribute`) — never concatenated raw into `innerHTML`.
+  remote content is set via DOM properties (`textContent`, `setAttribute`) — never
+  concatenated raw into `innerHTML`. Web part properties are read in one place that checks
+  type and shape of every value (`settings.ts`).
   URLs are validated (scheme `https:` and an allow-listed host) before use. Links that open
   a new tab always carry `rel="noopener noreferrer"`.
 - **Theme-aware by default.** `supportsThemeVariants` stays `true`; colors come from the page
   theme via `onThemeChanged()` → CSS custom properties and SCSS theme tokens
-  (`"[theme:bodyText, default: #323130]"`) — no hard-coded colors. Icons/typography use
-  Fluent UI Core classes from `@microsoft/sp-office-ui-fabric-core`, not new icon sets.
+  (`"[theme:bodyText, default: #323130]"`) — no hard-coded colors. Icons are small inline
+  SVGs drawn in `currentColor` and hidden from screen readers — no icon fonts or icon
+  libraries in the bundle; the toolbox icon is a name from SharePoint's own icon font.
 - **Compile target is ES5 with the ES2015 lib** (rig default): APIs newer than ES2015 are not
   typed — check before using them, prefer small helpers over polyfills.
 - **Tests: Jest** (via `heft test`), colocated as `*.test.ts` next to the code; keep logic

@@ -1,4 +1,4 @@
-import { MESSAGE_KEYS, format, outcomeFor, resolveMessage, resolveState } from './messages';
+import { format, outcomeFor, resolveMessage, resolveState } from './messages';
 import type { DiagramState, ILoadError, IMessageModel, Outcome } from './messages';
 import type { IDiagramLink, LinkParseResult } from '../../providers/types';
 
@@ -160,28 +160,5 @@ describe('format', () => {
     expect(format('Host: {0}', ["$&$`$'<img src=x onerror=alert(1)>"])).toBe(
       "Host: $&$`$'<img src=x onerror=alert(1)>"
     );
-  });
-});
-
-describe('MESSAGE_KEYS', () => {
-  it('lists every key the state table uses', () => {
-    const states: DiagramState[] = [
-      { kind: 'noLink' },
-      { kind: 'loadFailed' },
-      { kind: 'blocked', host: 'h' },
-      { kind: 'invalidLink', error: 'empty' }
-    ];
-    const used = new Set<string>();
-    states.forEach((state) =>
-      [true, false].forEach((edit) => {
-        const outcome = outcomeFor(state, edit);
-        if (outcome.kind === 'message') {
-          const m = outcome.message;
-          [m.titleKey, m.bodyKey, ...m.detailKeys].forEach((key) => key && used.add(key));
-        }
-      })
-    );
-    used.delete('LinkErrorEmpty');
-    used.forEach((key) => expect(MESSAGE_KEYS).toContain(key));
   });
 });

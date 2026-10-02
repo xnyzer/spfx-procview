@@ -20,11 +20,11 @@ concurrency:
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    # Least privilege for a public repository: `packages: read` (private CodeQL packs) and
+    # `actions: read` (private repositories) are not needed
     permissions:
       contents: read
       security-events: write
-      packages: read
-      actions: read
     strategy:
       fail-fast: false
       matrix:

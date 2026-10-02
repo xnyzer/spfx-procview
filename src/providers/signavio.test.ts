@@ -35,7 +35,15 @@ describe('signavioProvider — valid "Simple image" links', () => {
   });
 
   it('covers exactly the seven verified regional hosts', () => {
-    expect(SIGNAVIO_HOSTS).toHaveLength(7);
+    expect([...SIGNAVIO_HOSTS].sort()).toEqual([
+      'app-au.signavio.com',
+      'app-ca.signavio.com',
+      'app-jp.signavio.com',
+      'app-kr.signavio.com',
+      'app-sgp.signavio.com',
+      'app-us.signavio.com',
+      'editor.signavio.com'
+    ]);
   });
 
   it('accepts a link without "inline" and adds it to the output', () => {

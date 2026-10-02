@@ -1,7 +1,8 @@
 import type { IMessageTexts } from './messages';
-import { hubAnchor } from './renderDiagram';
+import { externalLink } from './externalLink';
 import type { IHubLinkView } from './renderDiagram';
 
+/** Everything a message (empty or error state) needs — assembled by the web part. */
 export interface IMessageView {
   texts: IMessageTexts;
   /** Label of the "Configure" button; the button appears only with `onConfigure`. */
@@ -24,31 +25,23 @@ export interface IMessageView {
   };
 }
 
-/**
- * Builds a message (empty/error state) with DOM APIs only — every text is set via
- * `textContent`, nothing is interpreted as markup (CODING-STANDARDS §13).
- */
-export function renderMessage(doc: Document, view: IMessageView): HTMLElement {
-  const { texts, classNames } = view;
-  const root = doc.createElement('section');
-  root.className = classNames.root;
+/** A paragraph with plain text. */
+function createParagraph(doc: Document, className: string, text: string): HTMLElement {
+  const paragraph = doc.createElement('p');
+  paragraph.className = className;
+  paragraph.textContent = text;
+  return paragraph;
+}
 
+/** The message box: optional title, body, optional list of details and the Configure button. */
+function createMessageBox(doc: Document, view: IMessageView): HTMLElement {
+  const { texts, classNames } = view;
   const box = doc.createElement('div');
   box.className = `${classNames.message} ${texts.tone === 'info' ? classNames.info : classNames.error}`;
-  root.appendChild(box);
-
   if (texts.title) {
-    const title = doc.createElement('p');
-    title.className = classNames.title;
-    title.textContent = texts.title;
-    box.appendChild(title);
+    box.appendChild(createParagraph(doc, classNames.title, texts.title));
   }
-
-  const body = doc.createElement('p');
-  body.className = classNames.body;
-  body.textContent = texts.body;
-  box.appendChild(body);
-
+  box.appendChild(createParagraph(doc, classNames.body, texts.body));
   if (texts.details.length > 0) {
     const list = doc.createElement('ul');
     list.className = classNames.details;
@@ -59,7 +52,6 @@ export function renderMessage(doc: Document, view: IMessageView): HTMLElement {
     });
     box.appendChild(list);
   }
-
   const onConfigure = view.onConfigure;
   if (texts.showConfigure && onConfigure) {
     const button = doc.createElement('button');
@@ -69,13 +61,23 @@ export function renderMessage(doc: Document, view: IMessageView): HTMLElement {
     button.addEventListener('click', () => onConfigure());
     box.appendChild(button);
   }
+  return box;
+}
 
-  if (texts.showHubLink && view.hubLink) {
+/**
+ * Builds a message (empty/error state) with DOM APIs only — every text is set via
+ * `textContent`, nothing is interpreted as markup (CODING-STANDARDS §13).
+ */
+export function renderMessage(doc: Document, view: IMessageView): HTMLElement {
+  const { classNames } = view;
+  const root = doc.createElement('section');
+  root.className = classNames.root;
+  root.appendChild(createMessageBox(doc, view));
+  if (view.texts.showHubLink && view.hubLink) {
     const paragraph = doc.createElement('p');
     paragraph.className = classNames.hubLink;
-    paragraph.appendChild(hubAnchor(doc, view.hubLink, classNames));
+    paragraph.appendChild(externalLink(doc, view.hubLink, { anchor: classNames.hubAnchor, srOnly: classNames.srOnly }));
     root.appendChild(paragraph);
   }
-
   return root;
 }

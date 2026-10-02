@@ -1,4 +1,4 @@
-import { diagramStyles, dimensionErrorKey, MAX_PX, parseDimension } from './sizing';
+import { diagramStyles, dimensionErrorKey, dimensionErrorText, MAX_PX, parseDimension } from './sizing';
 import type { Dimension, DimensionResult } from './sizing';
 
 const auto: Dimension = { kind: 'auto' };
@@ -119,5 +119,21 @@ describe('dimensionErrorKey', () => {
     expect(dimensionErrorKey('tooLarge', 'width')).toBe('DimensionErrorTooLarge');
     expect(dimensionErrorKey('percentOutOfRange', 'width')).toBe('DimensionErrorPercentOutOfRange');
     expect(dimensionErrorKey('percentNotAllowed', 'height')).toBe('DimensionErrorPercentHeight');
+  });
+});
+
+describe('dimensionErrorText', () => {
+  // Every text reads as its own name, the "too large" one with the placeholder
+  const strings = new Proxy(
+    {},
+    { get: (_target, key) => (key === 'DimensionErrorTooLarge' ? 'The maximum is {0} pixels.' : String(key)) }
+  ) as unknown as IProcViewWebPartStrings;
+
+  it('fills in the upper bound from MAX_PX in the reader’s number format', () => {
+    expect(dimensionErrorText('tooLarge', 'width', strings)).toBe(`The maximum is ${MAX_PX.toLocaleString()} pixels.`);
+  });
+
+  it('leaves texts without a placeholder as they are', () => {
+    expect(dimensionErrorText('invalid', 'height', strings)).toBe('DimensionErrorInvalidHeight');
   });
 });
