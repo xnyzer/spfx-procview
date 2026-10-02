@@ -1,4 +1,4 @@
-import { openLightbox } from './lightbox';
+import { CLOSE_GUARD_MS, openLightbox } from './lightbox';
 import type { ILightbox, ILightboxProps } from './lightbox';
 
 // Placeholder link — real model ids and keys never enter the repository.
@@ -9,6 +9,7 @@ const PROPS: ILightboxProps = {
   altText: 'Order process',
   labels: {
     close: 'Close',
+    loadFailed: 'The diagram could not be loaded',
     zoom: { zoomIn: 'Zoom in', zoomOut: 'Zoom out', reset: 'Fit to frame', viewport: 'Zoomable diagram' }
   },
   classNames: {
@@ -16,6 +17,7 @@ const PROPS: ILightboxProps = {
     frame: 'lightboxFrame',
     image: 'lightboxImage',
     close: 'lightboxClose',
+    message: 'lightboxMessage',
     zoom: { zoomable: 'zoomable', zoomed: 'zoomed', controls: 'zoomControls', button: 'zoomButton' }
   }
 };
@@ -45,8 +47,18 @@ afterAll(() => {
 
 let opener: HTMLButtonElement;
 let lightbox: ILightbox | undefined;
+/** The test clock (`Date.now`) — clicks that close only count after the guard time. */
+let now = 0;
+let clock: jest.SpyInstance<number, []> | undefined;
+
+/** Lets the guard time after opening pass. */
+function later(): void {
+  now += CLOSE_GUARD_MS;
+}
 
 beforeEach(() => {
+  now = 1000000;
+  clock = jest.spyOn(Date, 'now').mockImplementation(() => now);
   showModal.mockClear();
   closeDialog.mockClear();
   opener = document.createElement('button');
@@ -58,6 +70,7 @@ afterEach(() => {
   lightbox?.close();
   lightbox = undefined;
   opener.remove();
+  clock?.mockRestore();
 });
 
 function open(): HTMLDialogElement {
@@ -120,6 +133,7 @@ describe('openLightbox — background', () => {
 describe('openLightbox — closing', () => {
   it('closes with the close button and returns the focus', () => {
     const dialog = open();
+    later();
     (dialog.querySelector('button.lightboxClose') as HTMLButtonElement).click();
     expect(closeDialog).toHaveBeenCalledTimes(1);
     expect(dialog.isConnected).toBe(false);
@@ -146,12 +160,14 @@ describe('openLightbox — closing', () => {
 
   it('closes with a click on the backdrop', () => {
     const dialog = open();
+    later();
     press(dialog);
     expect(dialog.isConnected).toBe(false);
   });
 
   it('stays open for clicks on the image and the zoom controls', () => {
     const dialog = open();
+    later();
     press(dialog.querySelector('img') as HTMLImageElement);
     press(dialog.querySelector('.zoomControls button') as HTMLButtonElement);
     expect(dialog.isConnected).toBe(true);
@@ -159,6 +175,7 @@ describe('openLightbox — closing', () => {
 
   it('stays open when a drag starts on the image and ends on the backdrop', () => {
     const dialog = open();
+    later();
     // The click then targets the dialog (common ancestor), but the press started on the image
     press(dialog.querySelector('img') as HTMLImageElement, dialog);
     expect(dialog.isConnected).toBe(true);
@@ -179,5 +196,74 @@ describe('openLightbox — closing', () => {
     expect(closeDialog).toHaveBeenCalledTimes(1);
     expect(frame.querySelector('.zoomControls')).toBeNull();
     expect(document.querySelector('dialog')).toBeNull();
+  });
+});
+
+describe('openLightbox — no close right after opening', () => {
+  it('ignores the second click of a double-click on the full-screen button (backdrop or close)', () => {
+    const dialog = open();
+    press(dialog);
+    (dialog.querySelector('button.lightboxClose') as HTMLButtonElement).click();
+    expect(dialog.isConnected).toBe(true);
+    later();
+    press(dialog);
+    expect(dialog.isConnected).toBe(false);
+  });
+
+  it('lets a held Enter not press "close" (keyboard auto-repeat)', () => {
+    const dialog = open();
+    const close = dialog.querySelector('button.lightboxClose') as HTMLButtonElement;
+    const repeated = new KeyboardEvent('keydown', { key: 'Enter', repeat: true, bubbles: true, cancelable: true });
+    close.dispatchEvent(repeated);
+    expect(repeated.defaultPrevented).toBe(true);
+    const single = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    close.dispatchEvent(single);
+    expect(single.defaultPrevented).toBe(false);
+  });
+
+  it('still closes with Escape right away', () => {
+    const dialog = open();
+    dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
+    expect(dialog.isConnected).toBe(false);
+  });
+});
+
+describe('openLightbox — error state', () => {
+  it('shows the load-failed text instead of a broken image', () => {
+    const dialog = open();
+    const image = dialog.querySelector('img') as HTMLImageElement;
+    image.dispatchEvent(new Event('error'));
+    expect(image.hidden).toBe(true);
+    const message = dialog.querySelector('.lightboxMessage');
+    expect(message?.textContent).toBe('The diagram could not be loaded');
+    expect(message?.getAttribute('role')).toBe('alert');
+  });
+});
+
+describe('openLightbox — onClose', () => {
+  function openWithOnClose(): { dialog: HTMLDialogElement; onClose: jest.Mock } {
+    const onClose = jest.fn();
+    lightbox = openLightbox(document, { ...PROPS, onClose });
+    return { dialog: document.querySelector('dialog') as HTMLDialogElement, onClose };
+  }
+
+  it.each<[string, (dialog: HTMLDialogElement) => void]>([
+    ['the close button', (dialog) => (dialog.querySelector('button.lightboxClose') as HTMLButtonElement).click()],
+    ['Escape', (dialog) => dialog.dispatchEvent(new Event('cancel', { cancelable: true }))],
+    ['the backdrop', (dialog) => press(dialog)],
+    ['the browser', (dialog) => dialog.dispatchEvent(new Event('close'))],
+    [
+      'the API, twice',
+      () => {
+        lightbox?.close();
+        lightbox?.close();
+      }
+    ]
+  ])('fires once when closed via %s, after the focus went back', (_label, closeIt) => {
+    const { dialog, onClose } = openWithOnClose();
+    onClose.mockImplementation(() => expect(document.activeElement).toBe(opener));
+    later();
+    closeIt(dialog);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

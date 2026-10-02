@@ -34,6 +34,8 @@
   padding: 4px 8px;
   border-radius: 2px;
   font-size: 0.875em;
+  // Solid first: browsers without color-mix() drop the translucent line and keep this one
+  background: var(--bodyBackground, '[theme:bodyBackground, default: #ffffff]');
   background: color-mix(in srgb, var(--bodyBackground, '[theme:bodyBackground, default: #ffffff]') 80%, transparent);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: background-color 0.15s ease-in-out;
@@ -114,6 +116,8 @@
   padding: 0;
   border: 0;
   border-radius: 2px;
+  // Solid first: browsers without color-mix() drop the translucent line and keep this one
+  background: var(--bodyBackground, '[theme:bodyBackground, default: #ffffff]');
   background: color-mix(in srgb, var(--bodyBackground, '[theme:bodyBackground, default: #ffffff]') 80%, transparent);
   color: var(--bodyText, '[theme:bodyText, default: #323130]');
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -304,7 +308,10 @@ $lightbox-padding-side: 24px;
 
 // Full-screen view (lightbox.ts): a modal <dialog> covering the window. The dialog itself is the
 // dark layer, so a click on it next to the image is the "backdrop click" that closes it.
-// It lives in <body>, outside the web part, so colours fall back to the page theme tokens.
+// It lives in <body>, outside the web part and outside any section theme, and is always dark —
+// so its own colours are fixed, not theme colours (registered in .claude/convention-overrides.md):
+// the scrim, the close button, the message and a two-tone focus ring (white ring with a black
+// edge) that stays visible on the dark layer and on any diagram background in every theme.
 .lightbox {
   position: fixed;
   inset: 0;
@@ -318,6 +325,14 @@ $lightbox-padding-side: 24px;
   border: 0;
   background: rgba(0, 0, 0, 0.85);
   overflow: hidden;
+  // Gestures on the dark layer must not zoom the page behind it (the frame's own classes decide inside)
+  touch-action: none;
+
+  :focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #000000;
+  }
 
   // Only while open — a closed dialog must stay hidden
   &[open] {
@@ -349,8 +364,24 @@ $lightbox-padding-side: 24px;
   display: block;
   width: auto;
   height: auto;
+  // The visible window: dvw/dvh leave out a page scrollbar and mobile toolbars; vw/vh before
+  // them for browsers without dynamic viewport units
   max-width: calc(100vw - #{2 * $lightbox-padding-side});
+  max-width: calc(100dvw - #{2 * $lightbox-padding-side});
   max-height: calc(100vh - #{$lightbox-padding-top + $lightbox-padding-side});
+  max-height: calc(100dvh - #{$lightbox-padding-top + $lightbox-padding-side});
+}
+
+// Instead of an image that could not be loaded: readable on the dark layer
+.lightboxMessage {
+  margin: 0;
+  padding: 16px;
+  color: #ffffff;
+  font-size: 16px;
+
+  @media (forced-colors: active) {
+    color: CanvasText;
+  }
 }
 
 .lightboxClose {
@@ -365,14 +396,10 @@ $lightbox-padding-side: 24px;
   padding: 0;
   border: 0;
   border-radius: 2px;
-  background: '[theme:white, default: #ffffff]';
-  color: '[theme:neutralPrimary, default: #323130]';
+  // Fixed light button on the always dark layer — a theme "white" is dark in dark themes
+  background: #ffffff;
+  color: #323130;
   cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid '[theme:white, default: #ffffff]';
-    outline-offset: 2px;
-  }
 
   @media (forced-colors: active) {
     background: ButtonFace;

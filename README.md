@@ -47,7 +47,8 @@ See `PROGRESS.md` for the roadmap.
      a click next to the diagram.
      **Background behind the diagram** (on by default, white) puts a colour exactly behind
      the diagram — Signavio images are transparent and hard to read on dark or coloured
-     sections; pick another colour or switch it off. It applies in full screen as well.
+     sections; pick another colour or switch it off. It applies in full screen as well —
+     switched off, the diagram stays transparent there too, on the dark full-screen layer.
    - **About** — link to this repository (source code, documentation, issues).
 4. **When something is wrong:** editors see what to fix (no link yet, a wrong link such as
    the embed code, or why the image could not be loaded — e.g. revoked sharing, or a

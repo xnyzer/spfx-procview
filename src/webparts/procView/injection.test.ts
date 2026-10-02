@@ -330,8 +330,15 @@ describe('injection — every setting hostile at once', () => {
       imageUrl: IMAGE_LINK,
       altText: settings.diagram.altText,
       background: settings.diagram.background,
-      labels: { close: 'close', zoom: ZOOM_LABELS },
-      classNames: { dialog: 'dialog', frame: 'frame', image: 'image', close: 'close', zoom: ZOOM_CLASS_NAMES }
+      labels: { close: 'close', loadFailed: 'failed', zoom: ZOOM_LABELS },
+      classNames: {
+        dialog: 'dialog',
+        frame: 'frame',
+        image: 'image',
+        close: 'close',
+        message: 'message',
+        zoom: ZOOM_CLASS_NAMES
+      }
     });
     const dialog = document.querySelector('dialog') as HTMLDialogElement;
     loadImages(dialog);

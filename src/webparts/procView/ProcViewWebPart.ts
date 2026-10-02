@@ -219,16 +219,35 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       imageUrl: link.imageUrl,
       altText: settings.diagram.altText,
       opener,
+      // The background switch applies here as on the page (owner decision 2026-10-02)
       background: settings.diagram.background,
-      labels: { close: strings.CloseFullScreen, zoom: ZOOM_LABELS },
+      labels: { close: strings.CloseFullScreen, loadFailed: strings.MessageLoadFailedTitle, zoom: ZOOM_LABELS },
       classNames: {
         dialog: styles.lightbox,
         frame: styles.lightboxFrame,
         image: styles.lightboxImage,
         close: styles.lightboxClose,
+        message: styles.lightboxMessage,
         zoom: zoomClassNames(styles.lightboxZoomControls)
-      }
+      },
+      // Not after dispose: onDispose closes the view itself
+      onClose: this._guard.forLifetime(() => this._onFullScreenClosed())
     });
+  }
+
+  /**
+   * Forgets the closed view. If a re-render replaced the full-screen button while the view was
+   * open, the focus could not go back to it — give it to the current one instead.
+   */
+  private _onFullScreenClosed(): void {
+    this._lightbox = undefined;
+    if (document.activeElement && document.activeElement !== document.body) {
+      return;
+    }
+    const button = Array.from(this.domElement.querySelectorAll('button')).find(
+      (candidate) => candidate.getAttribute('aria-label') === strings.FullScreen
+    );
+    button?.focus();
   }
 
   private _disposeZoom(): void {

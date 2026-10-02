@@ -202,3 +202,11 @@ describe('readSettings — diagram alignment', () => {
     expect(readSettings({ diagramAlign: 'right' }, LINK, STRINGS).diagram.style.frame['margin-right']).toBe('0');
   });
 });
+
+describe('readSettings — background switch', () => {
+  it('shows no colour when switched off, even with a colour still stored (page and full screen)', () => {
+    expect(readSettings({ showBackground: false, backgroundColor: '#0e5a73' }, LINK, STRINGS).diagram.background).toBe(
+      undefined
+    );
+  });
+});

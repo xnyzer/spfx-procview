@@ -8,6 +8,98 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-017 — Zoom and full-screen fixes from the audit
+
+_Completed 2026-10-02 (F-017a, F-017b, F-017c)._
+
+**Problem:** The audit (F-016a) found that zoom and full screen misbehave in edge cases and
+for keyboard users, and that their code breaks the length and parameter limits: a double-click
+on the full-screen button opens and immediately closes it, zoom buttons drop the keyboard focus
+when they disable themselves, focus rings in full screen fail the 3:1 contrast, and with the
+background setting off the transparent diagram is unreadable on the dark full-screen layer.
+
+**Idea:** One pass over `zoom.ts`, `zoomView.ts`, `lightbox.ts` and the zoom/full-screen parts
+of `renderDiagram.ts` and the stylesheet: fix the behaviour, then split the long functions.
+
+**Solution sketch** (updated at prep-step, 2026-10-02; size: large, three substeps — shared
+icons and the `renderDiagram` split first, so zoom and full screen build on them):
+- Ignore backdrop clicks that belong to the opening click (double-click, held Enter) (M6)
+- Keep the focus when a zoom button becomes unavailable: `aria-disabled` instead of
+  `disabled` — the button stays focusable, is announced as unavailable and does nothing (M7);
+  focus rings that stay visible on the dark layer in every theme — a fixed two-tone ring,
+  registered as a colour exception (M8)
+- M9 accepted instead (owner decision 2026-10-02, supersedes the 2026-10-01 one): the background
+  switch applies on the page and in full screen — switched off, no colour in either; the
+  full-screen error state reuses the existing text `MessageLoadFailedTitle`
+- Pointer handling: primary mouse button only, end on `buttons === 0`, `lostpointercapture`
+  (M10); no native image drag while zoomable (M11)
+- Split `attachZoom` (211 lines), `openLightbox` and `renderDiagram`; options objects instead
+  of 4–6 parameters (M2b–c, M2d `renderDiagram`, M3)
+- Small items: inherited-key lookup (L3a), unused `update`/`reset` and the untested
+  `showModal` fallback (L6b–c), one shared icon helper and constants (L7b–c), pointer capture
+  without try/catch (L9a), wheel page mode (L11), NaN guards (L12), full-screen error state,
+  closed-lightbox reference, viewport units, `touch-action` and layout reads (L13), scrim
+  colours as a documented exception and a `color-mix` fallback (L14), comments and names in
+  these files (L19b–c)
+
+**Dependencies:** F-016c
+
+**Result:** all zoom and full-screen findings of the audit are resolved — M9 as an owner
+decision (the background switch applies in full screen too), the rest fixed; the longest
+function in these files is 43 lines (was 211); 603 Jest tests.
+
+### F-017c — Full screen
+
+_Part of F-017 — Zoom and full-screen fixes from the audit. Completed 2026-10-02._
+
+**What:** M9 accepted — the background switch applies in full screen too (owner decision
+2026-10-02); a double-click or held Enter
+no longer closes it right after opening — a short named guard time (M6); two-tone focus rings
+visible on the dark layer in every theme (M8); `openLightbox` split (M2c); the `showModal`
+fallback removed (L6c); an error state with the existing load-failed text, an `onClose`
+callback that clears the web part's reference and returns the focus to the current
+full-screen button, `dvw`/`dvh` with `vw`/`vh` fallback, `touch-action: none` (L13); the dark
+layer's fixed colours registered as an exception, a fallback before `color-mix` (L14).
+
+**Files:** `lightbox.ts`, `lightbox.test.ts`, `settings.test.ts`, `injection.test.ts`,
+`ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`, `.claude/convention-overrides.md`,
+`README.md`, `REQUIREMENTS.md`
+
+**Dependencies:** F-017b
+
+**Acceptance criteria:**
+- [x] Tests: no colour in full screen with the background switch off, a second click right
+      after opening does not close, the error state shows the text, `onClose` fires once on
+      every way of closing — `lightbox.test.ts` (guard time, held Enter, error state, `onClose`
+      for button, Escape, backdrop, browser and API), `settings.test.ts` (switch off)
+- [x] Visual check: double-click, keyboard (Enter, Tab, Escape), focus rings in a light and a
+      dark theme, background switched off, a broken image link in full screen — owner's
+      visual check (the error state checked in offline mode)
+- [x] No function over 50 lines in these files; `just check` green — longest `openLightbox`
+      43 lines (was 95); 603 Jest tests, 12 script tests
+
+**Implemented:**
+- `lightbox.ts` — split into `createImage`, `createParts` and `bindClosing`; the button and
+  backdrop close only after `CLOSE_GUARD_MS` (500 ms), a held Enter or space no longer
+  presses "close", Escape still closes at once; an image that cannot be loaded is hidden
+  and replaced by the load-failed text (`role="alert"`); `onClose` fires once on every way of
+  closing, after the focus went back; the `showModal` fallback is removed.
+- `ProcViewWebPart.ts` — passes the load-failed text and the message class; `onClose` clears
+  the reference and, if a re-render replaced the full-screen button, focuses the current one;
+  the full-screen colour is the page's background setting.
+- Stylesheet — a fixed two-tone focus ring (white with a black edge) inside the full-screen
+  layer, a fixed light close button, `.lightboxMessage`, `touch-action: none` on the layer,
+  `dvw`/`dvh` with `vw`/`vh` fallback, a solid fallback before both `color-mix()` lines.
+- `.claude/convention-overrides.md` — the fixed full-screen colours and the neutral shadows
+  registered as a deviation from §13 (theme colours only).
+- README and REQUIREMENTS — the background switch applies in full screen too.
+
+**Decisions / deviations:**
+- M9: the plan put a colour behind the diagram in full screen even with the switch off (the
+  owner's 2026-10-01 decision). In the visual check the owner found that a colour chosen
+  earlier then reappears without the switch on and decided the switch applies everywhere —
+  a new decision-log entry supersedes the old one; M9 is accepted, not fixed.
+
 ### F-017b — Zoom
 
 _Part of F-017 — Zoom and full-screen fixes from the audit. Completed 2026-10-02._

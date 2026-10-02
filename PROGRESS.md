@@ -51,72 +51,12 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-018 | Diagram alignment (centred by default) and property pane in the editors' order | 2026-10-02 |
 | F-017a | One shared SVG icon helper (`svgIcon.ts`), `renderDiagram` split into small builders, full-screen sizes as stylesheet variables | 2026-10-02 |
 | F-017b | Zoom: `ZoomView` class, options objects, focus kept via `aria-disabled`, primary mouse button only, no native image drag, wheel units, NaN guards | 2026-10-02 |
+| F-017c | Full screen: no close right after opening, two-tone focus ring, error state, `onClose` with focus return, `openLightbox` split, background switch applies in full screen too | 2026-10-02 |
+| F-017 | Zoom and full-screen fixes from the audit (F-017a, F-017b, F-017c) | 2026-10-02 |
 
 ---
 
 ## Open tasks — work top to bottom
-
-### F-017 — Zoom and full-screen fixes from the audit
-
-**Status:** PLANNED
-
-**Problem:** The audit (F-016a) found that zoom and full screen misbehave in edge cases and
-for keyboard users, and that their code breaks the length and parameter limits: a double-click
-on the full-screen button opens and immediately closes it, zoom buttons drop the keyboard focus
-when they disable themselves, focus rings in full screen fail the 3:1 contrast, and with the
-background setting off the transparent diagram is unreadable on the dark full-screen layer.
-
-**Idea:** One pass over `zoom.ts`, `zoomView.ts`, `lightbox.ts` and the zoom/full-screen parts
-of `renderDiagram.ts` and the stylesheet: fix the behaviour, then split the long functions.
-
-**Solution sketch** (updated at prep-step, 2026-10-02; size: large, three substeps — shared
-icons and the `renderDiagram` split first, so zoom and full screen build on them):
-- Full screen always shows a colour behind the PNG — the configured one, otherwise white; the
-  background setting then only affects the page (owner decision 2026-10-01) (M9)
-- Ignore backdrop clicks that belong to the opening click (double-click, held Enter) (M6)
-- Keep the focus when a zoom button becomes unavailable: `aria-disabled` instead of
-  `disabled` — the button stays focusable, is announced as unavailable and does nothing (M7);
-  focus rings that stay visible on the dark layer in every theme — a fixed two-tone ring,
-  registered as a colour exception (M8)
-- Full-screen colour from `settings.ts` (`fullScreenBackground`): the chosen colour even with
-  the background switch off, otherwise white (M9); the full-screen error state reuses the
-  existing text `MessageLoadFailedTitle`
-- Pointer handling: primary mouse button only, end on `buttons === 0`, `lostpointercapture`
-  (M10); no native image drag while zoomable (M11)
-- Split `attachZoom` (211 lines), `openLightbox` and `renderDiagram`; options objects instead
-  of 4–6 parameters (M2b–c, M2d `renderDiagram`, M3)
-- Small items: inherited-key lookup (L3a), unused `update`/`reset` and the untested
-  `showModal` fallback (L6b–c), one shared icon helper and constants (L7b–c), pointer capture
-  without try/catch (L9a), wheel page mode (L11), NaN guards (L12), full-screen error state,
-  closed-lightbox reference, viewport units, `touch-action` and layout reads (L13), scrim
-  colours as a documented exception and a `color-mix` fallback (L14), comments and names in
-  these files (L19b–c)
-
-**Dependencies:** F-016c
-
-#### F-017c — Full screen
-
-**What:** Always a colour behind the diagram in full screen (M9); a double-click or held Enter
-no longer closes it right after opening — a short named guard time (M6); two-tone focus rings
-visible on the dark layer in every theme (M8); `openLightbox` split (M2c); the `showModal`
-fallback removed (L6c); an error state with the existing load-failed text, an `onClose`
-callback that clears the web part's reference and returns the focus to the current
-full-screen button, `dvw`/`dvh` with `vw`/`vh` fallback, `touch-action: none` (L13); the dark
-layer's fixed colours registered as an exception, a fallback before `color-mix` (L14).
-
-**Files:** `lightbox.ts`, `lightbox.test.ts`, `settings.ts`, `settings.test.ts`,
-`injection.test.ts`, `ProcViewWebPart.ts`, `ProcViewWebPart.module.scss`,
-`.claude/convention-overrides.md`, `README.md`
-
-**Dependencies:** F-017b
-
-**Acceptance criteria:**
-- [ ] Tests: full-screen colour with the background switch off, a second click right after
-      opening does not close, the error state shows the text, `onClose` fires once on every
-      way of closing
-- [ ] Visual check: double-click, keyboard (Enter, Tab, Escape), focus rings in a light and a
-      dark theme, background switched off, a broken image link in full screen
-- [ ] No function over 50 lines in these files; `just check` green
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
@@ -227,6 +167,6 @@ F-013 Link to the GitHub repository in the property pane (DONE)
 F-014 Own Teams app icons instead of the generator placeholders (DONE)
 F-015 Diagram background (setting) (DONE)
 F-016 Audit before the first release (DONE)
-F-017 Zoom and full-screen fixes from the audit (PLANNED)
+F-017 Zoom and full-screen fixes from the audit (DONE)
 F-018 Diagram alignment and property pane order (DONE)
 -->
