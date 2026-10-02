@@ -60,7 +60,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 
 ### F-019 — Fixes from the control audit before the first release
 
-**Status:** BACKLOG
+**Status:** PLANNED
 
 **Problem:** The control audit of 2026-10-02 (after F-016, F-017 and F-018) confirmed most audit
 fixes but found new issues: a zoomed diagram can stay half-zoomed and unclipped after a resize,
@@ -73,17 +73,22 @@ ADR-0001 — plus 21 low findings, some of them remainders of partly fixed audit
 with tests, then the pane focus with tooling and docs, then zoom and full screen. Finding ids
 (M14–M17, L26–L46) refer to the local `AUDIT-RESULTS.md` of 2026-10-02.
 
-**Solution sketch** (from the triage with the owner, 2026-10-02):
+**Solution sketch** (from the triage with the owner, 2026-10-02; F-019a updated at prep-step the
+same day — F-019b and F-019c get their own prep-step after F-019a, since b builds on the pane
+tests of a):
 - **F-019a — web part and pane tests, lifecycle and settings remainders:** tests on the real
-  `ProcViewWebPart.ts` and `propertyPane.ts` instead of the copied wiring in
-  `injection.test.ts` — stale and after-dispose events, hostile settings through `render()`,
-  pane order, conditional fields and defaults (M16); a policy violation re-renders only for the
-  current link (L29); a throwing Teams theme callback is reported instead of left as an
-  unhandled rejection (L30); more invisible characters count as empty text (L31); a stored load
-  error counts only while the same link stays entered (L32, owner decision); exhaustive
-  `render()` switch (L37); the pixel limit formatted in the UI language (L38); the pane reads
-  settings through `settings.ts` (L39); focus return to the full-screen button by reference,
-  not by its label (L40); a real assertion for the colour field (L41)
+  `ProcViewWebPart.ts` and `propertyPane.ts` through shared SPFx test doubles (the real SPFx
+  packages do not load under Jest) instead of the copied wiring in `injection.test.ts` — stale
+  and after-dispose events, hostile settings through `render()`, pane order, conditional
+  fields and defaults (M16); a stored load error counts only while the same link stays
+  entered (L32, owner decision) — `render()` drops an error of another link, so a late policy
+  violation can no longer upgrade a stale one (L29); a throwing Teams theme callback is
+  reported through `onError` instead of left as an unhandled rejection (L30); more invisible
+  characters count as empty text (L31); exhaustive `render()` switch (L37); the pixel limit
+  without digit grouping, as the field accepts it (L38); the pane reads the stored values
+  through `readPaneSettings()` in `settings.ts` (L39); the full-screen button reports itself
+  via `onAttach`, so the focus returns by reference, not by its label (L40); a real assertion
+  for the colour field (L41)
 - **F-019b — pane focus, tooling, docs:** custom pane fields updated in place instead of rebuilt
   on every pane update, so the alignment toolbars and the colour input keep the keyboard focus
   — checked in a SharePoint test site (M15); the `node-forge` advisory GHSA-86w9-cpqp-85rv
@@ -104,6 +109,44 @@ with tests, then the pane focus with tooling and docs, then zoom and full screen
   only in files touched anyway (L43)
 
 **Dependencies:** F-016, F-017, F-018 (done)
+
+#### F-019a — Web part and pane tests, lifecycle and settings remainders
+
+**What:** First pin today's behaviour of the web part and the property pane with tests on the
+real modules, then fix the lifecycle and settings remainders, each with a test that fails
+before the fix. Size: about 900 lines in about 15 files, roughly 750 of them tests.
+
+**Files:** `spfxTestDoubles.ts` (new — stubs for `sp-core-library`, `sp-property-pane`,
+`sp-webpart-base`, the strings module and a `<dialog>` stand-in, used via `jest.mock` at the
+top of a test file as in `customPaneField.test.ts`), `ProcViewWebPart.test.ts` (new),
+`propertyPane.test.ts` (new), `injection.test.ts` (end-to-end sections through the real web
+part and pane, the copied wiring removed), `ProcViewWebPart.ts`, `settings.ts`
+(`readPaneSettings`, invisible characters), `settings.test.ts`, `propertyPane.ts`,
+`renderDiagram.ts` (`onAttach` of the full-screen button), `renderDiagram.test.ts`,
+`teamsTheme.ts`, `teamsTheme.test.ts`, `assertNever.ts` (new, moved out of `sizing.ts`),
+`sizing.ts`, `sizing.test.ts`
+
+**Dependencies:** —
+
+**Acceptance criteria:**
+- [ ] The mutations that survived the audit now fail at least one test, checked in the
+      isolated copy: `onImageError` without `forRender`, `render()` without the disposed
+      check, the raw `altText` in full screen, the raw stored value as toolbar selection,
+      no `checked` on the background toggle
+- [ ] A failed load counts only while the same link stays entered: another link and back loads
+      again, a re-render with the same link (e.g. typing the caption) keeps the error, and a
+      late policy violation does not rebuild the new link's diagram
+- [ ] A throwing Teams theme callback reaches `onError` (logged) — no unhandled rejection, in
+      both the change handler and the `getContext` path
+- [ ] An alternative or link text made only of the L31 characters falls back to the default
+      text; the characters are written as `\u` escapes (perl scan for raw format characters)
+- [ ] The pane gets every stored value from `readPaneSettings()`; group and field order,
+      conditional fields, toggle defaults, toolbar selections and the colour field (white for
+      a hostile value) are pinned by tests
+- [ ] `render()` ends in `assertNever`; the pixel limit reads "10000" in every language
+- [ ] After closing full screen the focus returns to the current full-screen button by
+      reference, also after a re-render while the view was open
+- [ ] `just check` green (isolated copy while the dev server runs); no file over 500 lines
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 
@@ -217,5 +260,5 @@ F-015 Diagram background (setting) (DONE)
 F-016 Audit before the first release (DONE)
 F-017 Zoom and full-screen fixes from the audit (DONE)
 F-018 Diagram alignment and property pane order (DONE)
-F-019 Fixes from the control audit before the first release (BACKLOG)
+F-019 Fixes from the control audit before the first release (PLANNED)
 -->
