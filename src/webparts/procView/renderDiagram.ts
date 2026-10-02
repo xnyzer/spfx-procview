@@ -1,7 +1,7 @@
 import type { IDiagramLink } from '../../providers/types';
 import type { IDiagramStyles } from './sizing';
 import { applyStyles, createDiagramImage } from './diagramImage';
-import { externalLink } from './externalLink';
+import { createExternalLink } from './externalLink';
 import type { IExternalLink } from './externalLink';
 import { createIcon } from './svgIcon';
 import { attachZoom } from './zoomView';
@@ -104,7 +104,7 @@ export function renderDiagram(doc: Document, view: IDiagramView): HTMLElement {
     const paragraph = doc.createElement('p');
     paragraph.className = view.classNames.hubLink;
     paragraph.style.setProperty('text-align', view.hubLink.align);
-    paragraph.appendChild(externalLink(doc, view.hubLink, pickLinkClassNames(view.classNames)));
+    paragraph.appendChild(createExternalLink(doc, view.hubLink, pickLinkClassNames(view.classNames)));
     root.appendChild(paragraph);
   }
   // Set last, so every load/error listener (also the zoom's) is in place before the request starts
@@ -142,7 +142,7 @@ function createFrame(doc: Document, view: IDiagramView, image: HTMLImageElement)
   applyStyles(frame, view.style.frame);
   frame.appendChild(image);
   if (view.hubLink?.position === 'overlay') {
-    const overlay = externalLink(doc, view.hubLink, pickLinkClassNames(view.classNames));
+    const overlay = createExternalLink(doc, view.hubLink, pickLinkClassNames(view.classNames));
     overlay.className = `${view.classNames.hubAnchor} ${view.classNames.hubOverlay}`;
     frame.appendChild(overlay);
   }

@@ -16,7 +16,7 @@ export interface IExternalLink {
  * A link that opens in a new tab without opener access or referrer — the hub link (below the
  * diagram, as overlay and in messages) and the repository link in the property pane.
  */
-export function externalLink(
+export function createExternalLink(
   doc: Document,
   link: IExternalLink,
   classNames: { anchor: string; srOnly: string }

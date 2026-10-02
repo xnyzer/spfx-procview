@@ -4,7 +4,8 @@
  * so the renderers only ever see validated values. Pure functions — no DOM, no SharePoint.
  */
 
-import type { IDiagramLink } from '../../providers/types';
+import { parseDiagramLink } from '../../providers/registry';
+import type { IDiagramLink, LinkParseResult } from '../../providers/types';
 import { parseBackgroundColor } from './background';
 import { parseHubLinkPosition, parseTextAlign } from './renderDiagram';
 import type { HubLinkPosition, IDiagramView, IHubLinkView, TextAlign } from './renderDiagram';
@@ -50,6 +51,19 @@ export type UntrustedProps = { readonly [K in keyof IProcViewWebPartProps]?: unk
 
 /** Settings with an alignment. */
 export type AlignProperty = 'diagramAlign' | 'captionAlign' | 'hubLinkAlign';
+
+/** Settings that are on/off switches. */
+type ToggleProperty = 'showHubLink' | 'offerZoom' | 'offerFullScreen' | 'showBackground';
+
+/** Settings that are texts — the page reads anything that is not a string as empty. */
+const TEXT_PROPERTIES: readonly (keyof IProcViewWebPartProps)[] = [
+  'imageLink',
+  'width',
+  'height',
+  'altText',
+  'caption',
+  'hubLinkText'
+];
 
 /** Default alignment per setting: diagram and caption are centred, the hub link sits on the right. */
 const ALIGN_DEFAULTS: Record<AlignProperty, TextAlign> = {
@@ -130,6 +144,14 @@ export function isOnByDefault(value: unknown): boolean {
   return value !== false;
 }
 
+/** How the page reads each toggle: off by default, or on by default. */
+const TOGGLE_READERS: Record<ToggleProperty, (value: unknown) => boolean> = {
+  showHubLink: isOn,
+  offerZoom: isOn,
+  offerFullScreen: isOnByDefault,
+  showBackground: isOnByDefault
+};
+
 /** Width or height; invalid values count as automatic (the pane shows the error). */
 export function readDimension(value: unknown, field: DimensionField): Dimension {
   const result = parseDimension(value, field === 'width');
@@ -174,6 +196,46 @@ export function readPaneSettings(props: UntrustedProps): IPaneSettings {
       hubLinkAlign: readAlign(props, 'hubLinkAlign')
     }
   };
+}
+
+/** Whether a stored value is missing — SharePoint's pane then shows the field's `checked:` default. */
+function isMissing(value: unknown): boolean {
+  return value === undefined || value === null;
+}
+
+/**
+ * The stored settings as the page reads them, for `onAfterDeserialize`. SharePoint's property pane
+ * shows a stored toggle or choice value before any `checked:` default, so a value the page cannot
+ * read — a toggle stored as `"true"`, an unknown hub link position, a width stored as a number (a
+ * page written by a provisioning template, say) — would look different in pane and page. Each such
+ * value becomes what the page reads from it; texts that are not strings are removed, as the page
+ * reads them as empty. Missing and readable values stay, and so do alignments and the colour, whose
+ * custom fields already show the checked value. Returns a copy.
+ */
+export function normalizeStoredSettings(props: UntrustedProps): UntrustedProps {
+  const normalized: { [K in keyof IProcViewWebPartProps]?: unknown } = { ...props };
+  TEXT_PROPERTIES.forEach((property) => {
+    if (!isMissing(props[property]) && typeof props[property] !== 'string') {
+      delete normalized[property];
+    }
+  });
+  (Object.keys(TOGGLE_READERS) as ToggleProperty[]).forEach((property) => {
+    const value = props[property];
+    if (!isMissing(value) && typeof value !== 'boolean') {
+      normalized[property] = TOGGLE_READERS[property](value);
+    }
+  });
+  // An empty choice counts as missing in SharePoint's pane, as it does on the page
+  const position = props.hubLinkPosition;
+  if (!isMissing(position) && position !== '' && position !== parseHubLinkPosition(position)) {
+    normalized.hubLinkPosition = parseHubLinkPosition(position);
+  }
+  return normalized;
+}
+
+/** The diagram link, checked by its tool's provider (`registry.ts`) — the image link is page data. */
+export function readDiagramLink(props: UntrustedProps): LinkParseResult {
+  return parseDiagramLink(props.imageLink);
 }
 
 /** Hub link, when switched on and the tool has an interactive view for the link. */

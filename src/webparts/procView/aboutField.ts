@@ -1,4 +1,4 @@
-import { externalLink } from './externalLink';
+import { createExternalLink } from './externalLink';
 
 /** Public repository of this web part — source code, documentation and issue tracker. */
 export const REPOSITORY_URL = 'https://github.com/xnyzer/spfx-procview';
@@ -38,7 +38,11 @@ export function renderAboutField(doc: Document, props: IAboutFieldProps): HTMLEl
   const root = doc.createElement('p');
   root.className = props.classNames.root;
   root.appendChild(
-    externalLink(doc, { url: REPOSITORY_URL, text: props.linkText, newTabHint: props.newTabHint }, props.classNames)
+    createExternalLink(
+      doc,
+      { url: REPOSITORY_URL, text: props.linkText, newTabHint: props.newTabHint },
+      props.classNames
+    )
   );
   if (props.versionText) {
     const version = doc.createElement('span');

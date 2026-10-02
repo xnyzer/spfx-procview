@@ -1,5 +1,5 @@
 import type { IMessageTexts } from './messages';
-import { externalLink } from './externalLink';
+import { createExternalLink } from './externalLink';
 import type { IHubLinkView } from './renderDiagram';
 
 /** Everything a message (empty or error state) needs — assembled by the web part. */
@@ -76,7 +76,9 @@ export function renderMessage(doc: Document, view: IMessageView): HTMLElement {
   if (view.texts.showHubLink && view.hubLink) {
     const paragraph = doc.createElement('p');
     paragraph.className = classNames.hubLink;
-    paragraph.appendChild(externalLink(doc, view.hubLink, { anchor: classNames.hubAnchor, srOnly: classNames.srOnly }));
+    paragraph.appendChild(
+      createExternalLink(doc, view.hubLink, { anchor: classNames.hubAnchor, srOnly: classNames.srOnly })
+    );
     root.appendChild(paragraph);
   }
   return root;

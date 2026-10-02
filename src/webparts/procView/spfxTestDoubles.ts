@@ -16,10 +16,10 @@ import type { ITeamsJs } from './teamsTheme';
 /** `DisplayMode` values as SharePoint defines them. */
 export const DISPLAY_MODE = { Read: 1, Edit: 2 };
 
-/** The parts of `@microsoft/sp-core-library` the web part uses; `Log.warn` records its calls. */
+/** The parts of `@microsoft/sp-core-library` the web part uses; `Log` records its calls. */
 export const coreLibraryDouble = {
   DisplayMode: DISPLAY_MODE,
-  Log: { warn: jest.fn() },
+  Log: { warn: jest.fn(), error: jest.fn() },
   Version: { parse: (version: string): string => version }
 };
 
@@ -98,6 +98,11 @@ class BaseClientSideWebPartDouble {
     return Promise.resolve();
   }
 
+  /** SharePoint's own implementation keeps the property bag as it was read (`BaseWebPart`). */
+  protected onAfterDeserialize(deserializedObject: unknown, dataVersion: unknown): unknown {
+    return deserializedObject;
+  }
+
   protected onDispose(): void {
     // SharePoint's base class releases its own resources here — nothing to stand in for
   }
@@ -113,6 +118,7 @@ export interface IWebPartHarness {
   properties: Record<string, unknown>;
   displayMode: number;
   render(): void;
+  onAfterDeserialize(deserializedObject: unknown, dataVersion: unknown): Record<string, unknown>;
   onInit(): Promise<void>;
   onDispose(): void;
   onDisplayModeChanged(): void;
@@ -130,10 +136,36 @@ export interface IStartOptions {
 }
 
 const startedWebParts: IWebPartHarness[] = [];
+/** The data version of the stored settings, as SharePoint passes it to `onAfterDeserialize`. */
+const STORED_DATA_VERSION = '1.0';
 
 /**
- * Creates the web part as SharePoint does — properties first, then `onInit` and the first
- * `render()` — with its element in the document, where focus works. `disposeWebParts` removes it.
+ * Whether SharePoint's pane shows a toggle as on: it shows the stored value whenever there is one,
+ * `checked:` only without (SPFx 1.23.2, `PropertyPaneGroup._getCheckedStatus`).
+ */
+export function isToggleShownOn(field: IFieldDouble, properties: Record<string, unknown>): boolean {
+  const stored = properties[field.targetProperty];
+  return Boolean(stored !== undefined && stored !== null ? stored : field.properties.checked);
+}
+
+/**
+ * What SharePoint's pane selects in a choice group: the option whose key is the stored value
+ * whenever one is stored (not empty), the option marked `checked` only without — `undefined` when
+ * the stored value matches no option (SPFx 1.23.2, `PropertyPaneGroup`).
+ */
+export function findShownChoice(field: IFieldDouble, properties: Record<string, unknown>): string | undefined {
+  const options = field.properties.options as { key: string; checked?: boolean }[];
+  const stored = properties[field.targetProperty];
+  if (stored !== undefined && stored !== null && stored !== '') {
+    return options.find((option) => option.key === stored)?.key;
+  }
+  return options.find((option) => option.checked)?.key;
+}
+
+/**
+ * Creates the web part as SharePoint does — the stored properties through `onAfterDeserialize`
+ * first, then `onInit` and the first `render()` — with its element in the document, where focus
+ * works. `disposeWebParts` removes it.
  */
 export async function startWebPart(
   webPartClass: new () => object,
@@ -141,7 +173,7 @@ export async function startWebPart(
   options: IStartOptions = {}
 ): Promise<IWebPartHarness> {
   const webPart = new webPartClass() as IWebPartHarness;
-  webPart.properties = properties;
+  webPart.properties = webPart.onAfterDeserialize(properties, STORED_DATA_VERSION);
   webPart.displayMode = options.displayMode ?? DISPLAY_MODE.Edit;
   if (options.teamsJs) {
     webPart.context.sdks.microsoftTeams = { teamsJs: options.teamsJs };

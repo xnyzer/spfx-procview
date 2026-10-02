@@ -61,6 +61,7 @@ Details: `HOW-TO-CODE-WITH-CLAUDE.md`.
 | F-009a | One version from package.json (sync and check), `just release` with a tested release script, CHANGELOG with the 1.0.0 features, version in the property pane | 2026-10-02 |
 | F-009b | Release workflow (read-only build job, publish job with write access on tags only, dry run), `--notes` from the CHANGELOG, CodeQL for workflows, IT deployment guide; dry run on GitHub green | 2026-10-02 |
 | F-021a | Release only from `main` (fetch and up-to-date check, atomic push, ancestry check in the build), `publish` only for a pushed tag, immutable releases, private vulnerability reporting, SHA pinning required, pinned runner image; stricter version and character checks, docs; dry run on GitHub green | 2026-10-02 |
+| F-021b | Stored values the page cannot read normalised in `onAfterDeserialize` (pane and page agree), manifest defaults tested against the code fallbacks, `imageLink` via `settings.ts`, a refused full-screen dialog logged, renames | 2026-10-02 |
 
 ---
 
@@ -119,68 +120,6 @@ Owner decisions (2026-10-02): all findings of the release control audit are fixe
 release 1.0.0, in their own feature before F-009c.
 
 **Dependencies:** F-019, F-020, F-009a, F-009b (done)
-
-#### F-021b — Web part, pane and settings
-
-**What:** Pane and page never disagree on a stored value, the manifest defaults are pinned by a
-test, every property is read in `settings.ts`, a failed full-screen dialog is logged, and the
-remaining names of the release control audit in these files (L55, L56, L57, L61, L63).
-
-- **Stored values (L55):** SharePoint shows the stored value of a toggle whenever it is not
-  `undefined`/`null`, and the stored value of a choice group whenever it is not
-  `undefined`/`null`/empty — `checked:` only fills in missing values (SPFx 1.23.2,
-  `PropertyPaneGroup`). A value the page cannot read (`showHubLink: "true"`, `offerZoom: 1`,
-  `hubLinkPosition: "<img src=x>"`, a page written by a provisioning template) therefore looks
-  different in pane and page. New `normalizeStoredSettings` in `settings.ts`, applied in
-  `onAfterDeserialize` — the hook SPFx provides to fix the property bag after reading it
-  (`BaseWebPart`): every value becomes what the page reads from it — a toggle that is not a
-  boolean becomes the page's boolean (`isOn`/`isOnByDefault`), an unknown hub link position
-  `below`; texts that are not strings (e.g. `width: 600` as a number) are removed, as the page
-  reads them as empty (extension agreed at prep-step: same mismatch, the text field would show
-  "600"). `undefined`/`null` stay — `checked:` and the code fallbacks cover them; alignments
-  and the colour stay — their custom fields already show the checked value. The stand-ins call
-  `onAfterDeserialize` in `startWebPart` as SharePoint does, and new helpers tell what
-  SharePoint would show for a toggle or choice group (stored value before `checked:`); the pane
-  test that asserted option flags SharePoint ignores checks what the pane shows instead
-- **Manifest defaults (L56):** `manifestDefaults.test.ts` reads the manifest (copied next to the
-  compiled tests) with TypeScript's JSONC parser (`parseConfigFileTextToJson` — the manifest has
-  comments and a `https://` inside a string) and checks that its initial values read back as the
-  code fallbacks (`readPaneSettings`, `readSettings` with and without them) and that it lists
-  exactly the nine properties with fallbacks — so a typo in a key fails too
-- **`imageLink` (L57):** `readDiagramLink(props)` in `settings.ts`; `render()` and the natural
-  size text use it instead of the registry directly
-- **Full screen (L61):** `_openFullScreen` catches a failed `showModal()` (rethrown by
-  `openLightbox` after removing the dialog) and reports it with `Log.error`; the stand-in gets
-  `Log.error`
-- **Renames (L63):** `moveFocus` → `shouldMoveFocus` (`alignmentField.ts`), `zoomClassNames` →
-  `pickZoomClassNames` (`ProcViewWebPart.ts`, like `pickLinkClassNames`), `externalLink` →
-  `createExternalLink` (`externalLink.ts` and its callers `aboutField.ts`, `renderDiagram.ts`,
-  `renderMessage.ts`)
-- **Docs:** a technical decision in REQUIREMENTS; the CLAUDE.md note on defaults names the new
-  test
-
-**Files:** `settings.ts`, `settings.test.ts`, `ProcViewWebPart.ts`, `ProcViewWebPart.test.ts`,
-`spfxTestDoubles.ts`, `propertyPane.test.ts`, `injection.test.ts`, `manifestDefaults.test.ts`
-(new), `alignmentField.ts`, `externalLink.ts`, `aboutField.ts`, `renderDiagram.ts`,
-`renderMessage.ts` (all in `src/webparts/procView/`), `REQUIREMENTS.md`, `CLAUDE.md`
-
-**Dependencies:** F-021a (done)
-
-**Acceptance criteria:**
-- [ ] Hostile stored values (`"true"`, `1`, `"<img src=x>"`, a number in a text field) show the
-      same state in pane and page — through `startWebPart` (with `onAfterDeserialize`) and the
-      helpers for what SharePoint shows; `normalizeStoredSettings` unit tests, also that
-      `undefined`/`null`, valid values, alignments and the colour stay as they are
-- [ ] `manifestDefaults.test.ts` fails for a changed value and for a misspelled key in the
-      manifest (mutation runs)
-- [ ] `imageLink` is read only through `settings.ts` (no `parseDiagramLink(this.properties…)`
-      left in the web part)
-- [ ] A throwing `showModal()` leaves no uncaught error and no dialog, and is reported with
-      `Log.error` (test)
-- [ ] Renames done, no old name left (`moveFocus`, `zoomClassNames`, `externalLink(`)
-- [ ] Owner's short visual check in the local workbench: pane, hub link and full screen look and
-      work as before
-- [ ] `just check` green
 
 ### F-009 — Versioning, release via CI + IT deployment guide
 

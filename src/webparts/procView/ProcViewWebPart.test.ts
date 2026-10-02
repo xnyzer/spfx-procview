@@ -252,6 +252,35 @@ describe('ProcViewWebPart — full screen', () => {
     expect(document.activeElement).toBe(current);
   });
 
+  it('logs a dialog the browser refuses instead of letting the error escape (audit L61)', async () => {
+    const webPart = await start({ imageLink: LINK_A });
+    const prototype = HTMLDialogElement.prototype as unknown as { showModal: () => void };
+    const standIn = prototype.showModal;
+    prototype.showModal = () => {
+      throw new Error('InvalidStateError');
+    };
+    // jsdom reports an error thrown in a listener on the window instead of throwing it from click()
+    const uncaught: unknown[] = [];
+    const onError = (event: ErrorEvent): void => {
+      uncaught.push(event.error);
+      event.preventDefault();
+    };
+    window.addEventListener('error', onError);
+    coreLibraryDouble.Log.error.mockClear();
+    try {
+      findFullScreenButton(webPart)?.click();
+    } finally {
+      prototype.showModal = standIn;
+      window.removeEventListener('error', onError);
+    }
+    expect(uncaught).toEqual([]);
+    expect(coreLibraryDouble.Log.error).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('dialog')).toBeNull();
+    // The page stays usable: the next attempt opens the view
+    findFullScreenButton(webPart)?.click();
+    expect(document.querySelector('dialog')?.hasAttribute('open')).toBe(true);
+  });
+
   it('closes an open view on dispose', async () => {
     const webPart = await start({ imageLink: LINK_A });
     findFullScreenButton(webPart)?.click();

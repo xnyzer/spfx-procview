@@ -97,7 +97,10 @@ function createOptionButton(doc: Document, option: IAlignmentOption): HTMLButton
 }
 
 /** A click selects its option; arrow keys, Home and End move the selection and the focus. */
-function bindOptionEvents(buttons: HTMLButtonElement[], select: (index: number, moveFocus: boolean) => void): void {
+function bindOptionEvents(
+  buttons: HTMLButtonElement[],
+  select: (index: number, shouldMoveFocus: boolean) => void
+): void {
   buttons.forEach((button, index) => {
     button.addEventListener('click', () => select(index, false));
     button.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -132,9 +135,9 @@ export function renderAlignmentButtons(doc: Document, props: IAlignmentButtonsPr
     });
   };
 
-  const select = (index: number, moveFocus: boolean): void => {
+  const select = (index: number, shouldMoveFocus: boolean): void => {
     const key = props.options[index].key;
-    if (moveFocus) {
+    if (shouldMoveFocus) {
       buttons[index].focus();
     }
     if (key === selected) {

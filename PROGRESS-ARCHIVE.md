@@ -8,6 +8,105 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-021b — Web part, pane and settings
+
+_Completed 2026-10-02. Part of F-021, which stays open with F-021c._
+
+**What:** Pane and page never disagree on a stored value, the manifest defaults are pinned by a
+test, every property is read in `settings.ts`, a failed full-screen dialog is logged, and the
+remaining names of the release control audit in these files (L55, L56, L57, L61, L63).
+
+- **Stored values (L55):** SharePoint shows the stored value of a toggle whenever it is not
+  `undefined`/`null`, and the stored value of a choice group whenever it is not
+  `undefined`/`null`/empty — `checked:` only fills in missing values (SPFx 1.23.2,
+  `PropertyPaneGroup`). A value the page cannot read (`showHubLink: "true"`, `offerZoom: 1`,
+  `hubLinkPosition: "<img src=x>"`, a page written by a provisioning template) therefore looks
+  different in pane and page. New `normalizeStoredSettings` in `settings.ts`, applied in
+  `onAfterDeserialize` — the hook SPFx provides to fix the property bag after reading it
+  (`BaseWebPart`): every value becomes what the page reads from it — a toggle that is not a
+  boolean becomes the page's boolean (`isOn`/`isOnByDefault`), an unknown hub link position
+  `below`; texts that are not strings (e.g. `width: 600` as a number) are removed, as the page
+  reads them as empty (extension agreed at prep-step: same mismatch, the text field would show
+  "600"). `undefined`/`null` stay — `checked:` and the code fallbacks cover them; alignments
+  and the colour stay — their custom fields already show the checked value. The stand-ins call
+  `onAfterDeserialize` in `startWebPart` as SharePoint does, and new helpers tell what
+  SharePoint would show for a toggle or choice group (stored value before `checked:`); the pane
+  test that asserted option flags SharePoint ignores checks what the pane shows instead
+- **Manifest defaults (L56):** `manifestDefaults.test.ts` reads the manifest (copied next to the
+  compiled tests) with TypeScript's JSONC parser (`parseConfigFileTextToJson` — the manifest has
+  comments and a `https://` inside a string) and checks that its initial values read back as the
+  code fallbacks (`readPaneSettings`, `readSettings` with and without them) and that it lists
+  exactly the nine properties with fallbacks — so a typo in a key fails too
+- **`imageLink` (L57):** `readDiagramLink(props)` in `settings.ts`; `render()` and the natural
+  size text use it instead of the registry directly
+- **Full screen (L61):** `_openFullScreen` catches a failed `showModal()` (rethrown by
+  `openLightbox` after removing the dialog) and reports it with `Log.error`; the stand-in gets
+  `Log.error`
+- **Renames (L63):** `moveFocus` → `shouldMoveFocus` (`alignmentField.ts`), `zoomClassNames` →
+  `pickZoomClassNames` (`ProcViewWebPart.ts`, like `pickLinkClassNames`), `externalLink` →
+  `createExternalLink` (`externalLink.ts` and its callers `aboutField.ts`, `renderDiagram.ts`,
+  `renderMessage.ts`)
+- **Docs:** a technical decision in REQUIREMENTS; the CLAUDE.md note on defaults names the new
+  test
+
+**Files:** `settings.ts`, `ProcViewWebPart.ts`, `spfxTestDoubles.ts`, `ProcViewWebPart.test.ts`,
+`propertyPane.test.ts`, `storedSettings.test.ts` (new), `manifestDefaults.test.ts` (new),
+`alignmentField.ts`, `externalLink.ts`, `aboutField.ts`, `renderDiagram.ts`, `renderMessage.ts`
+(all in `src/webparts/procView/`), `REQUIREMENTS.md`, `CLAUDE.md`
+
+**Dependencies:** F-021a
+
+**Acceptance criteria:**
+- [x] Hostile stored values (`"true"`, `1`, `"<img src=x>"`, a number in a text field) show the
+      same state in pane and page — through `startWebPart` (with `onAfterDeserialize`) and the
+      helpers for what SharePoint shows; `normalizeStoredSettings` unit tests, also that
+      `undefined`/`null`, valid values, alignments and the colour stay as they are —
+      `storedSettings.test.ts`; without the normalisation four of its tests fail (mutation run),
+      the control case with real booleans stays green
+- [x] `manifestDefaults.test.ts` fails for a changed value and for a misspelled key in the
+      manifest (mutation runs) — `diagramAlign: "left"` fails two tests, `showBackgroud` one
+- [x] `imageLink` is read only through `settings.ts` (no `parseDiagramLink(this.properties…)`
+      left in the web part) — the pane's own `parseDiagramLink` validates the text being typed,
+      not a stored value
+- [x] A throwing `showModal()` leaves no uncaught error and no dialog, and is reported with
+      `Log.error` (test) — the test listens for jsdom's window `error` events (jsdom does not
+      throw from `click()`); without the `catch` it fails (mutation run); the next click opens
+      the view
+- [x] Renames done, no old name left (`moveFocus`, `zoomClassNames`, `externalLink(`)
+- [x] Owner's short visual check in the local workbench: pane, hub link and full screen look and
+      work as before — the owner went on to step-done after the check request
+- [x] `just check` green (isolated copy while the dev server runs) — 704 Jest tests in 26 suites,
+      75 script tests
+
+**Implemented:**
+- `settings.ts` — `normalizeStoredSettings` (`TEXT_PROPERTIES`, `TOGGLE_READERS`, `isMissing`;
+  returns a copy) and `readDiagramLink`
+- `ProcViewWebPart.ts` — `onAfterDeserialize` returns the normalised bag; `render()` and the
+  natural size text use `readDiagramLink`; `_openFullScreen` catches a refused dialog and logs it
+  with `Log.error`, the view itself opens in the new `_showFullScreen`; `pickZoomClassNames`
+- `spfxTestDoubles.ts` — the base class has SharePoint's `onAfterDeserialize`, `startWebPart`
+  passes the stored properties through it; `Log.error`; `isToggleShownOn` and `findShownChoice`
+  tell what SharePoint's pane shows (stored value before `checked:`)
+- `storedSettings.test.ts` — unit tests of the normalisation, then pane against page for hostile
+  toggles, an unknown hub link position and a width stored as a number
+- `manifestDefaults.test.ts` — the manifest's initial values (read with TypeScript's
+  `parseConfigFileTextToJson`) against `readPaneSettings`, `readSettings` and the normalisation;
+  exactly the nine keys with fallbacks
+- `propertyPane.test.ts` — the hub link position test checks what the pane shows: nothing for the
+  stored value as is, `below` once normalised
+- Renames: `shouldMoveFocus`, `pickZoomClassNames`, `createExternalLink`
+- REQUIREMENTS: a technical decision; CLAUDE.md: the notes on defaults and untrusted settings
+  name the test and the normalisation
+
+**Deviations from the plan:**
+- The new tests went into `storedSettings.test.ts` instead of `settings.test.ts` and
+  `injection.test.ts` — those have 293 and 379 lines already
+- The manifest is read from the source folder (`process.cwd()`, `heft test` runs in the project
+  folder) rather than the copy next to the compiled tests — it is the file editors change; `fs`,
+  `process` and `typescript` come through `jest.requireActual` with narrow types, as the web
+  part's compilation has no Node types
+- The helper for toggles is named `isToggleShownOn` (it returns a boolean, §3)
+
 ### F-021a — Release path, tooling, docs, GitHub settings
 
 _Completed 2026-10-02; the dry run on GitHub followed right after the push. Part of F-021, which

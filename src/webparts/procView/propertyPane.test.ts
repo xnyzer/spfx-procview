@@ -7,6 +7,8 @@ jest.mock('@microsoft/sp-property-pane', () => jest.requireActual('./spfxTestDou
 jest.mock('ProcViewWebPartStrings', () => jest.requireActual('./spfxTestDoubles').stringsDouble, { virtual: true });
 
 import { CONDITIONAL_FIELD_PROPERTIES, propertyPaneConfiguration } from './propertyPane';
+import { normalizeStoredSettings } from './settings';
+import { findShownChoice } from './spfxTestDoubles';
 import type { IFieldDouble } from './spfxTestDoubles';
 
 interface IGroupDouble {
@@ -84,13 +86,12 @@ describe('propertyPaneConfiguration — layout', () => {
     expect(listLayout({ showHubLink: 'true' })[3][1]).toEqual(['showHubLink']);
   });
 
-  it('treats an unknown hub link position as below the diagram', () => {
-    const properties = { showHubLink: true, hubLinkPosition: '<img src=x>' };
-    const options = findField(properties, 'hubLinkPosition').properties.options as { key: string; checked: boolean }[];
-    expect(options.map((option) => [option.key, option.checked])).toEqual([
-      ['below', true],
-      ['overlay', false]
-    ]);
+  it('selects below for an unknown hub link position once the web part has normalised it (audit L55)', () => {
+    const stored = { showHubLink: true, hubLinkPosition: '<img src=x>' };
+    // SharePoint selects the stored value before any checked option — as stored, none would show
+    expect(findShownChoice(findField(stored, 'hubLinkPosition'), stored)).toBeUndefined();
+    const properties = normalizeStoredSettings(stored) as Record<string, unknown>;
+    expect(findShownChoice(findField(properties, 'hubLinkPosition'), properties)).toBe('below');
     expect(listLayout(properties)[3][1]).toContain('hubLinkAlign');
   });
 

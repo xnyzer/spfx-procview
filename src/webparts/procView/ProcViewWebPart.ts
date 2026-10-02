@@ -5,7 +5,6 @@ import type { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 import styles from './ProcViewWebPart.module.scss';
 import * as strings from 'ProcViewWebPartStrings';
-import { parseDiagramLink } from '../../providers/registry';
 import type { IDiagramLink, LinkParseResult } from '../../providers/types';
 import { readVersion } from './aboutField';
 import { assertNever } from './assertNever';
@@ -17,7 +16,7 @@ import { renderDiagram } from './renderDiagram';
 import type { IDiagramView } from './renderDiagram';
 import { renderMessage } from './renderMessage';
 import type { IMessageView } from './renderMessage';
-import { readSettings } from './settings';
+import { normalizeStoredSettings, readDiagramLink, readSettings } from './settings';
 import type { IProcViewWebPartProps, ISettings } from './settings';
 import { applyVariables, themeVariables } from './theme';
 import { followTeamsTheme, teamsThemeVariables } from './teamsTheme';
@@ -63,7 +62,7 @@ const ZOOM_LABELS: IZoomLabels = {
 };
 
 /** Zoom classes; `controls` places the zoom buttons (on the page or in full screen). */
-function zoomClassNames(controls: string): IZoomClassNames {
+function pickZoomClassNames(controls: string): IZoomClassNames {
   return { zoomable: styles.zoomable, zoomed: styles.zoomed, controls, button: styles.zoomButton };
 }
 
@@ -159,6 +158,16 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     return Version.parse('1.0');
   }
 
+  /**
+   * The settings as SharePoint read them from the page: a value the page cannot read becomes what
+   * the page reads from it, so the property pane — which shows a stored value before its own
+   * default — never disagrees with the page (settings.ts, audit L55).
+   */
+  protected onAfterDeserialize(deserializedObject: unknown, dataVersion: Version): IProcViewWebPartProps {
+    const stored: IProcViewWebPartProps = super.onAfterDeserialize(deserializedObject, dataVersion);
+    return normalizeStoredSettings(stored) as IProcViewWebPartProps;
+  }
+
   // --- Rendering --------------------------------------------------------------------------
 
   public render(): void {
@@ -170,7 +179,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
     this._guard.nextRender();
     this._disposeZoom();
     this._fullScreenButton = undefined;
-    const result = parseDiagramLink(this.properties.imageLink);
+    const result = readDiagramLink(this.properties);
     this._dropOtherLoadError(result);
     const settings = readSettings(this.properties, result.ok ? result.link : undefined, strings);
     const outcome = outcomeFor(resolveState(result, this._loadError), this.displayMode === DisplayMode.Edit);
@@ -207,7 +216,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
       zoom: settings.offerZoom
         ? {
             labels: ZOOM_LABELS,
-            classNames: zoomClassNames(styles.zoomControls),
+            classNames: pickZoomClassNames(styles.zoomControls),
             onAttach: (controller) => (this._zoom = controller)
           }
         : undefined,
@@ -230,7 +239,18 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   /** Full-screen view of the diagram: only the image, zoom and a close button (lightbox.ts). */
   private _openFullScreen(link: IDiagramLink, settings: ISettings, opener: HTMLElement): void {
     this._lightbox?.close();
-    this._lightbox = openLightbox(document, {
+    this._lightbox = undefined;
+    try {
+      this._lightbox = this._showFullScreen(link, settings, opener);
+    } catch (error) {
+      // The browser refused the modal dialog — openLightbox removed it again; the page stays usable
+      Log.error(LOG_SOURCE, error instanceof Error ? error : new Error(String(error)), this.context.serviceScope);
+    }
+  }
+
+  /** Opens the view itself; throws when the browser refuses the modal dialog. */
+  private _showFullScreen(link: IDiagramLink, settings: ISettings, opener: HTMLElement): ILightbox {
+    return openLightbox(document, {
       imageUrl: link.imageUrl,
       altText: settings.diagram.altText,
       opener,
@@ -243,7 +263,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
         image: styles.lightboxImage,
         close: styles.lightboxClose,
         message: styles.lightboxMessage,
-        zoom: zoomClassNames(styles.lightboxZoomControls)
+        zoom: pickZoomClassNames(styles.lightboxZoomControls)
       },
       // Not after dispose: onDispose closes the view itself
       onClose: this._guard.forLifetime(() => this._onFullScreenClosed())
@@ -295,7 +315,7 @@ export default class ProcViewWebPart extends BaseClientSideWebPart<IProcViewWebP
   }
 
   private _naturalSizeText(): string {
-    const result = parseDiagramLink(this.properties.imageLink);
+    const result = readDiagramLink(this.properties);
     const size = this._naturalSize;
     if (result.ok && size && size.imageUrl === result.link.imageUrl) {
       return format(strings.NaturalSizeKnown, [String(size.width), String(size.height)]);

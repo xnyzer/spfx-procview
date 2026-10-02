@@ -36,7 +36,7 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
 requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-020 in `PROGRESS.md`). All planned
-features are done (689 Jest tests, 75 script tests): Signavio link validation and provider
+features are done (704 Jest tests, 75 script tests): Signavio link validation and provider
 contract (F-001), configuration pane, sizing and caption (F-002), Collaboration Hub link
 (F-003), empty and error states (F-004), section theme colours (F-005), zoom and pan — "Offer
 zoom", default off (F-006), full-screen view — "Offer full screen", default on (F-007), Teams
@@ -62,9 +62,10 @@ audit of F-009c ran on 2026-10-02 (0 critical, 0 high, 3 medium, 18 low); all it
 into F-021 before the release. F-021a is done: a release only from a commit on `main`
 (`release.mjs` fetches `origin` and refuses a stale `main`, `git push --atomic`, an ancestry check
 in the release build), `publish` only for a pushed tag, immutable releases, private vulnerability
-reporting and SHA-pinned actions required on GitHub. Next: F-021b and F-021c, then F-009c (README
-for the release, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October
-2026).
+reporting and SHA-pinned actions required on GitHub. F-021b is done: stored values the page
+cannot read are normalised in `onAfterDeserialize`, so pane and page agree; the manifest defaults
+are tested against the code fallbacks. Next: F-021c, then F-009c (README for the release, release
+1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
 
 ## Project notes (learned the hard way)
 
@@ -89,9 +90,13 @@ for the release, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targe
   **on** needs three places: the manifest value, a code fallback that treats a missing value
   as on (`isOnByDefault` in `settings.ts`, for web parts saved before the setting existed) and
   `checked:` on the `PropertyPaneToggle` (`propertyPane.ts`), so the pane shows it on.
+  `manifestDefaults.test.ts` compares the manifest with the fallbacks — a new setting with a
+  manifest value goes into its list.
 - **Settings are untrusted:** every property is read in `settings.ts` (types, defaults, invisible
   characters); the renderers only get checked values. A new setting goes there, with hostile
-  cases in `injection.test.ts`.
+  cases in `injection.test.ts`. SharePoint's pane shows a stored toggle or choice value before
+  its `checked:` default, so `onAfterDeserialize` turns values the page cannot read into what it
+  reads (`normalizeStoredSettings`) — a new toggle, choice or text setting goes into its lists.
 - **Invisible characters in source:** write them as `\u` escapes. A raw U+200B/U+202E/U+00A0
   can slip in when a file is written, and a typed dash can arrive as escape text. `just check`
   fails on raw ones in `src/` and `scripts/` (`scripts/source-chars-check.mjs`); stray escapes
