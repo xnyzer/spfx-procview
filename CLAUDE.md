@@ -35,7 +35,7 @@ interface (`src/providers/`) keeps the door open for further process tools. Stac
 ## Status & where to start
 
 Bootstrapped from project-template 0.13.2 with the SPFx-generated web part scaffold;
-requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-020 in `PROGRESS.md`). All planned
+requirements defined (`REQUIREMENTS.md`, roadmap F-001–F-021 in `PROGRESS.md`). All planned
 features are done (710 Jest tests, 75 script tests): Signavio link validation and provider
 contract (F-001), configuration pane, sizing and caption (F-002), Collaboration Hub link
 (F-003), empty and error states (F-004), section theme colours (F-005), zoom and pan — "Offer
@@ -50,25 +50,14 @@ the editors' order (F-018), the zoom and full-screen fixes from the audit (F-017
 fixes from the control audit of 2026-10-02 (F-019: web part and pane tests on SharePoint
 stand-ins, pane focus kept, `just check` guarding source characters and deriving the licence
 notices from the build, zoom and full-screen remainders), and the README with screenshots and
-tables for settings, controls and messages (F-020: images in `docs/images/`, only the CI
-badge — the repository depends on no third-party website). F-009a is done: one version in
-`package.json` (`scripts/sync-version.mjs`, checked in `just check`), `just release x.y.z`
-(`scripts/release.mjs`; higher than the latest `v*` tag, so the first release is 1.0.0),
-`CHANGELOG.md`, the version in the property pane. F-009b is done: the release workflow
-(`.github/workflows/release.yml` — a read-only build job, a publish job with write access only
-on tags, a dry run via "Run workflow"), CodeQL for the workflow files and the IT guide
-`docs/deployment.md` with a first-use check. The dry run on GitHub is green. The release control
-audit of F-009c ran on 2026-10-02 (0 critical, 0 high, 3 medium, 18 low); all its findings go
-into F-021 before the release. F-021a is done: a release only from a commit on `main`
-(`release.mjs` fetches `origin` and refuses a stale `main`, `git push --atomic`, an ancestry check
-in the release build), `publish` only for a pushed tag, immutable releases, private vulnerability
-reporting and SHA-pinned actions required on GitHub. F-021b is done: stored values the page
-cannot read are normalised in `onAfterDeserialize`, so pane and page agree; the manifest defaults
-are tested against the code fallbacks. F-021c is done, and with it F-021: the zoom teardown is
-pinned by tests, the fallback focus is named and visible, the page behind full screen stays still
-in every browser (checked in Firefox, Safari and Chromium on a local test page outside the
-repository — the local workbench is a VS Code webview). Next: F-009c (README for the release,
-badges, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
+tables for settings, controls and messages (F-020: images in `docs/images/`), the release
+tooling (F-009: one version in `package.json` checked in `just check`, `just release x.y.z`, the
+release workflow — read-only build, publish only for a pushed tag, an ancestry check against
+`main` — immutable releases with a signed attestation, the IT guide `docs/deployment.md`) and
+the fixes from the release control audit (F-021: release path and GitHub settings, stored values
+normalised in `onAfterDeserialize`, zoom teardown tests, the page behind full screen kept
+still). **Release 1.0.0 is published** (2026-10-02; README badges from GitHub and shields.io).
+Next: F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for October 2026).
 
 ## Project notes (learned the hard way)
 
@@ -127,6 +116,15 @@ badges, release 1.0.0); F-010 waits for SPFx 1.24 (Node 24/26, GA targeted for O
   has no `instanceId` getter — use `this.context.instanceId` — and it renders a custom pane
   field again only when the field's `key` changes, so keys must be unique per web part
   instance.
+- **Browser checks outside VS Code:** the local workbench is a VS Code webview (Chromium only).
+  For Firefox and Safari, a local test page outside the repository bundles the compiled diagram,
+  zoom and full-screen modules from `lib/` (the private `browser-check` page — rebuild it after
+  `just check` or with the dev server running). Safari reaches buttons with Tab only with
+  Option + Tab (its default setting).
+- **Releases are immutable:** a published version can never be replaced or published again, not
+  even after deleting its release — a broken release is followed by the next patch version. Cut
+  a release with the dev server stopped (`mise exec -- just release x.y.z`) and push it with
+  `git push --atomic origin main vx.y.z`; README "Versioning and releases" has the details.
 
 <!-- section:claude-startup -->
 Read `README.md` and `REQUIREMENTS.md` (while it exists). Then `PROGRESS.md`: its open-tasks

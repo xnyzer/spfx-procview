@@ -8,6 +8,152 @@ and notable decisions or deviations. Newest entries at the top. The living list 
 
 ---
 
+### F-009 — Versioning, release via CI + IT deployment guide
+
+_Completed 2026-10-02 (F-009a, F-009b, F-009c) — release 1.0.0 published._
+
+**Problem:** IT needs a reproducible, versioned `.sppkg` and clear deployment steps. The
+App Catalog only offers an update when the solution version increases — today it is fixed
+(SemVer `1.0.0` plus a build part `0`) and would have to be changed by hand in two places.
+
+**Idea:** One version number as the single source of truth, a release recipe that sets it
+and tags the release, and a GitHub Actions workflow that builds the package on version
+tags and attaches it to a GitHub release; a deployment guide for IT.
+
+**Solution sketch** (updated at prep-step, 2026-10-01, and on 2026-10-02 for F-009a and for
+F-009b, which was split into F-009b and F-009c; size: medium to large, three substeps):
+- Version only in `package.json`; `package-solution.json` (solution + feature) gets `x.y.z.0`
+  from a dependency-free script (`scripts/sync-version.mjs`): without arguments it replaces
+  only the version values (the file's formatting stays), `--check` parses the file and compares
+  solution and feature versions — it runs in `just check`
+- Release recipe instead of an `npm version` hook (that would create its own commit/tag):
+  `just release x.y.z` — the logic sits in a tested, dependency-free script
+  (`scripts/release.mjs`, pure functions plus a command line, `node --test`), the recipe stays
+  thin: `node scripts/release.mjs x.y.z` (checks; `npm version x.y.z --no-git-tag-version
+  --allow-same-version` for package.json + lock; sync; CHANGELOG "Unreleased" → `x.y.z` with
+  date), `just check`, commit `chore(release): x.y.z` ending with the `Co-Authored-By: Claude`
+  trailer (owner decision 2026-10-02: Claude built the release tooling, that stays mentioned),
+  tag `vx.y.z`; it **does not push** — it prints the push command
+- The version must be higher than the **latest `v*` tag**, not than `package.json` (decision
+  2026-10-02): `package.json` already says 1.0.0 and there is no tag yet, so the first release
+  is 1.0.0, and every later release counts up from the last one — the App Catalog only compares
+  released packages. The script also refuses a dirty tree, a version that is not `x.y.z`, an
+  existing tag, an empty "Unreleased" section and a commit email that is not a GitHub noreply
+  address
+- `dataVersion` stays 1.0: every new setting has a code fallback, no stored value ever needed a
+  migration; bump only when the meaning of stored values changes — documented at the getter
+  and in README "Versioning and releases" (new, below Development; also: stop the dev server
+  before `just release`, its `just check` cleans the build folders)
+- Version in the property pane below the repository link ("About", e.g. "Version 1.0.0"),
+  from `this.context.manifest.version` (`version: "*"` in the manifest = package.json); shown
+  only when it looks like `x.y.z`, otherwise the line is left out (whether the local workbench
+  provides the manifest is confirmed in the owner's visual check)
+- `CHANGELOG.md` in the "Keep a Changelog" format: `## [Unreleased]`, `## [x.y.z] - YYYY-MM-DD`,
+  sections Added / Changed / Fixed, no compare links; F-009b takes the release notes from it
+- Release workflow on tags `v*`: tag must equal the version, `just setup` + `just build`,
+  GitHub release with the `.sppkg`, a SHA-256 checksum and the CHANGELOG section as notes.
+  Owner decisions at prep-step F-009b (2026-10-02): two jobs — `build` with read access only
+  (setup, check, build, checksum, notes, uploaded as a workflow artifact) and `publish` with
+  `contents: write`, only on tags, creating the release with GitHub's own `gh` CLI (no
+  third-party action) — so the token that may publish never runs `npm ci` and the install
+  scripts of dependencies; a dry run via `workflow_dispatch` that does everything but publish;
+  CodeQL also analyses the workflow files (language `actions`)
+- Owner decisions (2026-10-01): first release **1.0.0**; cutting it is the last step of F-009
+  (now F-009c)
+- Owner decision (2026-10-02): a control audit in a new session comes right before cutting the
+  release — F-009b was split at that boundary (2026-10-02): F-009b builds the workflow and the
+  IT guide, F-009c runs the audit and cuts the release; the decision log's references to the
+  IT guide in F-009b stay true
+- The first CHANGELOG entry (1.0.0) lists the features under "Added" only — no "Changed" notes
+  for earlier test packages (owner decision 2026-10-02: the first release lists what it
+  offers; a single small change does not belong in it)
+
+**Dependencies:** F-002, F-016 (audit before the first release), F-018 (diagram alignment,
+pane order), F-017 (zoom and full-screen fixes from the audit), F-019 (fixes from the control
+audit), F-020 (README with screenshots), F-021 (fixes from the release control audit)
+
+### F-009c — Control audit and release 1.0.0
+
+_Completed 2026-10-02 — release `v1.0.0` published. Completes F-009._
+
+**What:** The control audit before the first release (done — its findings were fixed in F-021),
+the docs brought to the state of a released project, `just release 1.0.0` and the published,
+verified release. Planned at prep-step 2026-10-02 in three phases, each step that writes to
+GitHub only after the owner's approval:
+
+1. **Docs before the tag** (one commit, pushed before `just release`, so the tagged README already
+   describes the release): README "Status" — released, download from the GitHub releases page,
+   worded without a fixed version; "For IT" — the "Package" and "Updates" bullets describe the
+   GitHub release (package, checksum, immutable, `gh release verify-asset`) instead of "follow
+   with F-009"; badges — GitHub's own status badges for CI (exists), CodeQL and Release, and
+   shields.io badges for the release version, the licence and the SPFx version (owner decision
+   2026-10-02: the criterion is "no tracking" — shields.io keeps no logs and sets no cookies, and
+   on GitHub README images go through GitHub's image proxy, so shields.io never sees a visitor);
+   a dated decision in REQUIREMENTS that supersedes the F-020 entry "the repository depends on no
+   third-party website" (an outage of shields.io only shows a broken badge); SECURITY.md
+   "Supported versions" — the latest release, fixes as a new patch release, instead of
+   "pre-release, latest `main` only"; `private/README.md` lists the local browser-check page
+2. **The release:** the owner stops the dev server (`just check` cleans its folders); Claude runs
+   `mise exec -- just release 1.0.0` after the owner's approval (fetch and checks, version,
+   CHANGELOG, `just check`, release commit and tag — local only); the owner approves
+   `git push --atomic origin main v1.0.0` — from here it is final: a published version can never
+   be replaced, only followed by 1.0.1; Claude watches the workflow — tag check, the ancestry
+   check against `main` (its first real run) and the first real `publish` run
+3. **Checks afterwards:** the release holds exactly `spfx-procview.sppkg`, its `.sha256` and
+   `THIRD-PARTY-NOTICES.md` and is immutable; the downloaded package passes `shasum -c`,
+   `gh release verify v1.0.0` and `gh release verify-asset v1.0.0 spfx-procview.sppkg`; on
+   GitHub the badges show the release and the README links (release page, IT guide) resolve
+
+Not part of F-009c (owner decisions 2026-10-02): the editor warnings on `tsconfig.json` (VS
+Code's own TypeScript 6 flags the SPFx rig's `target` and `moduleResolution`; the project builds
+with TypeScript 5.8.3) stay as they are; GitHub's "generated from project-template" label stays;
+the HOW-TO wording on where the skills come from goes to the template (managed file) and arrives
+here with `/update-conventions`.
+
+**Files:** `README.md`, `SECURITY.md`, `REQUIREMENTS.md`, `private/README.md` (commit `e674a0f`);
+the release commit `40af6e1` `chore(release): 1.0.0` (`CHANGELOG.md` — version 1.0.0 and the
+four-part solution version (`x.y.z.0`) were already set, so `package.json`, its lock and
+`package-solution.json` stayed unchanged), tag `v1.0.0`
+
+**Dependencies:** F-009b, F-021
+
+**Acceptance criteria:**
+- [x] Control audit before the release, in a new session — audit 2026-10-02 (21 of 25 earlier
+      findings fixed, the rest followed up; 21 new findings), all fixed in F-021 (owner
+      decision); the previous results stay archived locally
+- [x] Docs before the tag: README status, "For IT" and badges, the REQUIREMENTS decision on
+      badges, SECURITY.md supported versions, `private/README.md` — commit `e674a0f`, pushed
+      before `just release 1.0.0`; CI and CodeQL green on it
+- [x] First release: `just release 1.0.0` with the dev server stopped (the owner started it
+      after stopping the dev server — fetch and checks passed, `just check` green, release
+      commit and tag `v1.0.0`), owner approved `git push --atomic origin main v1.0.0`; release
+      run 37058561855: tag check, the ancestry check against `main` (first real run), `just
+      check`, `just build` and the first real `publish` green
+- [x] The published release checked: immutable (`immutable: true`), not a draft, exactly
+      `spfx-procview.sppkg` (33 KB), its `.sha256` and `THIRD-PARTY-NOTICES.md`; the
+      downloaded package passes `shasum -a 256 -c`, `gh release verify v1.0.0` (release
+      attestation) and `gh release verify-asset v1.0.0 spfx-procview.sppkg`; its app manifest
+      carries version 1.0.0 as `x.y.z.0`; the notes are the 1.0.0 CHANGELOG section with the
+      link to the IT guide at `v1.0.0`; on GitHub the badges show `release: v1.0.0`,
+      `Release - passing`, `license: Apache-2.0` and `SPFx: 1.23.2`, `releases/latest` redirects
+      to `v1.0.0`, and the README and notices links resolve
+- [x] `just check` green — in the release recipe and in the release build; CI and CodeQL green
+      on the release commit `40af6e1`
+
+**Implemented:**
+- README: six badges (CI, CodeQL and the release workflow from GitHub; latest release, licence
+  and SPFx version from shields.io), "Status" for a released project without a fixed version,
+  "For IT" with the package from the release, its checksum and attestation, and updates by a
+  higher version
+- SECURITY.md: the latest release is supported, fixes come as new patch releases
+- REQUIREMENTS: badges supersede the F-020 entry (criterion "no tracking")
+- `private/README.md`: the local browser-check page and template proposals listed
+- Release 1.0.0 at https://github.com/xnyzer/spfx-procview/releases/tag/v1.0.0
+
+**Deviations from the plan:**
+- The owner started `just release 1.0.0` right after stopping the dev server; Claude
+  checked the result (commit, annotated tag, clean tree) before the push approval
+
 ### F-021 — Fixes from the release control audit before 1.0.0
 
 _Completed 2026-10-02 (F-021a, F-021b, F-021c)._
